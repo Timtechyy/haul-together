@@ -160,7 +160,7 @@ const Onboarding = () => {
               HaulMate
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2024 HaulMate. All rights reserved.
+              © 2025 HaulMate. All rights reserved.
             </div>
           </div>
         </div>
