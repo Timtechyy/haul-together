@@ -107,9 +107,18 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Security Notice */}
-        <div className="text-center text-xs text-muted-foreground">
+        {/* Terms and Privacy */}
+        <div className="text-center text-xs text-muted-foreground space-y-2">
           <p>Protected by 256-bit SSL encryption</p>
+          <p>
+            <Link to="/terms" className="underline hover:text-foreground transition-colors">
+              Terms of Service
+            </Link>
+            {" • "}
+            <Link to="/privacy" className="underline hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>
