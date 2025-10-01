@@ -6,11 +6,27 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Eye, EyeOff, Package, Truck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(50),
+  lastName: z.string().trim().min(1, "Last name is required").max(50),
+  email: z.string().trim().email("Invalid email address"),
+  phone: z.string().trim().min(10, "Phone number must be at least 10 digits"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<"customer" | "driver">("customer");
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -19,11 +35,58 @@ const Signup = () => {
     password: "",
     confirmPassword: "",
   });
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication with Supabase
-    console.log("Signup attempt:", { ...formData, userType });
+    setIsLoading(true);
+
+    try {
+      const validation = signupSchema.safeParse(formData);
+      if (!validation.success) {
+        toast({
+          title: "Validation Error",
+          description: validation.error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const role = userType === "driver" ? "driver" : "user";
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/home`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            role: role,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. Redirecting...",
+        });
+        navigate("/home");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Signup Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -162,8 +225,8 @@ const Signup = () => {
                 />
               </div>
 
-              <Button type="submit" variant="hero" className="w-full">
-                Create Account
+              <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 

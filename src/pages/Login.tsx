@@ -1,23 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/home");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication with Supabase
-    console.log("Login attempt:", formData);
+    setIsLoading(true);
+
+    try {
+      const validation = loginSchema.safeParse(formData);
+      if (!validation.success) {
+        toast({
+          title: "Validation Error",
+          description: validation.error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Success!",
+          description: "Logged in successfully",
+        });
+        navigate("/home");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -89,8 +144,8 @@ const Login = () => {
                 </Button>
               </div>
 
-              <Button type="submit" variant="hero" className="w-full">
-                Sign In
+              <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </form>
 
