@@ -76,7 +76,13 @@ const Signup = () => {
           title: "Success!",
           description: "Account created successfully. Redirecting...",
         });
-        navigate("/home");
+
+        // Redirect based on role
+        if (userType === 'driver') {
+          navigate("/driver/dashboard");
+        } else {
+          navigate("/customer/booking");
+        }
       }
     } catch (error: any) {
       toast({
