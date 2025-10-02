@@ -58,11 +58,24 @@ const Login = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Check user role to redirect appropriately
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+
         toast({
           title: "Success!",
           description: "Logged in successfully",
         });
-        navigate("/home");
+
+        // Redirect based on role
+        if (roleData?.role === 'driver') {
+          navigate("/driver/dashboard");
+        } else {
+          navigate("/customer/booking");
+        }
       }
     } catch (error: any) {
       toast({
