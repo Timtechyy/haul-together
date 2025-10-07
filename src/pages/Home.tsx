@@ -16,14 +16,17 @@ import {
   Menu,
   Truck,
   Calendar,
-  DollarSign
+  DollarSign,
+  LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState<"book" | "deliveries" | "earnings">("book");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,6 +45,15 @@ const Home = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully",
+    });
+    navigate("/login");
+  };
 
   const recentDeliveries = [
     {
@@ -106,6 +118,10 @@ const Home = () => {
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
               </Button>
               <Avatar className="h-9 w-9">
                 <AvatarFallback>JD</AvatarFallback>
