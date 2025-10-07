@@ -30,7 +30,7 @@ const DriverDashboard = () => {
       title: "Logged out",
       description: "You have been logged out successfully",
     });
-    navigate("/");
+    navigate("/login");
   };
 
   // Mock data
