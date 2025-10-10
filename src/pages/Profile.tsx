@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   User, 
   Mail, 
@@ -21,18 +24,25 @@ import {
   Camera,
   Edit3,
   Truck,
-  Award
+  Award,
+  ArrowLeft
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [profile, setProfile] = useState({
-    firstName: "John",
-    lastName: "Doe", 
-    email: "john.doe@example.com",
-    phone: "(555) 123-4567",
-    address: "123 Main St, City, State 12345"
+    firstName: "",
+    lastName: "", 
+    email: "",
+    phone: "",
+    avatarUrl: ""
   });
 
   const stats = [
@@ -53,10 +63,159 @@ const Profile = () => {
     }
   ];
 
-  const handleSave = () => {
-    // TODO: Save profile changes
-    setIsEditing(false);
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      setUserId(user.id);
+
+      // Get user role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      setUserRole(roleData?.role || null);
+
+      // Get profile data
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      setProfile({
+        firstName: profileData.first_name || "",
+        lastName: profileData.last_name || "",
+        email: user.email || "",
+        phone: profileData.phone || "",
+        avatarUrl: profileData.avatar_url || ""
+      });
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSave = async () => {
+    if (!userId) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: profile.firstName,
+          last_name: profile.lastName,
+          phone: profile.phone
+        })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully"
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !userId) return;
+
+    try {
+      setUploading(true);
+
+      // Upload to storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatarUrl: publicUrl });
+
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully"
+      });
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully"
+    });
+    navigate("/login");
+  };
+
+  const handleBackNavigation = () => {
+    if (userRole === "driver") {
+      navigate("/driver/dashboard");
+    } else {
+      navigate("/home");
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,21 +224,16 @@ const Profile = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <Link to="/home">
-                  <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    HaulMate
-                  </div>
-                </Link>
+              <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
               </Button>
             </div>
             
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
-                <Settings className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <LogOut className="h-5 w-5" />
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
               </Button>
             </div>
           </div>
@@ -93,14 +247,27 @@ const Profile = () => {
             <div className="flex flex-col md:flex-row items-start gap-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarFallback className="text-2xl">
-                    {profile.firstName[0]}{profile.lastName[0]}
-                  </AvatarFallback>
+                  {profile.avatarUrl ? (
+                    <AvatarImage src={profile.avatarUrl} alt="Profile" />
+                  ) : (
+                    <AvatarFallback className="text-2xl">
+                      {profile.firstName[0]}{profile.lastName[0]}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
                 <Button
                   size="icon"
                   className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
                   variant="secondary"
+                  onClick={handleImageClick}
+                  disabled={uploading}
                 >
                   <Camera className="h-4 w-4" />
                 </Button>
@@ -203,20 +370,6 @@ const Profile = () => {
                     id="phone"
                     value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    disabled={!isEditing}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="address"
-                    value={profile.address}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10"
                   />

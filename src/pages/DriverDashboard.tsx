@@ -50,9 +50,12 @@ const DriverDashboard = () => {
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          <button 
+            onClick={() => navigate("/driver/dashboard")}
+            className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
+          >
             HaulMate Driver
-          </div>
+          </button>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
               <User className="mr-2 h-4 w-4" />
