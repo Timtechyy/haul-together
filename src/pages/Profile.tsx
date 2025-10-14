@@ -209,7 +209,7 @@ const Profile = () => {
     if (userRole === "driver") {
       navigate("/driver/dashboard");
     } else {
-      navigate("/home");
+      navigate("/customer/dashboard");
     }
   };
 
@@ -277,7 +277,9 @@ const Profile = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{profile.firstName} {profile.lastName}</h1>
-                    <p className="text-muted-foreground">Verified Customer</p>
+                    <p className="text-muted-foreground">
+                      {userRole === "driver" ? "Verified Driver" : "Verified Customer"}
+                    </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <Shield className="h-3 w-3" />

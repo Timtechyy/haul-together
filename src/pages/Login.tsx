@@ -65,7 +65,7 @@ const Login = () => {
         if (roleData?.role === 'driver') {
           navigate("/driver/dashboard");
         } else {
-          navigate("/customer/booking");
+          navigate("/customer/dashboard");
         }
       }
     } catch (error: any) {
