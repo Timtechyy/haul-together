@@ -14,6 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
+      deliveries: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          customer_id: string
+          delivered_at: string | null
+          delivery_lat: number | null
+          delivery_lng: number | null
+          delivery_location: string
+          driver_id: string | null
+          estimated_distance: number | null
+          id: string
+          item_description: string
+          picked_up_at: string | null
+          pickup_lat: number | null
+          pickup_lng: number | null
+          pickup_location: string
+          price: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          customer_id: string
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_location: string
+          driver_id?: string | null
+          estimated_distance?: number | null
+          id?: string
+          item_description: string
+          picked_up_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location: string
+          price?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          customer_id?: string
+          delivered_at?: string | null
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_location?: string
+          driver_id?: string | null
+          estimated_distance?: number | null
+          id?: string
+          item_description?: string
+          picked_up_at?: string | null
+          pickup_lat?: number | null
+          pickup_lng?: number | null
+          pickup_location?: string
+          price?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      driver_vehicles: {
+        Row: {
+          created_at: string
+          id: string
+          insurance_number: string | null
+          license_plate: string
+          make: string
+          model: string
+          tracking_consent: boolean
+          updated_at: string
+          user_id: string
+          vehicle_type: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insurance_number?: string | null
+          license_plate: string
+          make: string
+          model: string
+          tracking_consent?: boolean
+          updated_at?: string
+          user_id: string
+          vehicle_type: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insurance_number?: string | null
+          license_plate?: string
+          make?: string
+          model?: string
+          tracking_consent?: boolean
+          updated_at?: string
+          user_id?: string
+          vehicle_type?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      driver_verifications: {
+        Row: {
+          created_at: string
+          date_of_birth: string
+          first_name: string
+          id: string
+          last_name: string
+          license_back_url: string | null
+          license_front_url: string | null
+          license_number: string
+          license_state: string
+          ssn_last_four: string
+          updated_at: string
+          user_id: string
+          veriff_session_id: string | null
+          verification_status: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth: string
+          first_name: string
+          id?: string
+          last_name: string
+          license_back_url?: string | null
+          license_front_url?: string | null
+          license_number: string
+          license_state: string
+          ssn_last_four: string
+          updated_at?: string
+          user_id: string
+          veriff_session_id?: string | null
+          verification_status?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          license_back_url?: string | null
+          license_front_url?: string | null
+          license_number?: string
+          license_state?: string
+          ssn_last_four?: string
+          updated_at?: string
+          user_id?: string
+          veriff_session_id?: string | null
+          verification_status?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

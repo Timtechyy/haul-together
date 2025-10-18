@@ -54,7 +54,7 @@ const DriverDashboard = () => {
             onClick={() => navigate("/driver/dashboard")}
             className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
           >
-            HaulMate Driver
+            Wehauler Driver
           </button>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
@@ -139,7 +139,13 @@ const DriverDashboard = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">Decline</Button>
-                      <Button variant="hero" size="sm">Accept</Button>
+                      <Button 
+                        variant="hero" 
+                        size="sm"
+                        onClick={() => navigate(`/driver/tracking?id=${request.id}`)}
+                      >
+                        Accept
+                      </Button>
                     </div>
                   </div>
                 </div>

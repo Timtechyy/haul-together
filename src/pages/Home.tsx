@@ -111,7 +111,7 @@ const Home = () => {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                HaulMate
+                Wehauler
               </div>
             </div>
             

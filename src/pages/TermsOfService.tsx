@@ -18,7 +18,7 @@ const TermsOfService = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            HaulMate
+            Wehauler
           </div>
           <h1 className="text-4xl font-bold">Terms of Service</h1>
           <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
@@ -31,13 +31,13 @@ const TermsOfService = () => {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert space-y-6">
             <p>
-              By accessing and using HaulMate, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using this service.
+              By accessing and using Wehauler, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using this service.
             </p>
 
             <div>
               <h3 className="text-lg font-semibold mb-2">1. Use License</h3>
               <p>
-                Permission is granted to temporarily use HaulMate for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
+                Permission is granted to temporarily use Wehauler for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
               </p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Modify or copy the materials</li>
@@ -57,7 +57,7 @@ const TermsOfService = () => {
             <div>
               <h3 className="text-lg font-semibold mb-2">3. Service Description</h3>
               <p>
-                HaulMate connects customers who need delivery services with independent drivers. We facilitate the connection but do not employ drivers or guarantee service availability.
+                Wehauler connects customers who need delivery services with independent drivers. We facilitate the connection but do not employ drivers or guarantee service availability.
               </p>
             </div>
 
@@ -71,7 +71,7 @@ const TermsOfService = () => {
             <div>
               <h3 className="text-lg font-semibold mb-2">5. Liability</h3>
               <p>
-                HaulMate is not responsible for damages to items during transport, disputes between users, or any indirect damages arising from use of the service. Users are encouraged to maintain appropriate insurance.
+                Wehauler is not responsible for damages to items during transport, disputes between users, or any indirect damages arising from use of the service. Users are encouraged to maintain appropriate insurance.
               </p>
             </div>
 
@@ -92,7 +92,7 @@ const TermsOfService = () => {
             <div>
               <h3 className="text-lg font-semibold mb-2">8. Contact Us</h3>
               <p>
-                If you have any questions about these Terms, please contact us at support@haulmate.com.
+                If you have any questions about these Terms, please contact us at support@wehauler.com.
               </p>
             </div>
           </CardContent>

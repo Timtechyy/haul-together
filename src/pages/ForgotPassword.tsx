@@ -60,7 +60,7 @@ const ForgotPassword = () => {
                 <CheckCircle className="h-8 w-8 text-white" />
               </div>
               <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                HaulMate
+                Wehauler
               </div>
               <CardTitle className="text-2xl">Check your email</CardTitle>
               <CardDescription>
@@ -102,7 +102,7 @@ const ForgotPassword = () => {
               <Mail className="h-8 w-8 text-white" />
             </div>
             <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              HaulMate
+              Wehauler
             </div>
             <CardTitle className="text-2xl">Reset your password</CardTitle>
             <CardDescription>
