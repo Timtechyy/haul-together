@@ -94,7 +94,7 @@ const Login = () => {
         <Card className="shadow-medium">
           <CardHeader className="space-y-1 text-center">
             <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              HaulMate
+              Wehauler
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
