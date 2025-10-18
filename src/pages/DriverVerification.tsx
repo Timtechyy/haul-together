@@ -175,6 +175,7 @@ const DriverVerification = () => {
                 <div className="space-y-2">
                   <Label htmlFor="ssnLastFour">Last 4 Digits of SSN</Label>
                   <Input
+                    type="number"
                     id="ssnLastFour"
                     name="ssnLastFour"
                     maxLength={4}
