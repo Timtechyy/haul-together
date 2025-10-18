@@ -34,7 +34,7 @@ const Onboarding = () => {
       <header className="container mx-auto px-4 py-6">
         <nav className="flex items-center justify-between">
           <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            HaulMate
+            Wehauler
           </div>
           <div className="flex gap-4">
             <Button variant="ghost" asChild>
@@ -108,7 +108,7 @@ const Onboarding = () => {
       {/* Features Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center space-y-4 mb-12">
-          <h2 className="text-3xl font-bold">Why Choose HaulMate?</h2>
+          <h2 className="text-3xl font-bold">Why Choose Wehauler?</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             We make large item delivery simple, affordable, and reliable for everyone
           </p>
@@ -137,7 +137,7 @@ const Onboarding = () => {
           <div className="space-y-4">
             <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Join thousands of users who trust HaulMate for their delivery needs
+              Join thousands of users who trust Wehauler for their delivery needs
             </p>
           </div>
           
@@ -157,10 +157,10 @@ const Onboarding = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              HaulMate
+              Wehauler
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2025 HaulMate. All rights reserved.
+              © 2025 Wehauler. All rights reserved.
             </div>
           </div>
         </div>

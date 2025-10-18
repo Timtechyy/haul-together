@@ -15,6 +15,8 @@ import NotFound from "./pages/NotFound";
 import CustomerBooking from "./pages/CustomerBooking";
 import DriverDashboard from "./pages/DriverDashboard";
 import CustomerDashboard from "./pages/CustomerDashboard";
+import DriverVerification from "./pages/DriverVerification";
+import OrderTracking from "./pages/OrderTracking";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ const App = () => (
           <Route path="/customer/booking" element={<CustomerBooking />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/driver/verification" element={<DriverVerification />} />
+          <Route path="/driver/tracking" element={<OrderTracking />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

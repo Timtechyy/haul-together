@@ -71,7 +71,7 @@ const CustomerDashboard = () => {
             onClick={() => navigate("/customer/dashboard")}
             className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
           >
-            HaulMate
+            Wehauler
           </button>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>

@@ -18,7 +18,7 @@ const PrivacyPolicy = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            HaulMate
+            Wehauler
           </div>
           <h1 className="text-4xl font-bold">Privacy Policy</h1>
           <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>
@@ -31,7 +31,7 @@ const PrivacyPolicy = () => {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert space-y-6">
             <p>
-              At HaulMate, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.
+              At Wehauler, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform.
             </p>
 
             <div>
@@ -125,7 +125,7 @@ const PrivacyPolicy = () => {
             <div>
               <h3 className="text-lg font-semibold mb-2">9. Contact Us</h3>
               <p>
-                If you have any questions about this Privacy Policy, please contact us at privacy@haulmate.com.
+                If you have any questions about this Privacy Policy, please contact us at privacy@wehauler.com.
               </p>
             </div>
           </CardContent>

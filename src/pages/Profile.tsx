@@ -25,8 +25,11 @@ import {
   Edit3,
   Truck,
   Award,
-  ArrowLeft
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,6 +40,16 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [verification, setVerification] = useState<any>(null);
+  const [vehicle, setVehicle] = useState({
+    vehicleType: "",
+    make: "",
+    model: "",
+    year: "",
+    licensePlate: "",
+    insuranceNumber: "",
+    trackingConsent: false,
+  });
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "", 
@@ -102,6 +115,36 @@ const Profile = () => {
         phone: profileData.phone || "",
         avatarUrl: profileData.avatar_url || ""
       });
+
+      // Fetch vehicle info if driver
+      if (roleData?.role === 'driver') {
+        const { data: vehicleData } = await supabase
+          .from('driver_vehicles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (vehicleData) {
+          setVehicle({
+            vehicleType: vehicleData.vehicle_type || "",
+            make: vehicleData.make || "",
+            model: vehicleData.model || "",
+            year: vehicleData.year?.toString() || "",
+            licensePlate: vehicleData.license_plate || "",
+            insuranceNumber: vehicleData.insurance_number || "",
+            trackingConsent: vehicleData.tracking_consent || false,
+          });
+        }
+
+        // Fetch verification status
+        const { data: verificationData } = await supabase
+          .from('driver_verifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        setVerification(verificationData);
+      }
     } catch (error) {
       console.error("Error loading profile:", error);
       toast({
@@ -128,6 +171,24 @@ const Profile = () => {
         .eq("id", userId);
 
       if (error) throw error;
+
+      // Save vehicle info if driver
+      if (userRole === 'driver') {
+        const { error: vehicleError } = await supabase
+          .from('driver_vehicles')
+          .upsert({
+            user_id: userId,
+            vehicle_type: vehicle.vehicleType,
+            make: vehicle.make,
+            model: vehicle.model,
+            year: parseInt(vehicle.year),
+            license_plate: vehicle.licensePlate,
+            insurance_number: vehicle.insuranceNumber,
+            tracking_consent: vehicle.trackingConsent,
+          });
+
+        if (vehicleError) throw vehicleError;
+      }
 
       toast({
         title: "Success",
@@ -213,6 +274,8 @@ const Profile = () => {
     }
   };
 
+  const isVerified = verification?.verification_status === 'approved';
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -277,15 +340,19 @@ const Profile = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">{profile.firstName} {profile.lastName}</h1>
-                    <p className="text-muted-foreground">
-                      {userRole === "driver" ? "Verified Driver" : "Verified Customer"}
-                    </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Shield className="h-3 w-3" />
-                        Verified
-                      </Badge>
-                      <Badge variant="outline">Premium Member</Badge>
+                      {isVerified && (
+                        <Badge variant="default" className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Verified {userRole === "driver" ? "Driver" : "Customer"}
+                        </Badge>
+                      )}
+                      {!isVerified && userRole === 'driver' && verification?.verification_status === 'pending' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          Verification Pending
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <Button
@@ -390,6 +457,129 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Vehicle Information Card - Only for Drivers */}
+          {userRole === 'driver' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Vehicle Information
+                </CardTitle>
+                <CardDescription>
+                  Enter your vehicle details to accept deliveries
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="vehicleType">Vehicle Type</Label>
+                    <Input
+                      id="vehicleType"
+                      placeholder="e.g., Pickup Truck"
+                      value={vehicle.vehicleType}
+                      onChange={(e) => setVehicle({ ...vehicle, vehicleType: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="make">Make</Label>
+                    <Input
+                      id="make"
+                      placeholder="e.g., Ford"
+                      value={vehicle.make}
+                      onChange={(e) => setVehicle({ ...vehicle, make: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="model">Model</Label>
+                    <Input
+                      id="model"
+                      placeholder="e.g., F-150"
+                      value={vehicle.model}
+                      onChange={(e) => setVehicle({ ...vehicle, model: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Year</Label>
+                    <Input
+                      id="year"
+                      placeholder="e.g., 2020"
+                      value={vehicle.year}
+                      onChange={(e) => setVehicle({ ...vehicle, year: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="licensePlate">License Plate</Label>
+                    <Input
+                      id="licensePlate"
+                      placeholder="e.g., ABC1234"
+                      value={vehicle.licensePlate}
+                      onChange={(e) => setVehicle({ ...vehicle, licensePlate: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insuranceNumber">Insurance Number</Label>
+                    <Input
+                      id="insuranceNumber"
+                      placeholder="Optional"
+                      value={vehicle.insuranceNumber}
+                      onChange={(e) => setVehicle({ ...vehicle, insuranceNumber: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="trackingConsent"
+                    checked={vehicle.trackingConsent}
+                    onCheckedChange={(checked) => 
+                      setVehicle({ ...vehicle, trackingConsent: checked as boolean })
+                    }
+                    disabled={!isEditing}
+                  />
+                  <Label htmlFor="trackingConsent" className="text-sm">
+                    I agree to location tracking during active deliveries
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Verification Card - Only for Drivers */}
+          {userRole === 'driver' && !isVerified && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Driver Verification
+                </CardTitle>
+                <CardDescription>
+                  Complete verification to start accepting deliveries
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="hero" 
+                  className="w-full"
+                  onClick={() => navigate("/driver/verification")}
+                >
+                  {verification?.verification_status === 'pending' ? 'View Verification Status' : 'Verify Now'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Settings & Preferences */}
           <div className="space-y-6">
