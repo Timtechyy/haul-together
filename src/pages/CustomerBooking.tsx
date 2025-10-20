@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
@@ -21,7 +22,11 @@ const CustomerBooking = () => {
   
   // Form state
   const [pickupLocation, setPickupLocation] = useState("");
+  const [pickupLat, setPickupLat] = useState<number | undefined>();
+  const [pickupLng, setPickupLng] = useState<number | undefined>();
   const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [deliveryLat, setDeliveryLat] = useState<number | undefined>();
+  const [deliveryLng, setDeliveryLng] = useState<number | undefined>();
   const [itemType, setItemType] = useState("");
   const [quantity, setQuantity] = useState("");
   const [vehicleType, setVehicleType] = useState("");
@@ -56,6 +61,19 @@ const CustomerBooking = () => {
       description: "You have been logged out successfully",
     });
     navigate("/login");
+  };
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371; // Radius of Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in kilometers
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +114,7 @@ const CustomerBooking = () => {
 
       const verifiedUserIds = verifiedDrivers?.map(d => d.user_id) || [];
 
+      // Fetch drivers with location data
       const { data: matchingDrivers } = await supabase
         .from("driver_vehicles")
         .select(`
@@ -104,15 +123,33 @@ const CustomerBooking = () => {
           make,
           model,
           year,
+          current_lat,
+          current_lng,
           profiles:user_id (
             first_name,
             last_name
           )
         `)
         .eq("vehicle_type", vehicleType)
-        .in("user_id", verifiedUserIds);
+        .in("user_id", verifiedUserIds)
+        .not("current_lat", "is", null)
+        .not("current_lng", "is", null);
 
-      setDrivers(matchingDrivers || []);
+      // Calculate distance and sort by proximity if pickup location has coordinates
+      let driversWithDistance = matchingDrivers || [];
+      if (pickupLat && pickupLng && matchingDrivers) {
+        driversWithDistance = matchingDrivers.map((driver: any) => {
+          const distance = calculateDistance(
+            pickupLat,
+            pickupLng,
+            driver.current_lat,
+            driver.current_lng
+          );
+          return { ...driver, distance };
+        }).sort((a, b) => a.distance - b.distance);
+      }
+
+      setDrivers(driversWithDistance);
       setShowForm(false);
       
       toast({
@@ -166,27 +203,31 @@ const CustomerBooking = () => {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmitBooking} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pickupLocation">Pickup Location</Label>
-                      <Input
-                        id="pickupLocation"
-                        value={pickupLocation}
-                        onChange={(e) => setPickupLocation(e.target.value)}
-                        placeholder="Enter pickup address"
-                        required
-                      />
-                    </div>
+                    <GooglePlacesAutocomplete
+                      id="pickupLocation"
+                      label="Pickup Location"
+                      placeholder="Enter pickup address"
+                      value={pickupLocation}
+                      onChange={(value, lat, lng) => {
+                        setPickupLocation(value);
+                        setPickupLat(lat);
+                        setPickupLng(lng);
+                      }}
+                      required
+                    />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="deliveryLocation">Delivery Location</Label>
-                      <Input
-                        id="deliveryLocation"
-                        value={deliveryLocation}
-                        onChange={(e) => setDeliveryLocation(e.target.value)}
-                        placeholder="Enter delivery address"
-                        required
-                      />
-                    </div>
+                    <GooglePlacesAutocomplete
+                      id="deliveryLocation"
+                      label="Delivery Location"
+                      placeholder="Enter delivery address"
+                      value={deliveryLocation}
+                      onChange={(value, lat, lng) => {
+                        setDeliveryLocation(value);
+                        setDeliveryLat(lat);
+                        setDeliveryLng(lng);
+                      }}
+                      required
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="itemType">Item Type</Label>
@@ -306,11 +347,17 @@ const CustomerBooking = () => {
                                   {driver.year} {driver.make} {driver.model}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4 text-sm">
+                                 <div className="flex items-center gap-4 text-sm">
                                 <div className="flex items-center gap-1">
                                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                   <span className="font-medium">Verified Driver</span>
                                 </div>
+                                {driver.distance && (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>{driver.distance.toFixed(1)} km away</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
