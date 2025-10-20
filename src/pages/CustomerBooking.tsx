@@ -2,15 +2,30 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Star, MapPin, Truck, LogOut } from "lucide-react";
+import { Star, MapPin, Truck, LogOut, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
+  const [showForm, setShowForm] = useState(true);
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Form state
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [itemType, setItemType] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [vehicleType, setVehicleType] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -20,6 +35,16 @@ const CustomerBooking = () => {
         return;
       }
       setUser(session.user);
+      
+      // Fetch unique vehicle types
+      const { data: vehicles } = await supabase
+        .from("driver_vehicles")
+        .select("vehicle_type");
+      
+      if (vehicles) {
+        const uniqueTypes = [...new Set(vehicles.map(v => v.vehicle_type))];
+        setVehicleTypes(uniqueTypes);
+      }
     };
     checkUser();
   }, [navigate]);
@@ -33,12 +58,77 @@ const CustomerBooking = () => {
     navigate("/login");
   };
 
-  // Mock driver data
-  const drivers = [
-    { id: 1, name: "John Smith", rating: 4.8, trips: 156, vehicle: "Pickup Truck", location: "Downtown" },
-    { id: 2, name: "Sarah Johnson", rating: 4.9, trips: 203, vehicle: "Van", location: "Midtown" },
-    { id: 3, name: "Mike Wilson", rating: 4.7, trips: 128, vehicle: "Box Truck", location: "Uptown" },
-  ];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setReceiptFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmitBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!pickupLocation || !deliveryLocation || !itemType || !quantity || !vehicleType || !receiptFile) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill all fields and upload receipt",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Upload receipt
+      const fileExt = receiptFile.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, receiptFile);
+
+      if (uploadError) throw uploadError;
+
+      // Fetch drivers with matching vehicle type and verified status
+      const { data: verifiedDrivers } = await supabase
+        .from("driver_verifications")
+        .select("user_id")
+        .eq("verification_status", "verified");
+
+      const verifiedUserIds = verifiedDrivers?.map(d => d.user_id) || [];
+
+      const { data: matchingDrivers } = await supabase
+        .from("driver_vehicles")
+        .select(`
+          user_id,
+          vehicle_type,
+          make,
+          model,
+          year,
+          profiles:user_id (
+            first_name,
+            last_name
+          )
+        `)
+        .eq("vehicle_type", vehicleType)
+        .in("user_id", verifiedUserIds);
+
+      setDrivers(matchingDrivers || []);
+      setShowForm(false);
+      
+      toast({
+        title: "Booking Information Saved",
+        description: "Showing available drivers for your delivery",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -63,47 +153,176 @@ const CustomerBooking = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
-            <p className="text-muted-foreground">Book a driver for your delivery needs</p>
-          </div>
+          {showForm ? (
+            <>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Book a Delivery</h1>
+                <p className="text-muted-foreground">Fill in the details for your delivery</p>
+              </div>
 
-          <div className="grid gap-4">
-            {drivers.map((driver) => (
-              <Card key={driver.id} className="shadow-medium hover:shadow-elegant transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarFallback>{driver.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                      </Avatar>
-                      <div className="space-y-2">
-                        <div>
-                          <h3 className="text-xl font-semibold">{driver.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            {driver.location}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{driver.rating}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Truck className="h-4 w-4" />
-                            <span>{driver.vehicle}</span>
-                          </div>
-                          <span className="text-muted-foreground">{driver.trips} trips</span>
-                        </div>
+              <Card className="shadow-medium">
+                <CardHeader>
+                  <CardTitle>Delivery Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmitBooking} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pickupLocation">Pickup Location</Label>
+                      <Input
+                        id="pickupLocation"
+                        value={pickupLocation}
+                        onChange={(e) => setPickupLocation(e.target.value)}
+                        placeholder="Enter pickup address"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="deliveryLocation">Delivery Location</Label>
+                      <Input
+                        id="deliveryLocation"
+                        value={deliveryLocation}
+                        onChange={(e) => setDeliveryLocation(e.target.value)}
+                        placeholder="Enter delivery address"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="itemType">Item Type</Label>
+                      <Select value={itemType} onValueChange={setItemType} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select item type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Appliances">Appliances</SelectItem>
+                          <SelectItem value="Furniture">Furniture</SelectItem>
+                          <SelectItem value="Lumber">Lumber</SelectItem>
+                          <SelectItem value="Electronics">Electronics</SelectItem>
+                          <SelectItem value="Building Materials">Building Materials</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="quantity">Quantity</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        placeholder="Enter quantity"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicleType">Vehicle Type Required</Label>
+                      <Select value={vehicleType} onValueChange={setVehicleType} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vehicle type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicleTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="receipt">Order Receipt</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="receipt"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          required
+                        />
+                        <label
+                          htmlFor="receipt"
+                          className="flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-muted"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {receiptFile ? receiptFile.name : "Upload Receipt"}
+                        </label>
                       </div>
                     </div>
-                    <Button variant="hero">Book Now</Button>
-                  </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Finding Drivers..." : "Find Available Drivers"}
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
+                  <p className="text-muted-foreground">
+                    Drivers with {vehicleType} near {pickupLocation}
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => setShowForm(true)}>
+                  Back to Form
+                </Button>
+              </div>
+
+              <div className="grid gap-4">
+                {drivers.length === 0 ? (
+                  <Card className="shadow-medium">
+                    <CardContent className="p-6 text-center">
+                      <p className="text-muted-foreground">
+                        No drivers available with the selected vehicle type at the moment.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  drivers.map((driver) => (
+                    <Card key={driver.user_id} className="shadow-medium hover:shadow-elegant transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex gap-4">
+                            <Avatar className="h-16 w-16">
+                              <AvatarFallback>
+                                {driver.profiles?.first_name?.[0]}{driver.profiles?.last_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-2">
+                              <div>
+                                <h3 className="text-xl font-semibold">
+                                  {driver.profiles?.first_name} {driver.profiles?.last_name}
+                                </h3>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Truck className="h-4 w-4" />
+                                  {driver.year} {driver.make} {driver.model}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="font-medium">Verified Driver</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <Button variant="hero">Book Now</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
       </main>
     </div>
