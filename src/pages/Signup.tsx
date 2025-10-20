@@ -55,6 +55,28 @@ const Signup = () => {
 
       const role = userType === "driver" ? "driver" : "user";
       
+      // Get driver's location if they're signing up as a driver
+      let driverLocation: { lat: number; lng: number } | null = null;
+      if (userType === "driver") {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          driverLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+        } catch (geoError) {
+          console.error("Location error:", geoError);
+          toast({
+            title: "Location Required",
+            description: "Please enable location access for driver signup",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -65,6 +87,8 @@ const Signup = () => {
             last_name: formData.lastName,
             phone: formData.phone,
             role: role,
+            driver_lat: driverLocation?.lat,
+            driver_lng: driverLocation?.lng,
           },
         },
       });

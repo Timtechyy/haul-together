@@ -80,8 +80,11 @@ export type Database = {
       driver_vehicles: {
         Row: {
           created_at: string
+          current_lat: number | null
+          current_lng: number | null
           id: string
           insurance_number: string | null
+          last_location_update: string | null
           license_plate: string
           make: string
           model: string
@@ -93,8 +96,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           insurance_number?: string | null
+          last_location_update?: string | null
           license_plate: string
           make: string
           model: string
@@ -106,8 +112,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_lat?: number | null
+          current_lng?: number | null
           id?: string
           insurance_number?: string | null
+          last_location_update?: string | null
           license_plate?: string
           make?: string
           model?: string

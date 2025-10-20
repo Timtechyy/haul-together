@@ -174,6 +174,22 @@ const Profile = () => {
 
       // Save vehicle info if driver
       if (userRole === 'driver') {
+        // Get current location if tracking consent is enabled
+        let currentLat = null;
+        let currentLng = null;
+        
+        if (vehicle.trackingConsent) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+            currentLat = position.coords.latitude;
+            currentLng = position.coords.longitude;
+          } catch (geoError) {
+            console.error("Location error:", geoError);
+          }
+        }
+
         const { error: vehicleError } = await supabase
           .from('driver_vehicles')
           .upsert({
@@ -185,6 +201,9 @@ const Profile = () => {
             license_plate: vehicle.licensePlate,
             insurance_number: vehicle.insuranceNumber,
             tracking_consent: vehicle.trackingConsent,
+            current_lat: currentLat,
+            current_lng: currentLng,
+            last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
           });
 
         if (vehicleError) throw vehicleError;
