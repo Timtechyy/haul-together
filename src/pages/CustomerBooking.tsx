@@ -282,6 +282,7 @@ const CustomerBooking = () => {
                           id="receipt"
                           type="file"
                           accept="image/*"
+                          capture="environment"
                           onChange={handleFileChange}
                           className="hidden"
                           required
@@ -291,7 +292,7 @@ const CustomerBooking = () => {
                           className="flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer hover:bg-muted"
                         >
                           <Upload className="h-4 w-4" />
-                          {receiptFile ? receiptFile.name : "Upload Receipt"}
+                          {receiptFile ? receiptFile.name : "Take Photo or Upload Receipt"}
                         </label>
                       </div>
                     </div>
