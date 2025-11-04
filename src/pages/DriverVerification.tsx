@@ -69,7 +69,7 @@ const DriverVerification = () => {
     setLoading(true);
 
     try {
-      // Upload license images
+      // Upload license images to Supabase Storage
       let licenseFrontUrl = null;
       let licenseBackUrl = null;
 
@@ -98,16 +98,50 @@ const DriverVerification = () => {
 
       if (error) throw error;
 
+      // Create Veriff session
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke(
+        'create-veriff-session',
+        {
+          body: {
+            verification: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              dateOfBirth: formData.dateOfBirth,
+              licenseNumber: formData.licenseNumber,
+            },
+          },
+        }
+      );
+
+      if (sessionError) throw sessionError;
+
+      console.log("Veriff session created:", sessionData.sessionId);
+
+      // Upload images to Veriff (converted to base64 automatically)
+      const { error: uploadError } = await supabase.functions.invoke(
+        'upload-to-veriff',
+        {
+          body: {
+            sessionId: sessionData.sessionId,
+            imageFront: licenseFrontUrl,
+            imageBack: licenseBackUrl,
+          },
+        }
+      );
+
+      if (uploadError) throw uploadError;
+
       toast({
         title: "Verification Submitted",
-        description: "Your verification documents have been submitted for review.",
+        description: "Your verification documents have been submitted to Veriff for review.",
       });
 
       navigate("/profile");
     } catch (error: any) {
+      console.error("Verification error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to submit verification",
         variant: "destructive",
       });
     } finally {
