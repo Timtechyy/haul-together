@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Package, TrendingUp, LogOut, User } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const DriverDashboard = () => {
@@ -121,34 +122,62 @@ const DriverDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {pendingRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{request.customer}</span>
-                      <Badge variant="secondary">{request.distance}</Badge>
+                <Collapsible key={request.id}>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{request.customer}</span>
+                          <Badge variant="secondary">{request.distance}</Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Pickup: {request.pickup}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-xl font-bold">${request.price}</div>
+                          <div className="text-xs text-muted-foreground">Estimated</div>
+                        </div>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            View More
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      <div>Pickup: {request.pickup}</div>
-                      <div>Dropoff: {request.dropoff}</div>
-                    </div>
+                    
+                    <CollapsibleContent className="pt-4">
+                      <div className="space-y-3 border-t pt-3">
+                        <div className="text-sm">
+                          <div className="font-medium mb-1">Full Details</div>
+                          <div className="space-y-1 text-muted-foreground">
+                            <div><span className="font-medium">Pickup:</span> {request.pickup}</div>
+                            <div><span className="font-medium">Dropoff:</span> {request.dropoff}</div>
+                            <div><span className="font-medium">Distance:</span> {request.distance}</div>
+                            <div><span className="font-medium">Estimated Payment:</span> ${request.price}</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end pt-2">
+                          <Button variant="outline" size="sm">Decline</Button>
+                          <Button 
+                            variant="hero" 
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: "Request Accepted",
+                                description: "You've accepted the delivery request",
+                              });
+                            }}
+                          >
+                            Accept
+                          </Button>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-xl font-bold">${request.price}</div>
-                      <div className="text-xs text-muted-foreground">Estimated</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">Decline</Button>
-                      <Button 
-                        variant="hero" 
-                        size="sm"
-                        onClick={() => navigate(`/driver/tracking?id=${request.id}`)}
-                      >
-                        Accept
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                </Collapsible>
               ))}
             </CardContent>
           </Card>
