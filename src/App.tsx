@@ -14,6 +14,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import CustomerBooking from "./pages/CustomerBooking";
 import DriverDashboard from "./pages/DriverDashboard";
+import DriverEarnings from "./pages/DriverEarnings";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import DriverVerification from "./pages/DriverVerification";
 import OrderTracking from "./pages/OrderTracking";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/customer/booking" element={<CustomerBooking />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/driver/earnings" element={<DriverEarnings />} />
           <Route path="/driver/verification" element={<DriverVerification />} />
           <Route path="/driver/tracking" element={<OrderTracking />} />
           <Route path="/profile" element={<Profile />} />
