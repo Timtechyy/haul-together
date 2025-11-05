@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter } from "lucide-react";
+import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import DeliveryMap from "@/components/DeliveryMap";
 
 interface PendingDelivery {
   id: string;
@@ -36,6 +37,7 @@ const DriverDashboard = () => {
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -48,6 +50,27 @@ const DriverDashboard = () => {
     };
     checkUser();
   }, [navigate]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    const initNotifications = async () => {
+      const { notificationService } = await import('@/utils/notificationService');
+      
+      if (notificationService.isSupported()) {
+        const hasPermission = await notificationService.requestPermission();
+        setNotificationsEnabled(hasPermission);
+        
+        if (hasPermission) {
+          toast({
+            title: "Notifications Enabled",
+            description: "You'll receive alerts for new delivery requests",
+          });
+        }
+      }
+    };
+
+    initNotifications();
+  }, [toast]);
 
   // Fetch pending deliveries
   useEffect(() => {
@@ -86,10 +109,21 @@ const DriverDashboard = () => {
           table: "deliveries",
           filter: "status=eq.pending",
         },
-        (payload) => {
+        async (payload) => {
           const newDelivery = payload.new as PendingDelivery;
           if (!newDelivery.driver_id) {
             setPendingRequests((prev) => [...prev, newDelivery]);
+            
+            // Send notification for new delivery
+            if (notificationsEnabled) {
+              const { notificationService } = await import('@/utils/notificationService');
+              await notificationService.notifyNewDelivery({
+                pickup: newDelivery.pickup_location,
+                delivery: newDelivery.delivery_location,
+                price: newDelivery.price,
+                distance: newDelivery.estimated_distance,
+              });
+            }
           }
         }
       )
@@ -113,7 +147,7 @@ const DriverDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, toast]);
+  }, [user, toast, notificationsEnabled]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -212,6 +246,10 @@ const DriverDashboard = () => {
             Wehauler Driver
           </button>
           <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/driver/earnings")}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Earnings
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
               <User className="mr-2 h-4 w-4" />
               Profile
@@ -346,6 +384,19 @@ const DriverDashboard = () => {
                               <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
                             </div>
                           </div>
+                          
+                          {/* Map View */}
+                          <div className="mt-4">
+                            <DeliveryMap
+                              pickupLat={request.pickup_lat}
+                              pickupLng={request.pickup_lng}
+                              deliveryLat={request.delivery_lat}
+                              deliveryLng={request.delivery_lng}
+                              pickupAddress={request.pickup_location}
+                              deliveryAddress={request.delivery_location}
+                            />
+                          </div>
+                          
                           <div className="flex gap-2 justify-end pt-2">
                             <Button 
                               variant="outline" 
