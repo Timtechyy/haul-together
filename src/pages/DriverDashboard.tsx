@@ -38,6 +38,12 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [stats, setStats] = useState({
+    todayEarnings: 0,
+    yesterdayEarnings: 0,
+    completedTrips: 0,
+    rating: 0,
+  });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -72,31 +78,74 @@ const DriverDashboard = () => {
     initNotifications();
   }, [toast]);
 
-  // Fetch pending deliveries
+  // Fetch driver stats and pending deliveries
   useEffect(() => {
     if (!user) return;
 
-    const fetchPendingDeliveries = async () => {
-      const { data, error } = await supabase
+    const fetchDriverData = async () => {
+      // Fetch pending deliveries
+      const { data: pendingData, error: pendingError } = await supabase
         .from("deliveries")
         .select("*")
         .eq("status", "pending")
         .is("driver_id", null);
 
-      if (error) {
-        console.error("Error fetching deliveries:", error);
+      if (pendingError) {
+        console.error("Error fetching deliveries:", pendingError);
         toast({
           title: "Error",
           description: "Failed to load pending requests",
           variant: "destructive",
         });
-        return;
+      } else {
+        setPendingRequests(pendingData || []);
       }
 
-      setPendingRequests(data || []);
+      // Fetch today's earnings and trips
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      const { data: todayDeliveries } = await supabase
+        .from("deliveries")
+        .select("price, customer_rating")
+        .eq("driver_id", user.id)
+        .eq("status", "delivered")
+        .gte("delivered_at", todayISO);
+
+      // Fetch yesterday's earnings for comparison
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString();
+
+      const { data: yesterdayDeliveries } = await supabase
+        .from("deliveries")
+        .select("price")
+        .eq("driver_id", user.id)
+        .eq("status", "delivered")
+        .gte("delivered_at", yesterdayISO)
+        .lt("delivered_at", todayISO);
+
+      // Calculate stats
+      const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+      const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+      const completedTrips = todayDeliveries?.length || 0;
+
+      // Calculate average rating from today's deliveries
+      const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
+      const avgRating = ratingsToday.length > 0
+        ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
+        : 0;
+
+      setStats({
+        todayEarnings,
+        yesterdayEarnings,
+        completedTrips,
+        rating: Number(avgRating.toFixed(1)),
+      });
     };
 
-    fetchPendingDeliveries();
+    fetchDriverData();
 
     // Set up realtime subscription
     const channel = supabase
@@ -227,12 +276,10 @@ const DriverDashboard = () => {
       return 0;
     });
 
-  // Mock data
-  const stats = {
-    todayEarnings: 145.50,
-    completedTrips: 8,
-    rating: 4.8,
-  };
+  // Calculate percentage change
+  const earningsChange = stats.yesterdayEarnings > 0
+    ? ((stats.todayEarnings - stats.yesterdayEarnings) / stats.yesterdayEarnings * 100).toFixed(1)
+    : "0";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -279,7 +326,9 @@ const DriverDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">${stats.todayEarnings.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">+12% from yesterday</p>
+                <p className="text-xs text-muted-foreground">
+                  {Number(earningsChange) >= 0 ? '+' : ''}{earningsChange}% from yesterday
+                </p>
               </CardContent>
             </Card>
 
@@ -300,8 +349,8 @@ const DriverDashboard = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.rating}</div>
-                <p className="text-xs text-muted-foreground">Based on 156 reviews</p>
+                <div className="text-2xl font-bold">{stats.rating || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground">Average rating today</p>
               </CardContent>
             </Card>
           </div>

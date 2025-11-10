@@ -41,6 +41,11 @@ const Profile = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [verification, setVerification] = useState<any>(null);
+  const [driverStats, setDriverStats] = useState({
+    totalDeliveries: 0,
+    rating: 0,
+    memberSince: "",
+  });
   const [vehicle, setVehicle] = useState({
     vehicleType: "",
     make: "",
@@ -58,23 +63,6 @@ const Profile = () => {
     avatarUrl: ""
   });
 
-  const stats = [
-    {
-      label: "Total Deliveries",
-      value: "47",
-      icon: <Truck className="h-4 w-4" />
-    },
-    {
-      label: "Rating",
-      value: "4.9",
-      icon: <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-    },
-    {
-      label: "Member Since",
-      value: "Jan 2024",
-      icon: <Award className="h-4 w-4" />
-    }
-  ];
 
   useEffect(() => {
     loadProfile();
@@ -144,6 +132,27 @@ const Profile = () => {
           .single();
 
         setVerification(verificationData);
+
+        // Fetch driver stats
+        const { data: allDeliveries } = await supabase
+          .from('deliveries')
+          .select('customer_rating')
+          .eq('driver_id', user.id)
+          .eq('status', 'delivered');
+
+        const totalDeliveries = allDeliveries?.length || 0;
+        
+        // Calculate average rating from all completed deliveries
+        const ratingsData = allDeliveries?.filter(d => d.customer_rating) || [];
+        const avgRating = ratingsData.length > 0
+          ? ratingsData.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsData.length
+          : 0;
+
+        setDriverStats({
+          totalDeliveries,
+          rating: Number(avgRating.toFixed(1)),
+          memberSince: new Date(profileData.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        });
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -384,18 +393,32 @@ const Profile = () => {
                   </Button>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="text-center p-3 bg-muted/50 rounded-lg">
+                {/* Stats - Only show for drivers */}
+                {userRole === 'driver' && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center justify-center gap-1 text-lg font-semibold">
-                        {stat.icon}
-                        <span>{stat.value}</span>
+                        <Truck className="h-4 w-4" />
+                        <span>{driverStats.totalDeliveries}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">{stat.label}</div>
+                      <div className="text-xs text-muted-foreground">Total Deliveries</div>
                     </div>
-                  ))}
-                </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 text-lg font-semibold">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span>{driverStats.rating || 'N/A'}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">Rating</div>
+                    </div>
+                    <div className="text-center p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 text-lg font-semibold">
+                        <Award className="h-4 w-4" />
+                        <span>{driverStats.memberSince}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">Member Since</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
