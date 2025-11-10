@@ -576,32 +576,8 @@ const Profile = () => {
             </Card>
           )}
 
-          {/* Verification Card - Only for Drivers */}
-          {userRole === 'driver' && !isVerified && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Driver Verification
-                </CardTitle>
-                <CardDescription>
-                  Complete verification to start accepting deliveries
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  variant="hero" 
-                  className="w-full"
-                  onClick={() => navigate("/driver/verification")}
-                >
-                  {verification?.verification_status === 'pending' ? 'View Verification Status' : 'Verify Now'}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Settings & Preferences */}
-          <div className="space-y-6">
+          {/* <div className="space-y-6"> */}
             {/* Notification Settings */}
             <Card>
               <CardHeader>
@@ -644,7 +620,9 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Payment Methods */}
+           
+          {/* </div>  */}
+          {/* Payment Methods */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -674,7 +652,30 @@ const Profile = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
+
+            {/* Verification Card - Only for Drivers */}
+            {userRole === 'driver' && !isVerified && (
+              <Card className="h-46">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Driver Verification
+                  </CardTitle>
+                  <CardDescription>
+                    Complete verification to start accepting deliveries
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="hero" 
+                    className="w-full"
+                    onClick={() => navigate("/driver/verification")}
+                  >
+                    {verification?.verification_status === 'pending' ? 'View Verification Status' : 'Verify Now'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
         </div>
 
         {/* Account Actions */}
@@ -683,16 +684,18 @@ const Profile = () => {
             <CardTitle>Account Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+    
+            <Button variant="destructive" className="w-full justify-start">
+              Delete Account
+            </Button>  
+            {/* <Separator />
             <Button variant="outline" className="w-full justify-start">
               Download My Data
             </Button>
             <Button variant="outline" className="w-full justify-start">
               Privacy Settings
-            </Button>
-            <Separator />
-            <Button variant="destructive" className="w-full justify-start">
-              Delete Account
-            </Button>
+            </Button> */}
+          
           </CardContent>
         </Card>
       </main>
