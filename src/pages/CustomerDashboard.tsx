@@ -14,6 +14,12 @@ const CustomerDashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalBookings: 0,
+    activeBookings: 0,
+    totalSpent: 0,
+  });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -32,6 +38,48 @@ const CustomerDashboard = () => {
         .single();
       
       setProfile(profileData);
+
+      // Fetch delivery statistics
+      const { data: allDeliveries } = await supabase
+        .from("deliveries")
+        .select("*")
+        .eq("customer_id", session.user.id);
+
+      if (allDeliveries) {
+        const totalBookings = allDeliveries.length;
+        const activeBookings = allDeliveries.filter(
+          (d) => d.status !== "delivered" && d.status !== "cancelled"
+        ).length;
+        const totalSpent = allDeliveries.reduce(
+          (sum, d) => sum + (Number(d.price) || 0),
+          0
+        );
+
+        setStats({
+          totalBookings,
+          activeBookings,
+          totalSpent,
+        });
+      }
+
+      // Fetch recent bookings with driver info
+      const { data: bookingsData } = await supabase
+        .from("deliveries")
+        .select(`
+          *,
+          driver:driver_id (
+            first_name,
+            last_name
+          )
+        `)
+        .eq("customer_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (bookingsData) {
+        setRecentBookings(bookingsData);
+      }
+
       setLoading(false);
     };
     checkUser();
@@ -44,18 +92,6 @@ const CustomerDashboard = () => {
       description: "You have been logged out successfully",
     });
     navigate("/login");
-  };
-
-  // Mock data for customer bookings
-  const recentBookings = [
-    { id: 1, driver: "John Smith", status: "Completed", date: "2025-10-08", pickup: "123 Main St", dropoff: "456 Oak Ave", price: 25 },
-    { id: 2, driver: "Sarah Johnson", status: "In Progress", date: "2025-10-10", pickup: "789 Elm St", dropoff: "321 Pine Rd", price: 18 },
-  ];
-
-  const stats = {
-    totalBookings: 12,
-    activeBookings: 1,
-    totalSpent: 284.50,
   };
 
   if (loading) {
@@ -167,34 +203,49 @@ const CustomerDashboard = () => {
               <CardDescription>Your latest delivery requests</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">Driver: {booking.driver}</span>
-                      <Badge variant={booking.status === "Completed" ? "default" : "secondary"}>
-                        {booking.status}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {booking.pickup} → {booking.dropoff}
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />
-                        {booking.date}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold">${booking.price}</div>
-                    <Button variant="outline" size="sm" className="mt-2">
-                      View Details
-                    </Button>
-                  </div>
+              {recentBookings.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No bookings yet. Book your first delivery!
                 </div>
-              ))}
+              ) : (
+                recentBookings.map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                          Driver: {booking.driver ? `${booking.driver.first_name} ${booking.driver.last_name}` : "Not assigned"}
+                        </span>
+                        <Badge variant={booking.status === "delivered" ? "default" : "secondary"}>
+                          {booking.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {booking.pickup_location} → {booking.delivery_location}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(booking.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold">
+                        ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => navigate(`/order-tracking?id=${booking.id}`)}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
