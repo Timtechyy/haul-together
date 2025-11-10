@@ -19,6 +19,7 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           customer_id: string
+          customer_rating: number | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
@@ -39,6 +40,7 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           customer_id: string
+          customer_rating?: number | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
@@ -59,6 +61,7 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           customer_id?: string
+          customer_rating?: number | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
