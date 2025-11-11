@@ -48,20 +48,13 @@ const DriverVerification = () => {
     }
   };
 
-  const uploadLicense = async (file: File, side: 'front' | 'back') => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/license_${side}_${Date.now()}.${fileExt}`;
-    const { error: uploadError, data } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file);
-
-    if (uploadError) throw uploadError;
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,37 +62,19 @@ const DriverVerification = () => {
     setLoading(true);
 
     try {
-      // Upload license images to Supabase Storage
-      let licenseFrontUrl = null;
-      let licenseBackUrl = null;
+      // Convert images to base64
+      let licenseFrontBase64 = null;
+      let licenseBackBase64 = null;
 
       if (licenseFront) {
-        licenseFrontUrl = await uploadLicense(licenseFront, 'front');
+        licenseFrontBase64 = await fileToBase64(licenseFront);
       }
       if (licenseBack) {
-        licenseBackUrl = await uploadLicense(licenseBack, 'back');
+        licenseBackBase64 = await fileToBase64(licenseBack);
       }
 
-      // Insert verification data
-      const { error } = await supabase
-        .from('driver_verifications')
-        .upsert({
-          user_id: user.id,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          date_of_birth: formData.dateOfBirth,
-          ssn_last_four: formData.ssnLastFour,
-          license_number: formData.licenseNumber,
-          license_state: formData.licenseState,
-          license_front_url: licenseFrontUrl,
-          license_back_url: licenseBackUrl,
-          verification_status: 'pending',
-        });
-
-      if (error) throw error;
-
-      // Create Veriff session
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke(
+      // Send everything to edge function
+      const { data, error } = await supabase.functions.invoke(
         'create-veriff-session',
         {
           body: {
@@ -108,28 +83,16 @@ const DriverVerification = () => {
               lastName: formData.lastName,
               dateOfBirth: formData.dateOfBirth,
               licenseNumber: formData.licenseNumber,
+              ssnLastFour: formData.ssnLastFour,
+              licenseState: formData.licenseState,
             },
+            licenseFrontBase64,
+            licenseBackBase64,
           },
         }
       );
 
-      if (sessionError) throw sessionError;
-
-      console.log("Veriff session created:", sessionData.sessionId);
-
-      // Upload images to Veriff (converted to base64 automatically)
-      const { error: uploadError } = await supabase.functions.invoke(
-        'upload-to-veriff',
-        {
-          body: {
-            sessionId: sessionData.sessionId,
-            imageFront: licenseFrontUrl,
-            imageBack: licenseBackUrl,
-          },
-        }
-      );
-
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
       toast({
         title: "Verification Submitted",
