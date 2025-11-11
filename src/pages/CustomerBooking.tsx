@@ -78,7 +78,21 @@ const CustomerBooking = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setReceiptFile(e.target.files[0]);
+      const file = e.target.files[0];
+      
+      // Verify MIME type is an image
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select an image file (JPG, PNG, etc.)",
+          variant: "destructive",
+        });
+        e.target.value = ''; // Reset the input
+        setReceiptFile(null);
+        return;
+      }
+      
+      setReceiptFile(file);
     }
   };
 
