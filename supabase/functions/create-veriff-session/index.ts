@@ -28,7 +28,7 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { verification } = await req.json();
+    const { verification, licenseFrontBase64, licenseBackBase64 } = await req.json();
     
     const veriffApiKey = Deno.env.get("VERIFF_API_KEY");
     if (!veriffApiKey) {
@@ -70,17 +70,113 @@ serve(async (req) => {
     const veriffData = await veriffResponse.json();
     console.log("Veriff session created:", veriffData.verification.id);
 
-    // Update driver_verifications with session ID
-    const { error: updateError } = await supabase
-      .from("driver_verifications")
-      .update({
-        veriff_session_id: veriffData.verification.id,
-      })
-      .eq("user_id", user.id);
+    // Upload images to storage if provided
+    let licenseFrontUrl = null;
+    let licenseBackUrl = null;
 
-    if (updateError) {
-      console.error("Error updating verification:", updateError);
-      throw updateError;
+    if (licenseFrontBase64) {
+      const frontBuffer = Uint8Array.from(atob(licenseFrontBase64.split(',')[1]), c => c.charCodeAt(0));
+      const frontExt = licenseFrontBase64.split(';')[0].split('/')[1];
+      const frontFileName = `${user.id}/license_front_${Date.now()}.${frontExt}`;
+      
+      const { error: frontUploadError } = await supabase.storage
+        .from('avatars')
+        .upload(frontFileName, frontBuffer, { contentType: `image/${frontExt}` });
+
+      if (!frontUploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(frontFileName);
+        licenseFrontUrl = publicUrl;
+      }
+    }
+
+    if (licenseBackBase64) {
+      const backBuffer = Uint8Array.from(atob(licenseBackBase64.split(',')[1]), c => c.charCodeAt(0));
+      const backExt = licenseBackBase64.split(';')[0].split('/')[1];
+      const backFileName = `${user.id}/license_back_${Date.now()}.${backExt}`;
+      
+      const { error: backUploadError } = await supabase.storage
+        .from('avatars')
+        .upload(backFileName, backBuffer, { contentType: `image/${backExt}` });
+
+      if (!backUploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(backFileName);
+        licenseBackUrl = publicUrl;
+      }
+    }
+
+    // Save verification data to database
+    const { error: dbError } = await supabase
+      .from("driver_verifications")
+      .upsert({
+        user_id: user.id,
+        first_name: verification.firstName,
+        last_name: verification.lastName,
+        date_of_birth: verification.dateOfBirth,
+        ssn_last_four: verification.ssnLastFour,
+        license_number: verification.licenseNumber,
+        license_state: verification.licenseState,
+        license_front_url: licenseFrontUrl,
+        license_back_url: licenseBackUrl,
+        verification_status: 'pending',
+        veriff_session_id: veriffData.verification.id,
+      });
+
+    if (dbError) {
+      console.error("Error saving verification:", dbError);
+      throw dbError;
+    }
+
+    // Upload images to Veriff
+    if (licenseFrontBase64) {
+      const uploadFrontResponse = await fetch(
+        `https://stationapi.veriff.com/v1/sessions/${veriffData.verification.id}/media`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-AUTH-CLIENT": veriffApiKey,
+          },
+          body: JSON.stringify({
+            image: {
+              context: "document-front",
+              content: licenseFrontBase64.split(',')[1],
+              timestamp: new Date().toISOString(),
+            },
+          }),
+        }
+      );
+
+      if (!uploadFrontResponse.ok) {
+        console.error("Failed to upload front image to Veriff");
+      }
+    }
+
+    if (licenseBackBase64) {
+      const uploadBackResponse = await fetch(
+        `https://stationapi.veriff.com/v1/sessions/${veriffData.verification.id}/media`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-AUTH-CLIENT": veriffApiKey,
+          },
+          body: JSON.stringify({
+            image: {
+              context: "document-back",
+              content: licenseBackBase64.split(',')[1],
+              timestamp: new Date().toISOString(),
+            },
+          }),
+        }
+      );
+
+      if (!uploadBackResponse.ok) {
+        console.error("Failed to upload back image to Veriff");
+      }
     }
 
     return new Response(
