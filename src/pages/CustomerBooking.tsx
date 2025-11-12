@@ -31,6 +31,7 @@ const CustomerBooking = () => {
   const [quantity, setQuantity] = useState("");
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -75,6 +76,23 @@ const CustomerBooking = () => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distance in kilometers
   };
+
+  // Calculate price based on distance
+  const calculatePrice = (distanceKm: number) => {
+    const distanceMiles = distanceKm * 0.621371; // Convert km to miles
+    return distanceMiles <= 50 ? 60 : 85;
+  };
+
+  // Update price when pickup and delivery locations change
+  useEffect(() => {
+    if (pickupLat && pickupLng && deliveryLat && deliveryLng) {
+      const distance = calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
+      const price = calculatePrice(distance);
+      setCalculatedPrice(price);
+    } else {
+      setCalculatedPrice(null);
+    }
+  }, [pickupLat, pickupLng, deliveryLat, deliveryLng]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -306,6 +324,22 @@ const CustomerBooking = () => {
                         </p>
                       )}
                     </div>
+
+                    {calculatedPrice && (
+                      <Card className="bg-muted/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Estimated Price</span>
+                            <span className="text-2xl font-bold text-primary">
+                              ${calculatedPrice}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {calculatedPrice === 60 ? "Within 50 miles" : "Beyond 50 miles"}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
 
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Finding Drivers..." : "Find Available Drivers"}
