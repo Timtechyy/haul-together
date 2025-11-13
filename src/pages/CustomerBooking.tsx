@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
+import { z } from "zod";
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
@@ -117,10 +118,29 @@ const CustomerBooking = () => {
   const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!pickupLocation || !deliveryLocation || !itemType || !quantity || !vehicleType || !receiptFile) {
+    // Validate inputs with Zod
+    const bookingSchema = z.object({
+      pickupLocation: z.string().trim().min(3, "Pickup location must be at least 3 characters").max(200, "Pickup location is too long"),
+      deliveryLocation: z.string().trim().min(3, "Delivery location must be at least 3 characters").max(200, "Delivery location is too long"),
+      itemType: z.string().trim().min(1, "Item type is required").max(100, "Item type is too long"),
+      quantity: z.coerce.number().int("Quantity must be a whole number").positive("Quantity must be positive").max(1000, "Quantity cannot exceed 1000"),
+      vehicleType: z.string().trim().min(1, "Vehicle type is required").max(50, "Vehicle type is too long"),
+      receiptFile: z.instanceof(File, { message: "Receipt file is required" })
+    });
+
+    const validation = bookingSchema.safeParse({
+      pickupLocation,
+      deliveryLocation,
+      itemType,
+      quantity,
+      vehicleType,
+      receiptFile
+    });
+
+    if (!validation.success) {
       toast({
-        title: "Missing Information",
-        description: "Please fill all fields and upload receipt",
+        title: "Validation Error",
+        description: validation.error.errors[0].message,
         variant: "destructive",
       });
       return;
