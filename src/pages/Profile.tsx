@@ -60,7 +60,8 @@ const Profile = () => {
     lastName: "", 
     email: "",
     phone: "",
-    avatarUrl: ""
+    avatarUrl: "",
+    gender: ""
   });
 
 
@@ -101,7 +102,8 @@ const Profile = () => {
         lastName: profileData.last_name || "",
         email: user.email || "",
         phone: profileData.phone || "",
-        avatarUrl: profileData.avatar_url || ""
+        avatarUrl: profileData.avatar_url || "",
+        gender: profileData.gender || ""
       });
 
       // Fetch vehicle info if driver
@@ -466,9 +468,8 @@ const Profile = () => {
                     id="email"
                     type="email"
                     value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    disabled={!isEditing}
-                    className="pl-10"
+                    disabled
+                    className="pl-10 bg-muted"
                   />
                 </div>
               </div>
@@ -486,6 +487,18 @@ const Profile = () => {
                   />
                 </div>
               </div>
+
+              {profile.gender && (
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Input
+                    id="gender"
+                    value={profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+              )}
 
               {isEditing && (
                 <div className="flex gap-2">
