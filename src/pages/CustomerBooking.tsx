@@ -153,7 +153,7 @@ const CustomerBooking = () => {
       const fileExt = receiptFile.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('bookingReciepts')
         .upload(fileName, receiptFile);
 
       if (uploadError) throw uploadError;

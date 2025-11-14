@@ -1,9 +1,10 @@
 /// <reference types="@types/google.maps" />
-import { useEffect, useRef, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { loadGoogleMaps } from "@/utils/loadGoogleMap";
 
-interface GooglePlacesAutocompleteProps {
+interface Props {
   id: string;
   label: string;
   placeholder: string;
@@ -13,7 +14,7 @@ interface GooglePlacesAutocompleteProps {
   required?: boolean;
 }
 
-const GooglePlacesAutocomplete = ({
+export default function GooglePlacesAutocomplete({
   id,
   label,
   placeholder,
@@ -21,35 +22,22 @@ const GooglePlacesAutocomplete = ({
   onChange,
   disabled = false,
   required = false,
-}: GooglePlacesAutocompleteProps) => {
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Check if script is already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
-      initAutocomplete();
-      return;
-    }
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-    // Load Google Maps script
-    const script = document.createElement('script');
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    
-    script.onload = () => {
-      initAutocomplete();
-    };
-
-    script.onerror = () => {
-      console.error('Failed to load Google Maps');
-      setIsLoaded(true);
-    };
-
-    document.head.appendChild(script);
+    loadGoogleMaps(apiKey)
+      .then(() => {
+        setLoaded(true);
+        initAutocomplete();
+      })
+      .catch((err) => {
+        console.error("Maps failed to load:", err);
+      });
 
     return () => {
       if (autocompleteRef.current) {
@@ -59,42 +47,41 @@ const GooglePlacesAutocomplete = ({
   }, []);
 
   const initAutocomplete = () => {
-    if (inputRef.current && window.google && window.google.maps && window.google.maps.places) {
-      setIsLoaded(true);
-      
-      autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        fields: ['formatted_address', 'geometry'],
-      });
+    if (!inputRef.current || !window.google?.maps?.places) return;
 
-      autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
-        if (place && place.formatted_address && place.geometry?.location) {
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-          onChange(place.formatted_address, lat, lng);
-        }
-      });
-    }
+    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+      types: ["address"],
+      fields: ["formatted_address", "geometry"],
+    });
+
+    autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current?.getPlace();
+      if (!place) return;
+
+      const lat = place.geometry?.location?.lat();
+      const lng = place.geometry?.location?.lng();
+
+      onChange(place.formatted_address || "", lat, lng);
+    });
   };
 
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
+
       <Input
         ref={inputRef}
         id={id}
+        placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
         disabled={disabled}
         required={required}
       />
-      {!isLoaded && (
-        <p className="text-xs text-muted-foreground">Loading location suggestions...</p>
+
+      {!loaded && (
+        <p className="text-xs text-muted-foreground">Loading Google Maps…</p>
       )}
     </div>
   );
-};
-
-export default GooglePlacesAutocomplete;
+}
