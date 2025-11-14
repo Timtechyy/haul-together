@@ -18,6 +18,10 @@ interface PendingDelivery {
   pickup_location: string;
   delivery_location: string;
   item_description: string;
+  item_type?: string;
+  quantity?: number;
+  vehicle_type?: string;
+  receipt_url?: string;
   price: number;
   estimated_distance: number;
   created_at: string;
@@ -427,12 +431,27 @@ const DriverDashboard = () => {
                             <div className="font-medium mb-1">Full Details</div>
                             <div className="space-y-1 text-muted-foreground">
                               <div><span className="font-medium">Item:</span> {request.item_description}</div>
+                              {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
+                              {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
+                              {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
                               <div><span className="font-medium">Pickup:</span> {request.pickup_location}</div>
                               <div><span className="font-medium">Dropoff:</span> {request.delivery_location}</div>
                               <div><span className="font-medium">Distance:</span> {request.estimated_distance.toFixed(1)} mi</div>
                               <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
                             </div>
                           </div>
+
+                          {/* Order Receipt */}
+                          {request.receipt_url && (
+                            <div className="mt-4">
+                              <div className="font-medium text-sm mb-2">Order Receipt</div>
+                              <img 
+                                src={request.receipt_url} 
+                                alt="Order receipt" 
+                                className="w-full max-w-md rounded-lg border shadow-sm"
+                              />
+                            </div>
+                          )}
                           
                           {/* Map View */}
                           <div className="mt-4">
