@@ -149,14 +149,19 @@ const CustomerBooking = () => {
     setLoading(true);
 
     try {
-      // Upload receipt
+      // Upload receipt to bookingReceipts bucket
       const fileExt = receiptFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
-        .from('bookingReciepts')
+        .from('bookingReceipts')
         .upload(fileName, receiptFile);
 
       if (uploadError) throw uploadError;
+
+      // Get the public URL for the receipt
+      const { data: { publicUrl } } = supabase.storage
+        .from('bookingReceipts')
+        .getPublicUrl(fileName);
 
       // Fetch drivers with matching vehicle type and verified status
       const { data: verifiedDrivers } = await supabase
@@ -201,13 +206,63 @@ const CustomerBooking = () => {
         }).sort((a, b) => a.distance - b.distance);
       }
 
-      setDrivers(driversWithDistance);
+      // Store drivers with the receipt URL for later booking
+      const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
+      setDrivers(driversWithReceipt);
       setShowForm(false);
       
       toast({
         title: "Booking Information Saved",
         description: "Showing available drivers for your delivery",
       });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBookDriver = async (driver: any) => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Create the delivery record
+      const { data: delivery, error: deliveryError } = await supabase
+        .from("deliveries")
+        .insert({
+          customer_id: user.id,
+          pickup_location: pickupLocation,
+          delivery_location: deliveryLocation,
+          pickup_lat: pickupLat,
+          pickup_lng: pickupLng,
+          delivery_lat: deliveryLat,
+          delivery_lng: deliveryLng,
+          item_description: itemType,
+          item_type: itemType,
+          quantity: parseInt(quantity),
+          vehicle_type: vehicleType,
+          price: calculatedPrice,
+          estimated_distance: driver.distance,
+          receipt_url: driver.receiptUrl,
+          status: "pending"
+        })
+        .select()
+        .single();
+
+      if (deliveryError) throw deliveryError;
+
+      toast({
+        title: "Booking Created",
+        description: "Your delivery request has been created and is now visible to the driver",
+      });
+
+      // Navigate to order tracking
+      navigate(`/order-tracking/${delivery.id}`);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -423,11 +478,16 @@ const CustomerBooking = () => {
                                     <span>{driver.distance.toFixed(1)} km away</span>
                                   </div>
                                 )}
-                              </div>
-                            </div>
+                           </div>
                           </div>
-                          <Button variant="hero">Book Now</Button>
                         </div>
+                        <Button 
+                          variant="hero"
+                          onClick={() => handleBookDriver(driver)}
+                        >
+                          Book Now
+                        </Button>
+                      </div>
                       </CardContent>
                     </Card>
                   ))
