@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { z } from "zod";
+import PaymentForm from "@/components/PaymentElement";
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
@@ -33,6 +34,14 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  type PaymentModalState = {
+  open: boolean;
+  clientSecret?: string;
+  onSuccess?: () => Promise<void>;
+};
+
+const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: false });
+
 
   useEffect(() => {
     const checkUser = async () => {
@@ -227,12 +236,31 @@ const CustomerBooking = () => {
   };
 
   const handleBookDriver = async (driver: any) => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      // Create the delivery record
-      const { data: delivery, error: deliveryError } = await supabase
+    if (!user || !calculatedPrice) return;
+
+  setLoading(true);
+
+  try {
+    // Call edge function to create PaymentIntent
+    const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+      body: {
+        amount: calculatedPrice * 100,
+        currency: "usd",
+        deliveryId: null,
+      },
+    });
+
+    if (error) throw error;
+
+    const clientSecret = data.clientSecret;
+
+
+  setPaymentModal({
+    open: true,
+    clientSecret,
+    onSuccess: async () => {
+      // STEP C — Payment succeeded → Create delivery
+      const { data: delivery, error } = await supabase
         .from("deliveries")
         .insert({
           customer_id: user.id,
@@ -249,30 +277,25 @@ const CustomerBooking = () => {
           price: calculatedPrice,
           estimated_distance: driver.distance,
           receipt_url: driver.receiptUrl,
-          status: "pending"
+          status: "pending",
         })
         .select()
         .single();
 
-      if (deliveryError) throw deliveryError;
+      if (error) {
+        toast({ title: "Error", description: error.message });
+        return;
+      }
 
-      toast({
-        title: "Booking Created",
-        description: "Your delivery request has been created and is now visible to the driver",
-      });
-
-      // Navigate to order tracking
+      toast({ title: "Payment successful", description: "Delivery created!" });
       navigate(`/order-tracking/${delivery.id}`);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });} catch (err) {
+    toast({ title: "Error", description: err.message, variant: "destructive" });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -515,7 +538,25 @@ const CustomerBooking = () => {
           )}
         </div>
       </main>
+          {/* PaymentForm Modal */}
+    {paymentModal.open && paymentModal.clientSecret && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-md max-w-md w-full">
+          <PaymentForm
+            clientSecret={paymentModal.clientSecret}
+            onSuccess={paymentModal.onSuccess!}
+          />
+          <button
+            onClick={() => setPaymentModal({ open: false })}
+            className="mt-4 text-red-500 underline"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    )}
     </div>
+    
   );
 };
 
