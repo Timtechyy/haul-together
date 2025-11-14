@@ -18,6 +18,7 @@ const signupSchema = z.object({
   phone: z.string().trim().min(10, "Phone number must be at least 10 digits"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  gender: z.enum(["male", "female"]).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -34,6 +35,7 @@ const Signup = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    gender: "" as "male" | "female" | "",
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -87,6 +89,7 @@ const Signup = () => {
             last_name: formData.lastName,
             phone: formData.phone,
             role: role,
+            gender: formData.gender || null,
             driver_lat: driverLocation?.lat,
             driver_lng: driverLocation?.lng,
           },
@@ -215,6 +218,23 @@ const Signup = () => {
                   required
                 />
               </div>
+              
+              {userType === "driver" && (
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <select
+                    id="gender"
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value as "male" | "female" })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
