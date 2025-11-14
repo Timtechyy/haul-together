@@ -1,202 +1,179 @@
-// import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { createHmac } from "https://deno.land/std@0.190.0/hash/mod.ts"; 
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+// Initialize Supabase client helper
+const initSupabase = (authHeader: string) => {
+  return createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader } } }
+  );
+};
+
+
+// Create a Veriff session
+async function createVeriffSession(userId: string, verification: any) {
+  const VERIFF_BASE_URL = Deno.env.get("VERIFF_BASE_URL");
+  if (!VERIFF_BASE_URL) throw new Error("Veriff base URL not configured");
+  const VERIFF_API_KEY = Deno.env.get("VERIFF_API_KEY");
+  const response = await fetch( VERIFF_BASE_URL + "/sessions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-auth-client": VERIFF_API_KEY
+    },
+    body: JSON.stringify({
+      verification: {
+        person: {
+          firstName: verification.firstName,
+          lastName: verification.lastName,
+          dateOfBirth: verification.dateOfBirth,
+          phoneNumber: verification.phoneNumber,
+          idNumber: verification.idNumber,
+          gender: verification.gender,
+          email: verification.email,
+        },
+        document: {
+          number: verification.licenseNumber,
+          type: "DRIVERS_LICENSE",
+          country: "US",
+        },
+        vendorData: userId,
+        consents: [
+              {
+                "type": "ine",
+                "approved": true,
+              },
+            ],
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Veriff API error: ${errorText}`);
   }
+
+  const data = await response.json();
+  return data.verification;
+}
+
+// Upload a document image (front or back)
+async function uploadVeriffImage(sessionId: string, base64Image: string, imageType: "document-front" | "document-back") {
+  const VERIFF_BASE_URL = Deno.env.get("VERIFF_BASE_URL");
+  const VERIFF_API_KEY = Deno.env.get("VERIFF_API_KEY");
+  const VERIFF_SHARED_SECRET = Deno.env.get("VERIFF_SHARED_SECRET");
+
+  if (!VERIFF_API_KEY || !VERIFF_SHARED_SECRET) throw new Error("Veriff credentials missing");
+
+  const content = `data:image/png;base64,${base64Image}`; // adjust mime type if needed
+  const payload = {
+    image: {
+      context: imageType,
+      content,
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  const payloadString = JSON.stringify(payload);
+  const signature = createHmac("sha256", VERIFF_SHARED_SECRET).update(payloadString).toString("hex");
+
+  const response = await fetch(`${VERIFF_BASE_URL}/sessions/${sessionId}/media`, {
+    method: "POST",
+    headers: {
+      "x-auth-client": VERIFF_API_KEY,
+      "x-hmac-signature": signature,
+      "Content-Type": "application/json",
+    },
+    body: payloadString,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to upload media: ${text}`);
+  }
+
+  return await response.json();
+}
+
+// Submit the Veriff session for review
+export async function submitVeriffSession(sessionId: string) {
+    const VERIFF_BASE_URL = Deno.env.get("VERIFF_BASE_URL");
+  const VERIFF_API_KEY = Deno.env.get("VERIFF_API_KEY");
+  const VERIFF_SHARED_SECRET = Deno.env.get("VERIFF_SHARED_SECRET");
+   const payload = {
+    verification: {
+      status: "submitted",
+    },
+  };
+    const payloadString = JSON.stringify(payload);
+  const signature = createHmac("sha256", VERIFF_SHARED_SECRET).update(payloadString).toString("hex");
+  const response = await fetch(`${VERIFF_BASE_URL}/sessions/${sessionId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+     "x-auth-client": VERIFF_API_KEY,
+      "x-hmac-signature": signature,
+    },
+    body: payloadString,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Veriff submit session error: ${text}`);
+  }
+
+  return await response.json();
+}
+
+// Main edge function
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing authorization header");
-    }
+    if (!authHeader) throw new Error("Missing authorization header");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
+    const supabase = initSupabase(authHeader);
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error("Unauthorized");
-    }
+    if (userError || !user) throw new Error("Unauthorized");
 
-    const { verification, licenseFrontBase64, licenseBackBase64 } = await req.json();
-    
-    const veriffApiKey = Deno.env.get("VERIFF_API_KEY");
-    if (!veriffApiKey) {
-      throw new Error("Veriff API key not configured");
-    }
+    const { verification, licenseFrontBase64, licenseBackBase64, ssnLast4, licenseState } = await req.json();
 
-    console.log("Creating Veriff session for user:", user.id);
+    // // Store SSN last 4 & state in your internal table
+    // await supabase.from("driver_verification_info").upsert({
+    //   user_id: user.id,
+    //   ssn_last4: ssnLast4,
+    //   license_state: licenseState,
+    //   created_at: new Date().toISOString(),
+    // });
+  
+    const veriffSession = await createVeriffSession(user.id, verification);
 
-    // Create Veriff session
-    const veriffResponse = await fetch("https://stationapi.veriff.com/v1/sessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-AUTH-CLIENT": veriffApiKey,
-      },
-      body: JSON.stringify({
-        verification: {
-          person: {
-            firstName: verification.firstName,
-            lastName: verification.lastName,
-            dateOfBirth: verification.dateOfBirth,
-          },
-          document: {
-            number: verification.licenseNumber,
-            type: "DRIVERS_LICENSE",
-            country: "US",
-          },
-          vendorData: user.id,
-        },
-      }),
+   
+    if (licenseFrontBase64) await uploadVeriffImage(veriffSession.id, licenseFrontBase64, "document-front");
+    if (licenseBackBase64) await uploadVeriffImage(veriffSession.id, licenseBackBase64, "document-back");
+    await submitVeriffSession(veriffSession.id);
+
+    return new Response(JSON.stringify({
+      sessionId: veriffSession.id,
+      url: veriffSession.url
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
 
-    if (!veriffResponse.ok) {
-      const errorText = await veriffResponse.text();
-      console.error("Veriff API error:", errorText);
-      throw new Error(`Veriff API error: ${veriffResponse.status}`);
-    }
-
-    const veriffData = await veriffResponse.json();
-    console.log("Veriff session created:", veriffData.verification.id);
-
-    // Upload images to storage if provided
-    let licenseFrontUrl = null;
-    let licenseBackUrl = null;
-
-    if (licenseFrontBase64) {
-      const frontBuffer = Uint8Array.from(atob(licenseFrontBase64.split(',')[1]), c => c.charCodeAt(0));
-      const frontExt = licenseFrontBase64.split(';')[0].split('/')[1];
-      const frontFileName = `${user.id}/license_front_${Date.now()}.${frontExt}`;
-      
-      const { error: frontUploadError } = await supabase.storage
-        .from('avatars')
-        .upload(frontFileName, frontBuffer, { contentType: `image/${frontExt}` });
-
-      if (!frontUploadError) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(frontFileName);
-        licenseFrontUrl = publicUrl;
-      }
-    }
-
-    if (licenseBackBase64) {
-      const backBuffer = Uint8Array.from(atob(licenseBackBase64.split(',')[1]), c => c.charCodeAt(0));
-      const backExt = licenseBackBase64.split(';')[0].split('/')[1];
-      const backFileName = `${user.id}/license_back_${Date.now()}.${backExt}`;
-      
-      const { error: backUploadError } = await supabase.storage
-        .from('avatars')
-        .upload(backFileName, backBuffer, { contentType: `image/${backExt}` });
-
-      if (!backUploadError) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(backFileName);
-        licenseBackUrl = publicUrl;
-      }
-    }
-
-    // Save verification data to database
-    const { error: dbError } = await supabase
-      .from("driver_verifications")
-      .upsert({
-        user_id: user.id,
-        first_name: verification.firstName,
-        last_name: verification.lastName,
-        date_of_birth: verification.dateOfBirth,
-        ssn_last_four: verification.ssnLastFour,
-        license_number: verification.licenseNumber,
-        license_state: verification.licenseState,
-        license_front_url: licenseFrontUrl,
-        license_back_url: licenseBackUrl,
-        verification_status: 'pending',
-        veriff_session_id: veriffData.verification.id,
-      });
-
-    if (dbError) {
-      console.error("Error saving verification:", dbError);
-      throw dbError;
-    }
-
-    // Upload images to Veriff
-    if (licenseFrontBase64) {
-      const uploadFrontResponse = await fetch(
-        `https://stationapi.veriff.com/v1/sessions/${veriffData.verification.id}/media`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-AUTH-CLIENT": veriffApiKey,
-          },
-          body: JSON.stringify({
-            image: {
-              context: "document-front",
-              content: licenseFrontBase64.split(',')[1],
-              timestamp: new Date().toISOString(),
-            },
-          }),
-        }
-      );
-
-      if (!uploadFrontResponse.ok) {
-        console.error("Failed to upload front image to Veriff");
-      }
-    }
-
-    if (licenseBackBase64) {
-      const uploadBackResponse = await fetch(
-        `https://stationapi.veriff.com/v1/sessions/${veriffData.verification.id}/media`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-AUTH-CLIENT": veriffApiKey,
-          },
-          body: JSON.stringify({
-            image: {
-              context: "document-back",
-              content: licenseBackBase64.split(',')[1],
-              timestamp: new Date().toISOString(),
-            },
-          }),
-        }
-      );
-
-      if (!uploadBackResponse.ok) {
-        console.error("Failed to upload back image to Veriff");
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
-        sessionId: veriffData.verification.id,
-        url: veriffData.verification.url,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
   } catch (error) {
     console.error("Error in create-veriff-session:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
+    return new Response(JSON.stringify({ error: error }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
 });
