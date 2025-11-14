@@ -18,51 +18,67 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Get user from Authorization header
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
 
-    if (!user) {
-      throw new Error("User not authenticated");
-    }
+    if (!user) throw new Error("User not authenticated");
 
     const { amount, currency = "usd", deliveryId } = await req.json();
 
-    if (!amount || amount <= 0) {
-      throw new Error("Invalid amount");
-    }
+    if (!amount || amount <= 0) throw new Error("Invalid amount");
 
-    console.log("Creating payment intent for user:", user.id, "amount:", amount);
-
-    // Get or create Stripe customer
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("stripe_customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.stripe_customer_id) {
-      throw new Error("Stripe customer not found. Please create customer first.");
-    }
+    console.log("Processing payment for user:", user.id, "amount:", amount);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Create payment intent
+    // Get user profile from Supabase
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("stripe_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    let stripeCustomerId = profile?.stripe_id;
+
+    // Create Stripe customer if it doesn't exist
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email!,
+        name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
+        metadata: { supabase_user_id: user.id },
+      });
+
+      stripeCustomerId = customer.id;
+
+      // Update Supabase profile with new Stripe customer ID
+      const { error: updateError } = await supabaseClient
+        .from("profiles")
+        .update({ stripe_id: stripeCustomerId })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      console.log("Created new Stripe customer:", stripeCustomerId);
+    }
+
+    // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(amount * 100), // Convert dollars to cents
       currency: currency.toLowerCase(),
-      customer: profile.stripe_customer_id,
+      customer: stripeCustomerId,
       metadata: {
-        supabase_user_id: user.id,
+        user_id: user.id,
         delivery_id: deliveryId || "",
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      automatic_payment_methods: { enabled: true },
     });
 
     console.log("Created payment intent:", paymentIntent.id);
@@ -77,14 +93,11 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in create-payment-intent:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({ error: error.message || "Internal Server Error" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

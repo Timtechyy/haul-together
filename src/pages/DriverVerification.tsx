@@ -141,8 +141,6 @@ const DriverVerification = () => {
     setLoading(false);
   }
 };
-
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">

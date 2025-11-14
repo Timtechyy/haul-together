@@ -146,38 +146,8 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Unauthorized");
 
-    const { verification, licenseFrontBase64, licenseBackBase64,} = await req.json();
-
-    // // Store SSN last 4 & state in your internal table
-    // await supabase.from("driver_verification_info").upsert({
-    //   user_id: user.id,
-    //   ssn_last4: ssnLast4,
-    //   license_state: licenseState,
-    //   created_at: new Date().toISOString(),
-    // });
-  
+    const { verification, licenseFrontBase64, licenseBackBase64,} = await req.json()
     const veriffSession = await createVeriffSession(user.id, verification);
-
-    // Store verification data in database
-    const { error: dbError } = await supabase
-      .from("driver_verifications")
-      .upsert({
-        user_id: user.id,
-        first_name: verification.firstName,
-        last_name: verification.lastName,
-        date_of_birth: verification.dateOfBirth,
-        ssn_last_four: verification.ssnLastFour,
-        license_number: verification.licenseNumber,
-        license_state: verification.licenseState,
-        veriff_session_id: veriffSession.id,
-        verification_status: "pending",
-      });
-
-    if (dbError) {
-      console.error("Error storing verification:", dbError);
-      throw dbError;
-    }
-   
     if (licenseFrontBase64) await uploadVeriffImage(veriffSession.id, licenseFrontBase64.base64, licenseFrontBase64.mimeType,"document-front");
     if (licenseBackBase64) await uploadVeriffImage(veriffSession.id, licenseBackBase64.base64,licenseBackBase64.mimeType, "document-back");
     await submitVeriffSession(veriffSession.id);
