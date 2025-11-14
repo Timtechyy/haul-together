@@ -35,7 +35,7 @@ async function createVeriffSession(userId: string, verification: any) {
           lastName: verification.lastName,
           dateOfBirth: verification.dateOfBirth,
           phoneNumber: verification.phoneNumber,
-          idNumber: verification.idNumber,
+          idNumber: verification.licenseNumber,
           gender: verification.gender,
           email: verification.email,
         },
@@ -65,14 +65,16 @@ async function createVeriffSession(userId: string, verification: any) {
 }
 
 // Upload a document image (front or back)
-async function uploadVeriffImage(sessionId: string, base64Image: string, imageType: "document-front" | "document-back") {
+async function uploadVeriffImage(sessionId: string, base64Image: string, mimeType: string, imageType: "document-front" | "document-back") {
   const VERIFF_BASE_URL = Deno.env.get("VERIFF_BASE_URL");
   const VERIFF_API_KEY = Deno.env.get("VERIFF_API_KEY");
   const VERIFF_SHARED_SECRET = Deno.env.get("VERIFF_SHARED_SECRET");
 
   if (!VERIFF_API_KEY || !VERIFF_SHARED_SECRET) throw new Error("Veriff credentials missing");
 
-  const content = `data:image/png;base64,${base64Image}`; // adjust mime type if needed
+
+  const content = `data:${mimeType};base64,${base64Image}`;
+
   const payload = {
     image: {
       context: imageType,
@@ -144,7 +146,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Unauthorized");
 
-    const { verification, licenseFrontBase64, licenseBackBase64, ssnLast4, licenseState } = await req.json();
+    const { verification, licenseFrontBase64, licenseBackBase64,} = await req.json();
 
     // // Store SSN last 4 & state in your internal table
     // await supabase.from("driver_verification_info").upsert({
@@ -157,8 +159,8 @@ serve(async (req) => {
     const veriffSession = await createVeriffSession(user.id, verification);
 
    
-    if (licenseFrontBase64) await uploadVeriffImage(veriffSession.id, licenseFrontBase64, "document-front");
-    if (licenseBackBase64) await uploadVeriffImage(veriffSession.id, licenseBackBase64, "document-back");
+    if (licenseFrontBase64) await uploadVeriffImage(veriffSession.id, licenseFrontBase64.base64, licenseFrontBase64.mimeType,"document-front");
+    if (licenseBackBase64) await uploadVeriffImage(veriffSession.id, licenseBackBase64.base64,licenseBackBase64.mimeType, "document-back");
     await submitVeriffSession(veriffSession.id);
 
     return new Response(JSON.stringify({

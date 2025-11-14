@@ -67,70 +67,81 @@ const DriverVerification = () => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+  // const fileToBase64 = (file: File): Promise<string> => {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => resolve(reader.result as string);
+  //     reader.onerror = error => reject(error);
+  //   });
+  // };
+
+  const fileToBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string; 
+      const mimeType = file.type || "application/octet-stream";
+      // result already contains data:[mime];base64,... so you can strip prefix if needed
+      const base64 = result.split(",")[1]; // only the actual Base64 string
+      resolve({ base64, mimeType });
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // Convert images to base64
-      let licenseFrontBase64 = null;
-      let licenseBackBase64 = null;
+  try {
+    // Convert license images to base64
+    const licenseFrontBase64 = licenseFront ? await fileToBase64(licenseFront) : null;
+    const licenseBackBase64 = licenseBack ? await fileToBase64(licenseBack) : null;
 
-      if (licenseFront) {
-        licenseFrontBase64 = await fileToBase64(licenseFront);
-      }
-      if (licenseBack) {
-        licenseBackBase64 = await fileToBase64(licenseBack);
-      }
+    // Call your edge function
+    const { data, error } = await supabase.functions.invoke('create-veriff-session', {
+      body: {
+        verification: {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: formData.dateOfBirth,
+          phoneNumber: user?.phone,
+          gender: formData.gender,
+          email: user?.email,
+          licenseNumber: formData.licenseNumber,
+          ssnLastFour: formData.ssnLastFour,
+          licenseState: formData.licenseState,
+        },
+        licenseFrontBase64,
+        licenseBackBase64,
+      },
+    });
 
-      // Send everything to edge function
-      const { data, error } = await supabase.functions.invoke(
-        'create-veriff-session',
-        {
-          body: {
-            verification: {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              gender: formData.gender,
-              dateOfBirth: formData.dateOfBirth,
-              licenseNumber: formData.licenseNumber,
-              ssnLastFour: formData.ssnLastFour,
-              licenseState: formData.licenseState,
-            },
-            licenseFrontBase64,
-            licenseBackBase64,
-          },
-        }
-      );
+    if (error) throw error;
 
-      if (error) throw error;
+    // You can just notify the user that verification is submitted
+    toast({
+      title: "Verification Submitted",
+      description: "Your documents have been submitted and are being reviewed.",
+    });
 
-      toast({
-        title: "Verification Submitted",
-        description: "Your verification documents have been submitted to Veriff for review.",
-      });
+    // Optionally, reset form or navigate back to profile
+    navigate("/profile");
 
-      navigate("/profile");
-    } catch (error: any) {
-      console.error("Verification error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit verification",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err: any) {
+    console.error("Verification error:", err);
+    toast({
+      title: "Error",
+      description: err.message || "Failed to submit verification",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
