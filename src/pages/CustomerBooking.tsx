@@ -381,7 +381,6 @@ const CustomerBooking = () => {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="receipt">Order Receipt</Label>
                       <Input
@@ -394,12 +393,18 @@ const CustomerBooking = () => {
                         className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
                       />
                       {receiptFile && (
-                        <p className="text-sm text-muted-foreground">
-                          Selected: {receiptFile.name}
-                        </p>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            Selected: {receiptFile.name}
+                          </p>
+                          <img
+                            src={URL.createObjectURL(receiptFile)}
+                            alt="Receipt Preview"
+                            className="mt-2 max-h-60 w-auto rounded-md border"
+                          />
+                        </div>
                       )}
                     </div>
-
                     {calculatedPrice && (
                       <Card className="bg-muted/50">
                         <CardContent className="p-4">
@@ -415,10 +420,23 @@ const CustomerBooking = () => {
                         </CardContent>
                       </Card>
                     )}
+                    <div className="flex flex-row justify-evenly mt-4 gap-4">
+                    <Button 
+                    className="flex-1"
+                      type="button" 
+                      variant="outline"
+                      onClick={() => navigate("/customer/dashboard")} // go back to dashboard
+                    >
+                      Cancel
+                    </Button>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button type="submit" className="flex-1" disabled={loading}>
                       {loading ? "Finding Drivers..." : "Find Available Drivers"}
                     </Button>
+                  </div>
+                    {/* <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Finding Drivers..." : "Find Available Drivers"}
+                    </Button> */}
                   </form>
                 </CardContent>
               </Card>
