@@ -13,9 +13,11 @@ const DriverVerification = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profileData, setProfileData] = useState<any>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    gender: "",
     dateOfBirth: "",
     ssnLastFour: "",
     licenseNumber: "",
@@ -32,6 +34,23 @@ const DriverVerification = () => {
         return;
       }
       setUser(session.user);
+      
+      // Fetch profile data to auto-populate fields
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, gender')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profile) {
+        setProfileData(profile);
+        setFormData(prev => ({
+          ...prev,
+          firstName: profile.first_name || "",
+          lastName: profile.last_name || "",
+          gender: profile.gender || ""
+        }));
+      }
     };
     checkUser();
   }, [navigate]);
@@ -81,6 +100,7 @@ const DriverVerification = () => {
             verification: {
               firstName: formData.firstName,
               lastName: formData.lastName,
+              gender: formData.gender,
               dateOfBirth: formData.dateOfBirth,
               licenseNumber: formData.licenseNumber,
               ssnLastFour: formData.ssnLastFour,
@@ -141,8 +161,8 @@ const DriverVerification = () => {
                       id="firstName"
                       name="firstName"
                       value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
+                      disabled
+                      className="bg-muted"
                     />
                   </div>
                   <div className="space-y-2">
@@ -151,10 +171,21 @@ const DriverVerification = () => {
                       id="lastName"
                       name="lastName"
                       value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
+                      disabled
+                      className="bg-muted"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Input
+                    id="gender"
+                    name="gender"
+                    value={formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1) : ""}
+                    disabled
+                    className="bg-muted"
+                  />
                 </div>
 
                 <div className="space-y-2">
