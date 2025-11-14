@@ -28,13 +28,17 @@ export type Database = {
           estimated_distance: number | null
           id: string
           item_description: string
+          item_type: string | null
           picked_up_at: string | null
           pickup_lat: number | null
           pickup_lng: number | null
           pickup_location: string
           price: number | null
+          quantity: number | null
+          receipt_url: string | null
           status: string
           updated_at: string
+          vehicle_type: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -49,13 +53,17 @@ export type Database = {
           estimated_distance?: number | null
           id?: string
           item_description: string
+          item_type?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location: string
           price?: number | null
+          quantity?: number | null
+          receipt_url?: string | null
           status?: string
           updated_at?: string
+          vehicle_type?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -70,13 +78,17 @@ export type Database = {
           estimated_distance?: number | null
           id?: string
           item_description?: string
+          item_type?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
           pickup_location?: string
           price?: number | null
+          quantity?: number | null
+          receipt_url?: string | null
           status?: string
           updated_at?: string
+          vehicle_type?: string | null
         }
         Relationships: []
       }
@@ -190,6 +202,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           first_name: string | null
+          gender: string | null
           id: string
           last_name: string | null
           phone: string | null
@@ -200,6 +213,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           first_name?: string | null
+          gender?: string | null
           id: string
           last_name?: string | null
           phone?: string | null
@@ -210,6 +224,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           first_name?: string | null
+          gender?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
