@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { createHmac } from "https://deno.land/std@0.190.0/hash/mod.ts";
+import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,9 +23,20 @@ serve(async (req) => {
     const payload = await req.text();
     
     if (signature) {
-      const expectedSignature = createHmac("sha256", VERIFF_SHARED_SECRET)
-        .update(payload)
-        .toString("hex");
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(VERIFF_SHARED_SECRET);
+      const messageData = encoder.encode(payload);
+      const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
       
       if (signature !== expectedSignature) {
         console.error("Invalid webhook signature");
@@ -94,8 +105,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error in veriff-webhook:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
