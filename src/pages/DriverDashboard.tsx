@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3 } from "lucide-react";
+import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DeliveryMap from "@/components/DeliveryMap";
+import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
 
 interface PendingDelivery {
@@ -43,6 +44,8 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(true);
+  const { isTracking, location } = useLocationTracking(user?.id, locationTrackingEnabled);
   const [stats, setStats] = useState({
     todayEarnings: 0,
     yesterdayEarnings: 0,
@@ -291,16 +294,24 @@ const DriverDashboard = () => {
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <button 
-            onClick={() => navigate("/driver/dashboard")}
-            className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
-          >
-             <img
-              src={logo}
-              alt="Wehauler Logo"
-              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
-            />
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate("/driver/dashboard")}
+              className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
+            >
+               <img
+                src={logo}
+                alt="Wehauler Logo"
+                className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+              />
+            </button>
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className={`h-4 w-4 ${isTracking ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <span className="text-muted-foreground hidden sm:inline">
+                {isTracking ? 'Location Active' : 'Location Off'}
+              </span>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/driver/earnings")}>
               <BarChart3 className="mr-2 h-4 w-4" />
