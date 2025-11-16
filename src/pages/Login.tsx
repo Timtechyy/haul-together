@@ -9,7 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-
+import logo from "@/assets/logo.png";
 const loginSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -92,10 +92,15 @@ const Login = () => {
 
         {/* Login Form */}
         <Card className="shadow-medium">
-          <CardHeader className="space-y-1 text-center">
-            <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              Wehauler
-            </div>
+          <CardHeader className="space-y-1 text-center items-center">
+            <div className="flex flex-col justify-start items-start h-full">
+            <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
+          </div>
+
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
               Sign in to your account to continue

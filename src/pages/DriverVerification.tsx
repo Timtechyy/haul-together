@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
+const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
   const navigate = useNavigate();
@@ -25,6 +26,24 @@ const DriverVerification = () => {
   });
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
+  const [licenseFrontBase64, setLicenseFrontBase64] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [licenseBackBase64, setLicenseBackBase64] = useState<{ base64: string; mimeType: string } | null>(null);
+
+  const [previewFront, setPreviewFront] = useState<string | null>(null);
+  const [previewBack, setPreviewBack] = useState<string | null>(null);
+
+  const workerFront = useRef<Worker>();
+  const workerBack = useRef<Worker>();
+
+  useEffect(() => {
+    workerFront.current = createWorker();
+    workerBack.current = createWorker();
+
+    return () => {
+      workerFront.current?.terminate();
+      workerBack.current?.terminate();
+    };
+  }, []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -59,37 +78,45 @@ const DriverVerification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (side === 'front') setLicenseFront(file);
-      else setLicenseBack(file);
+    if (!file) return;
+
+    const previewURL = URL.createObjectURL(file);
+
+    if (side === "front") {
+      setLicenseFront(file);
+      setPreviewFront(previewURL);
+      convertWithWorker(file, workerFront.current!).then(result => setLicenseFrontBase64(result));
+    } else {
+      setLicenseBack(file);
+      setPreviewBack(previewURL);
+      convertWithWorker(file, workerBack.current!).then(result => setLicenseBackBase64(result));
     }
   };
-
-  // const fileToBase64 = (file: File): Promise<string> => {
-  //   return new Promise((resolve, reject) => {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => resolve(reader.result as string);
-  //     reader.onerror = error => reject(error);
-  //   });
+  const convertWithWorker = (file: File, worker: Worker) => {
+    return new Promise<{ base64: string; mimeType: string }>((resolve, reject) => {
+      worker.postMessage(file);
+      worker.onmessage = (e: MessageEvent) => {
+        if (e.data.error) reject(e.data.error);
+        else resolve(e.data);
+      };
+    });
+  };
+  // const fileToBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
+  // return new Promise((resolve, reject) => {
+  //   const reader = new FileReader();
+  //   reader.readAsDataURL(file);
+  //   reader.onload = () => {
+  //     const result = reader.result as string; 
+  //     const mimeType = file.type || "application/octet-stream";
+  //     // result already contains data:[mime];base64,... so you can strip prefix if needed
+  //     const base64 = result.split(",")[1]; // only the actual Base64 string
+  //     resolve({ base64, mimeType });
+  //   };
+  //   reader.onerror = (error) => reject(error);
+  // });
   // };
-
-  const fileToBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const result = reader.result as string; 
-      const mimeType = file.type || "application/octet-stream";
-      // result already contains data:[mime];base64,... so you can strip prefix if needed
-      const base64 = result.split(",")[1]; // only the actual Base64 string
-      resolve({ base64, mimeType });
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,15 +155,16 @@ const DriverVerification = () => {
         title: "Uploading documents...",
         description: "This may take a moment",
       });
+    
 
-      const licenseFrontBase64 = licenseFront ? await fileToBase64(licenseFront) : null;
-      const licenseBackBase64 = licenseBack ? await fileToBase64(licenseBack) : null;
+      const front = licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
+      const back = licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
 
       const { error: completeError } = await supabase.functions.invoke('complete-veriff-session', {
         body: {
           sessionId: sessionData.sessionId,
-          licenseFrontBase64,
-          licenseBackBase64,
+          front,
+          back,
         },
       });
 
@@ -266,7 +294,7 @@ const DriverVerification = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="licenseFront">Driver's License (Front)</Label>
                   <div className="flex items-center gap-2">
                     <Input
@@ -278,11 +306,27 @@ const DriverVerification = () => {
                     />
                     <Upload className="h-4 w-4 text-muted-foreground" />
                   </div>
-                </div>
-
+                </div> */}
+                {/* FRONT IMAGE */}
                 <div className="space-y-2">
+                  <Label htmlFor="licenseFront">Driver's License (Front)</Label>
+                  <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                    {previewFront ? (
+                      <img src={previewFront} alt="Front Preview" className="h-full w-auto object-contain" />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Click to upload front image</span>
+                    )}
+                    <Input
+                      type="file"
+                      className="absolute opacity-0 cursor-pointer h-full w-full"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, "front")}
+                    />
+                  </div>
+                </div>
+                {/* <div className="space-y-2">
                   <Label htmlFor="licenseBack">Driver's License (Back)</Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ">
                     <Input
                       id="licenseBack"
                       type="file"
@@ -291,6 +335,23 @@ const DriverVerification = () => {
                       required
                     />
                     <Upload className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div> */}
+                {/* BACK IMAGE */}
+                <div className="space-y-2">
+                  <Label htmlFor="licenseBack">Driver's License (Back)</Label>
+                  <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                    {previewBack ? (
+                      <img src={previewBack} alt="Back Preview" className="h-full w-auto object-contain" />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Click to upload back image</span>
+                    )}
+                    <Input
+                      type="file"
+                      className="absolute opacity-0 cursor-pointer h-full w-full"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, "back")}
+                    />
                   </div>
                 </div>
 

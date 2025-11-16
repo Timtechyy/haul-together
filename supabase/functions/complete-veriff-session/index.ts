@@ -133,9 +133,11 @@ serve(async (req) => {
         status: 401,
       });
     }
-
+  // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    console.log("Token extracted, length:", token.length);
     const supabase = initSupabase(authHeader);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {

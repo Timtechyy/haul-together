@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DeliveryMap from "@/components/DeliveryMap";
+import logo from "@/assets/logo.png";
 
 interface PendingDelivery {
   id: string;
@@ -294,7 +295,11 @@ const DriverDashboard = () => {
             onClick={() => navigate("/driver/dashboard")}
             className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
           >
-            Wehauler Driver
+             <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
           </button>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/driver/earnings")}>
