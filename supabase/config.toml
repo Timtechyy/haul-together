@@ -18,5 +18,8 @@ verify_jwt = false
 [functions.veriff-webhook]
 verify_jwt = false
 
-[functions.complete-veriff-session]
+[functions.upload-veriff-image]
+verify_jwt = true
+
+[functions.submit-veriff-session]
 verify_jwt = true
