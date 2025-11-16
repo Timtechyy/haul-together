@@ -91,12 +91,11 @@ const DriverDashboard = () => {
     if (!user) return;
 
     const fetchDriverData = async () => {
-      // Fetch pending deliveries
+      // Fetch pending deliveries (both unassigned and assigned to this driver)
       const { data: pendingData, error: pendingError } = await supabase
         .from("deliveries")
         .select("*")
-        .eq("status", "pending")
-        .is("driver_id", null);
+        .or(`and(status.eq.pending,driver_id.is.null),and(status.eq.assigned,driver_id.eq.${user.id})`);
 
       if (pendingError) {
         console.error("Error fetching deliveries:", pendingError);
@@ -187,16 +186,50 @@ const DriverDashboard = () => {
       .on(
         "postgres_changes",
         {
+          event: "INSERT",
+          schema: "public",
+          table: "deliveries",
+          filter: `driver_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const assignedDelivery = payload.new as PendingDelivery;
+          setPendingRequests((prev) => [...prev, assignedDelivery]);
+          
+          // Send notification for assigned delivery
+          if (notificationsEnabled) {
+            const { notificationService } = await import('@/utils/notificationService');
+            await notificationService.showNotification('New Delivery Assigned!', {
+              body: `${assignedDelivery.pickup_location} → ${assignedDelivery.delivery_location}\n$${assignedDelivery.price.toFixed(2)} • ${assignedDelivery.estimated_distance.toFixed(1)} mi`,
+              tag: 'assigned-delivery',
+              requireInteraction: true,
+            });
+          }
+          
+          toast({
+            title: "New Delivery Assigned!",
+            description: `$${assignedDelivery.price.toFixed(2)} - ${assignedDelivery.pickup_location}`,
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "UPDATE",
           schema: "public",
           table: "deliveries",
         },
         (payload) => {
           const updatedDelivery = payload.new as PendingDelivery;
-          // Remove from list if no longer pending or assigned to a driver
-          setPendingRequests((prev) =>
-            prev.filter((req) => req.id !== updatedDelivery.id)
-          );
+          // Remove from list if no longer pending/assigned or if assigned to another driver
+          if (updatedDelivery.status !== "pending" && updatedDelivery.status !== "assigned") {
+            setPendingRequests((prev) =>
+              prev.filter((req) => req.id !== updatedDelivery.id)
+            );
+          } else if (updatedDelivery.driver_id && updatedDelivery.driver_id !== user.id) {
+            setPendingRequests((prev) =>
+              prev.filter((req) => req.id !== updatedDelivery.id)
+            );
+          }
         }
       )
       .subscribe();
