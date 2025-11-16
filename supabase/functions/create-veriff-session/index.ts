@@ -183,8 +183,12 @@ serve(async (req) => {
       });
     }
 
+    // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    console.log("Token extracted, length:", token.length);
+    
     const supabase = initSupabase(authHeader);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError) {
       console.error("Auth error:", userError);
