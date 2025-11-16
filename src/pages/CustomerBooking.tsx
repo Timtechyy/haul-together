@@ -176,8 +176,8 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
       // Fetch drivers with matching vehicle type and verified status
       const { data: verifiedDrivers } = await supabase
         .from("driver_verifications")
-        .select("user_id")
-        .eq("verification_status", "verified");
+        .select("user_id");
+        // .eq("verification_status", "verified");
 
       const verifiedUserIds = verifiedDrivers?.map(d => d.user_id) || [];
 
@@ -277,7 +277,6 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
           quantity: parseInt(quantity),
           vehicle_type: vehicleType,
           price: calculatedPrice,
-          estimated_distance: driver.distance,
           receipt_url: driver.receiptUrl,
           status: "assigned",
         })
