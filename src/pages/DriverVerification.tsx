@@ -92,55 +92,73 @@ const DriverVerification = () => {
 };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    // Convert license images to base64
-    const licenseFrontBase64 = licenseFront ? await fileToBase64(licenseFront) : null;
-    const licenseBackBase64 = licenseBack ? await fileToBase64(licenseBack) : null;
+    try {
+      // Step 1: Create Veriff session (fast)
+      toast({
+        title: "Creating verification session...",
+        description: "Please wait",
+      });
 
-    // Call your edge function
-    const { data, error } = await supabase.functions.invoke('create-veriff-session', {
-      body: {
-        verification: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          dateOfBirth: formData.dateOfBirth,
-          phoneNumber: user?.phone,
-          gender: formData.gender,
-          email: user?.email,
-          licenseNumber: formData.licenseNumber,
-          ssnLastFour: formData.ssnLastFour,
-          licenseState: formData.licenseState,
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-veriff-session', {
+        body: {
+          verification: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            dateOfBirth: formData.dateOfBirth,
+            phoneNumber: user?.phone,
+            gender: formData.gender,
+            email: user?.email,
+            licenseNumber: formData.licenseNumber,
+            ssnLastFour: formData.ssnLastFour,
+            licenseState: formData.licenseState,
+          },
         },
-        licenseFrontBase64,
-        licenseBackBase64,
-      },
-    });
+      });
 
-    if (error) throw error;
+      if (sessionError) throw sessionError;
+      if (!sessionData?.sessionId) throw new Error("Failed to create session");
 
-    // You can just notify the user that verification is submitted
-    toast({
-      title: "Verification Submitted",
-      description: "Your documents have been submitted and are being reviewed.",
-    });
+      console.log("Session created:", sessionData.sessionId);
 
-    // Optionally, reset form or navigate back to profile
-    navigate("/profile");
+      // Step 2: Upload images and submit (can take longer)
+      toast({
+        title: "Uploading documents...",
+        description: "This may take a moment",
+      });
 
-  } catch (err: any) {
-    console.error("Verification error:", err);
-    toast({
-      title: "Error",
-      description: err.message || "Failed to submit verification",
-      variant: "destructive",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      const licenseFrontBase64 = licenseFront ? await fileToBase64(licenseFront) : null;
+      const licenseBackBase64 = licenseBack ? await fileToBase64(licenseBack) : null;
+
+      const { error: completeError } = await supabase.functions.invoke('complete-veriff-session', {
+        body: {
+          sessionId: sessionData.sessionId,
+          licenseFrontBase64,
+          licenseBackBase64,
+        },
+      });
+
+      if (completeError) throw completeError;
+
+      toast({
+        title: "Success!",
+        description: "Your verification has been submitted successfully.",
+      });
+
+      navigate("/profile");
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to submit verification. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">

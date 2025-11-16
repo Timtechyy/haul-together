@@ -204,11 +204,11 @@ serve(async (req) => {
     
     console.log("User authenticated:", user.id);
 
-    const { verification, licenseFrontBase64, licenseBackBase64,} = await req.json()
+    const { verification } = await req.json();
+    console.log("Creating Veriff session for user:", user.id);
+    
     const veriffSession = await createVeriffSession(user.id, verification);
-    if (licenseFrontBase64) await uploadVeriffImage(veriffSession.id, licenseFrontBase64.base64, licenseFrontBase64.mimeType,"document-front");
-    if (licenseBackBase64) await uploadVeriffImage(veriffSession.id, licenseBackBase64.base64,licenseBackBase64.mimeType, "document-back");
-    await submitVeriffSession(veriffSession.id);
+    console.log("Veriff session created:", veriffSession.id);
 
     return new Response(JSON.stringify({
       sessionId: veriffSession.id,
