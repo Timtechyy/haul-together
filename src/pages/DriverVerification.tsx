@@ -103,27 +103,13 @@ const DriverVerification = () => {
       };
     });
   };
-  // const fileToBase64 = (file: File): Promise<{ base64: string; mimeType: string }> => {
-  // return new Promise((resolve, reject) => {
-  //   const reader = new FileReader();
-  //   reader.readAsDataURL(file);
-  //   reader.onload = () => {
-  //     const result = reader.result as string; 
-  //     const mimeType = file.type || "application/octet-stream";
-  //     // result already contains data:[mime];base64,... so you can strip prefix if needed
-  //     const base64 = result.split(",")[1]; // only the actual Base64 string
-  //     resolve({ base64, mimeType });
-  //   };
-  //   reader.onerror = (error) => reject(error);
-  // });
-  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Step 1: Create Veriff session (fast)
+
       toast({
         title: "Creating verification session...",
         description: "Please wait",
@@ -327,20 +313,6 @@ const DriverVerification = () => {
                     />
                   </div>
                 </div>
-
-                {/* <div className="space-y-2">
-                  <Label htmlFor="licenseFront">Driver's License (Front)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="licenseFront"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'front')}
-                      required
-                    />
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div> */}
                 {/* FRONT IMAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="licenseFront">Driver's License (Front)</Label>
@@ -358,19 +330,7 @@ const DriverVerification = () => {
                     />
                   </div>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label htmlFor="licenseBack">Driver's License (Back)</Label>
-                  <div className="flex items-center gap-2 ">
-                    <Input
-                      id="licenseBack"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'back')}
-                      required
-                    />
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div> */}
+                
                 {/* BACK IMAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="licenseBack">Driver's License (Back)</Label>
