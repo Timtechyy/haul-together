@@ -150,25 +150,59 @@ const DriverVerification = () => {
 
       console.log("Session created:", sessionData.sessionId);
 
-      // Step 2: Upload images and submit (can take longer)
+      // Step 2: Upload front image
       toast({
-        title: "Uploading documents...",
-        description: "This may take a moment",
+        title: "Uploading front of license...",
+        description: "Please wait",
       });
-    
 
       const front = licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
-      const back = licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
+      
+      if (front) {
+        const { error: frontError } = await supabase.functions.invoke('upload-veriff-image', {
+          body: {
+            sessionId: sessionData.sessionId,
+            imageBase64: front.base64,
+            mimeType: front.mimeType,
+            imageType: "document-front",
+          },
+        });
+        if (frontError) throw frontError;
+      }
 
-      const { error: completeError } = await supabase.functions.invoke('complete-veriff-session', {
+      // Step 3: Upload back image
+      toast({
+        title: "Uploading back of license...",
+        description: "Please wait",
+      });
+
+      const back = licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
+      
+      if (back) {
+        const { error: backError } = await supabase.functions.invoke('upload-veriff-image', {
+          body: {
+            sessionId: sessionData.sessionId,
+            imageBase64: back.base64,
+            mimeType: back.mimeType,
+            imageType: "document-back",
+          },
+        });
+        if (backError) throw backError;
+      }
+
+      // Step 4: Submit session
+      toast({
+        title: "Submitting verification...",
+        description: "Almost done",
+      });
+
+      const { error: submitError } = await supabase.functions.invoke('submit-veriff-session', {
         body: {
           sessionId: sessionData.sessionId,
-          front,
-          back,
         },
       });
 
-      if (completeError) throw completeError;
+      if (submitError) throw submitError;
 
       toast({
         title: "Success!",
