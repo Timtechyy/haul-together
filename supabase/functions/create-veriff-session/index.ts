@@ -173,11 +173,36 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
+    console.log("Auth header present:", !!authHeader);
+    
+    if (!authHeader) {
+      console.error("Missing authorization header");
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
 
     const supabase = initSupabase(authHeader);
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error("Unauthorized");
+    
+    if (userError) {
+      console.error("Auth error:", userError);
+      return new Response(JSON.stringify({ error: "Authentication failed: " + userError.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
+    if (!user) {
+      console.error("No user found");
+      return new Response(JSON.stringify({ error: "User not authenticated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
+    console.log("User authenticated:", user.id);
 
     const { verification, licenseFrontBase64, licenseBackBase64,} = await req.json()
     const veriffSession = await createVeriffSession(user.id, verification);
