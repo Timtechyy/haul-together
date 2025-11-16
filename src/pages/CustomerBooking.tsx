@@ -260,11 +260,12 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
     open: true,
     clientSecret,
     onSuccess: async () => {
-      // STEP C — Payment succeeded → Create delivery
+      // STEP C — Payment succeeded → Create delivery and assign driver
       const { data: delivery, error } = await supabase
         .from("deliveries")
         .insert({
           customer_id: user.id,
+          driver_id: driver.user_id,
           pickup_location: pickupLocation,
           delivery_location: deliveryLocation,
           pickup_lat: pickupLat,
@@ -278,7 +279,7 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
           price: calculatedPrice,
           estimated_distance: driver.distance,
           receipt_url: driver.receiptUrl,
-          status: "pending",
+          status: "assigned",
         })
         .select()
         .single();
