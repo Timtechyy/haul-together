@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { z } from "zod";
 import PaymentForm from "@/components/PaymentElement";
+import logo from "@/assets/logo.png";
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
@@ -302,8 +303,12 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Wehauler
+          <div className="flex flex-col justify-start items-start h-full">
+            <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Package, MapPin, Clock, LogOut, User, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import logo from "@/assets/logo.png";
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -107,7 +108,11 @@ const CustomerDashboard = () => {
             onClick={() => navigate("/customer/dashboard")}
             className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent cursor-pointer"
           >
-            Wehauler
+             <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
           </button>
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>

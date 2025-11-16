@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import logo from "@/assets/logo.png";
 
 const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(50),
@@ -135,10 +136,15 @@ const Signup = () => {
 
         {/* Signup Form */}
         <Card className="shadow-medium">
-          <CardHeader className="space-y-1 text-center">
-            <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              Wehauler
+          <CardHeader className="space-y-1 text-center items-center">
+           <div className="flex flex-col justify-start items-start h-full">
+              <img
+                src={logo}
+                alt="Wehauler Logo"
+                className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+              />
             </div>
+          
             <CardTitle className="text-2xl">Create your account</CardTitle>
             <CardDescription>
               Join our community of customers and drivers

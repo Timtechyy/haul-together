@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import logo from "@/assets/logo.png";
 
 const PrivacyPolicy = () => {
   return (
@@ -17,8 +18,12 @@ const PrivacyPolicy = () => {
 
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Wehauler
+          <div className="flex flex-col justify-start items-start h-full">
+            <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
           </div>
           <h1 className="text-4xl font-bold">Privacy Policy</h1>
           <p className="text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</p>

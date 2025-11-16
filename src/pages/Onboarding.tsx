@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Truck, Package, Users, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-delivery.jpg";
+import logo from "@/assets/logo.png";
 
 const Onboarding = () => {
   const features = [
@@ -33,15 +34,20 @@ const Onboarding = () => {
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <nav className="flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Wehauler
+          <div className="flex flex-col justify-start items-start h-full">
+            <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-20 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
           </div>
+
           <div className="flex gap-4">
-            <Button variant="ghost" asChild>
+            {/* <Button variant="ghost" asChild>
               <Link to="/login">Sign In</Link>
-            </Button>
+            </Button> */}
             <Button variant="outline" asChild>
-              <Link to="/signup">Get Started</Link>
+              <Link to="/login">Sign In</Link>
             </Button>
           </div>
         </nav>
@@ -65,13 +71,13 @@ const Onboarding = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button variant="hero" size="xl" className="group" asChild>
-                <Link to="/signup">
+                <Link to="/login">
                   Start Delivering
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
               <Button variant="outline" size="xl" asChild>
-                <Link to="/signup">Book a Delivery</Link>
+                <Link to="/login">Book a Delivery</Link>
               </Button>
             </div>
 
@@ -145,9 +151,9 @@ const Onboarding = () => {
             <Button variant="hero" size="xl" asChild>
               <Link to="/signup">Sign Up as Driver</Link>
             </Button>
-            <Button variant="secondary" size="xl" asChild>
+            {/* <Button variant="secondary" size="xl" asChild>
               <Link to="/signup">Book Delivery</Link>
-            </Button>
+            </Button> */}
           </div>
         </div>
       </section>
@@ -156,8 +162,12 @@ const Onboarding = () => {
       <footer className="border-t py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Wehauler
+           <div className="flex flex-col justify-start items-start h-full">
+            <img
+              src={logo}
+              alt="Wehauler Logo"
+              className="h-20 sm:h-20 md:h-24 lg:h-32 object-contain"
+            />
             </div>
             <div className="text-sm text-muted-foreground">
               © 2025 Wehauler. All rights reserved.
