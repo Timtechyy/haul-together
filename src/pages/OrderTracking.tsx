@@ -14,11 +14,12 @@ const OrderTracking = () => {
   const orderId = searchParams.get('id');
   const [delivery, setDelivery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [driverProfile, setDriverProfile] = useState<any>(null);
 
   useEffect(() => {
     const fetchDelivery = async () => {
       if (!orderId) {
-        navigate("/driver/dashboard");
+        navigate("/");
         return;
       }
 
@@ -34,15 +35,65 @@ const OrderTracking = () => {
           description: "Failed to load delivery details",
           variant: "destructive",
         });
-        navigate("/driver/dashboard");
+        navigate("/");
         return;
       }
 
       setDelivery(data);
+      
+      // Fetch driver profile if assigned
+      if (data.driver_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', data.driver_id)
+          .single();
+        
+        setDriverProfile(profile);
+      }
+      
       setLoading(false);
     };
 
     fetchDelivery();
+
+    // Set up realtime subscription for delivery updates
+    const channel = supabase
+      .channel(`delivery-${orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'deliveries',
+          filter: `id=eq.${orderId}`,
+        },
+        async (payload) => {
+          const updated = payload.new as any;
+          setDelivery(updated);
+
+          // Fetch driver profile when assigned
+          if (updated.driver_id && !driverProfile) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', updated.driver_id)
+              .single();
+            
+            setDriverProfile(profile);
+
+            toast({
+              title: "Driver Assigned!",
+              description: `${profile?.first_name} ${profile?.last_name} accepted your delivery`,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [orderId, navigate, toast]);
 
   const updateStatus = async (newStatus: string) => {
@@ -81,7 +132,8 @@ const OrderTracking = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: any = {
-      accepted: "secondary",
+      pending: "secondary",
+      accepted: "default",
       picking_up: "default",
       in_transit: "default",
       delivered: "success",
@@ -93,9 +145,9 @@ const OrderTracking = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/driver/dashboard")}>
+          <Button variant="ghost" onClick={() => navigate("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back
           </Button>
         </div>
       </header>
@@ -113,6 +165,66 @@ const OrderTracking = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Waiting for Driver */}
+              {delivery.status === 'pending' && (
+                <div className="p-6 bg-muted/50 rounded-lg text-center space-y-4">
+                  <div className="animate-pulse">
+                    <Package className="h-12 w-12 mx-auto text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Waiting for Driver</h3>
+                    <p className="text-sm text-muted-foreground">
+                      We're notifying available drivers. Someone will accept your delivery soon!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Driver Info */}
+              {delivery.driver_id && driverProfile && (
+                <div className="p-4 bg-primary/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold">
+                        {driverProfile.first_name} {driverProfile.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Your assigned driver</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Waiting for Driver */}
+              {delivery.status === 'pending' && (
+                <div className="p-6 bg-muted/50 rounded-lg text-center space-y-4">
+                  <div className="animate-pulse">
+                    <Package className="h-12 w-12 mx-auto text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Waiting for Driver</h3>
+                    <p className="text-sm text-muted-foreground">
+                      We're notifying available drivers. Someone will accept your delivery soon!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Driver Info */}
+              {delivery.driver_id && driverProfile && (
+                <div className="p-4 bg-primary/10 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold">
+                        {driverProfile.first_name} {driverProfile.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Your assigned driver</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Route Information */}
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">

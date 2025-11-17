@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { z } from "zod";
 import PaymentForm from "@/components/PaymentElement";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import logo from "@/assets/logo.png";
 
 const CustomerBooking = () => {
@@ -35,13 +37,10 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
-  type PaymentModalState = {
-  open: boolean;
-  clientSecret?: string;
-  onSuccess?: () => Promise<void>;
-};
-
-const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: false });
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -104,6 +103,20 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
       setCalculatedPrice(null);
     }
   }, [pickupLat, pickupLng, deliveryLat, deliveryLng]);
+
+  // Countdown timer for auto-showing payment
+  useEffect(() => {
+    if (countdown === null || countdown <= 0) return;
+    
+    const timer = setTimeout(() => {
+      setCountdown(countdown - 1);
+      if (countdown - 1 === 0) {
+        handleAutoPayment();
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -222,9 +235,12 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
       setShowForm(false);
       
       toast({
-        title: "Booking Information Saved",
-        description: "Showing available drivers for your delivery",
+        title: "Drivers Matched!",
+        description: `Found ${driversWithReceipt.length} available drivers. Payment will show in 1 minute...`,
       });
+
+      // Start 1-minute countdown
+      setCountdown(60);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -236,36 +252,52 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
     }
   };
 
-  const handleBookDriver = async (driver: any) => {
+  const handleAutoPayment = async () => {
     if (!user || !calculatedPrice) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    // Call edge function to create PaymentIntent
-    const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-      body: {
-        amount: calculatedPrice * 100,
-        currency: "usd",
-        deliveryId: null,
-      },
-    });
+    try {
+      // Call edge function to create PaymentIntent
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: {
+          amount: calculatedPrice,
+          currency: "usd",
+        },
+      });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    const clientSecret = data.clientSecret;
+      setClientSecret(data.clientSecret);
+      setShowPayment(true);
 
+      toast({
+        title: "Payment Ready",
+        description: "Please complete payment to notify drivers",
+      });
+    } catch (err: any) {
+      toast({ 
+        title: "Error", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  setPaymentModal({
-    open: true,
-    clientSecret,
-    onSuccess: async () => {
-      // STEP C — Payment succeeded → Create delivery and assign driver
+  const handlePaymentSuccess = async () => {
+    if (!user || !calculatedPrice) return;
+
+    setLoading(true);
+
+    try {
+      // Create delivery with pending status (no driver assigned yet)
       const { data: delivery, error } = await supabase
         .from("deliveries")
         .insert({
           customer_id: user.id,
-          driver_id: driver.user_id,
+          driver_id: null,
           pickup_location: pickupLocation,
           delivery_location: deliveryLocation,
           pickup_lat: pickupLat,
@@ -277,26 +309,32 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
           quantity: parseInt(quantity),
           vehicle_type: vehicleType,
           price: calculatedPrice,
-          receipt_url: driver.receiptUrl,
-          status: "assigned",
+          estimated_distance: drivers[0]?.distance || 0,
+          receipt_url: drivers[0]?.receiptUrl,
+          status: "pending",
         })
         .select()
         .single();
 
-      if (error) {
-        toast({ title: "Error", description: error.message });
-        return;
-      }
+      if (error) throw error;
 
-      toast({ title: "Payment successful", description: "Delivery created!" });
-      navigate(`/order-tracking/${delivery.id}`);
-    },
-  });} catch (err) {
-    toast({ title: "Error", description: err.message, variant: "destructive" });
-  } finally {
-    setLoading(false);
-  }
-};
+      toast({ 
+        title: "Payment Successful!", 
+        description: "Notifying matched drivers. Waiting for acceptance..." 
+      });
+
+      // Navigate to tracking page
+      navigate(`/order-tracking?id=${delivery.id}`);
+    } catch (err: any) {
+      toast({ 
+        title: "Error", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -469,19 +507,81 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
                 </CardContent>
               </Card>
             </>
+          ) : showPayment && clientSecret ? (
+            <>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Complete Payment</h1>
+                <p className="text-muted-foreground">
+                  Complete payment to notify {drivers.length} matched drivers
+                </p>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-6 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Delivery Fee:</span>
+                      <span className="font-semibold">${calculatedPrice?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span>${calculatedPrice?.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <Elements stripe={loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)} options={{ clientSecret }}>
+                    <PaymentForm 
+                      clientSecret={clientSecret} 
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                </CardContent>
+              </Card>
+            </>
           ) : (
             <>
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
                   <p className="text-muted-foreground">
-                    Drivers with {vehicleType} near {pickupLocation}
+                    {countdown !== null && countdown > 0 
+                      ? `Payment will show automatically in ${countdown}s` 
+                      : `Drivers with ${vehicleType} near ${pickupLocation}`}
                   </p>
                 </div>
-                <Button variant="outline" onClick={() => setShowForm(true)}>
-                  Back to Form
-                </Button>
+                {!countdown && (
+                  <Button variant="outline" onClick={() => {
+                    setShowForm(true);
+                    setDrivers([]);
+                    setShowPayment(false);
+                  }}>
+                    Back to Form
+                  </Button>
+                )}
               </div>
+
+              {countdown !== null && countdown > 0 && (
+                <Card className="border-primary">
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-4">
+                      <div className="text-6xl font-bold text-primary">{countdown}</div>
+                      <p className="text-lg">Payment will appear automatically...</p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setCountdown(null);
+                          handleAutoPayment();
+                        }}
+                      >
+                        Show Payment Now
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="grid gap-4">
                 {drivers.length === 0 ? (
@@ -496,44 +596,36 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
                   drivers.map((driver) => (
                     <Card key={driver.user_id} className="shadow-medium hover:shadow-elegant transition-shadow">
                       <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex gap-4">
-                            <Avatar className="h-16 w-16">
-                              <AvatarFallback>
-                                {driver.profiles?.first_name?.[0]}{driver.profiles?.last_name?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-2">
-                              <div>
-                                <h3 className="text-xl font-semibold">
-                                  {driver.profiles?.first_name} {driver.profiles?.last_name}
-                                </h3>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Truck className="h-4 w-4" />
-                                  {driver.year} {driver.make} {driver.model}
-                                </div>
+                        <div className="flex gap-4">
+                          <Avatar className="h-16 w-16">
+                            <AvatarFallback>
+                              {driver.profiles?.first_name?.[0]}{driver.profiles?.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-2">
+                            <div>
+                              <h3 className="text-xl font-semibold">
+                                {driver.profiles?.first_name} {driver.profiles?.last_name}
+                              </h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Truck className="h-4 w-4" />
+                                {driver.year} {driver.make} {driver.model}
                               </div>
-                                 <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                  <span className="font-medium">Verified Driver</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-medium">Verified Driver</span>
+                              </div>
+                              {driver.distance && (
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{driver.distance.toFixed(1)} km away</span>
                                 </div>
-                                {driver.distance && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{driver.distance.toFixed(1)} km away</span>
-                                  </div>
-                                )}
-                           </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <Button 
-                          variant="hero"
-                          onClick={() => handleBookDriver(driver)}
-                        >
-                          Book Now
-                        </Button>
-                      </div>
                       </CardContent>
                     </Card>
                   ))
@@ -543,25 +635,7 @@ const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: fals
           )}
         </div>
       </main>
-          {/* PaymentForm Modal */}
-    {paymentModal.open && paymentModal.clientSecret && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-md max-w-md w-full">
-          <PaymentForm
-            clientSecret={paymentModal.clientSecret}
-            onSuccess={paymentModal.onSuccess!}
-          />
-          <button
-            onClick={() => setPaymentModal({ open: false })}
-            className="mt-4 text-red-500 underline"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    )}
     </div>
-    
   );
 };
 
