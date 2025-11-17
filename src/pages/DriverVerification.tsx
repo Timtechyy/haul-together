@@ -315,7 +315,7 @@ const DriverVerification = () => {
                 {/* FRONT IMAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="licenseFront">Driver's License (Front)</Label>
-                  <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                  <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                     {previewFront ? (
                       <img src={previewFront} alt="Front Preview" className="h-full w-auto object-cover" />
                     ) : (
@@ -333,7 +333,7 @@ const DriverVerification = () => {
                 {/* BACK IMAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="licenseBack">Driver's License (Back)</Label>
-                  <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                  <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                     {previewBack ? (
                       <img src={previewBack} alt="Back Preview" className="h-full w-auto object-cover" />
                     ) : (
