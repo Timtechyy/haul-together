@@ -448,25 +448,25 @@ const CustomerBooking = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="receipt">Order Receipt</Label>
-                    <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
-                      {receiptFile? (
-                        <img src={URL.createObjectURL(receiptFile)} alt="Receipt Preview" className="h-full w-auto object-cover" />
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Click to upload Receipt</span>
-                      )}
-                      <Input
-                        id="receipt"
-                        type="file"
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-                        accept="image/*"
-                        capture="environment"
-                        required
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                  </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="receipt">Order Receipt</Label>
+                      <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                        {receiptFile? (
+                          <img src={URL.createObjectURL(receiptFile)} alt="Receipt Preview" className="h-full w-auto object-cover" />
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Click to upload Receipt</span>
+                        )}
+                        <Input
+                          id="receipt"
+                          type="file"
+                          className="absolute opacity-0 cursor-pointer h-full w-full"
+                          accept="image/*"
+                          capture="environment"
+                          required
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                   </div>
                     {calculatedPrice && (
                       <Card className="bg-muted/50">
                         <CardContent className="p-4">
