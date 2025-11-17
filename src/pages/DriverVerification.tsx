@@ -28,7 +28,6 @@ const DriverVerification = () => {
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
   const [licenseFrontBase64, setLicenseFrontBase64] = useState<{ base64: string; mimeType: string } | null>(null);
   const [licenseBackBase64, setLicenseBackBase64] = useState<{ base64: string; mimeType: string } | null>(null);
-
   const [previewFront, setPreviewFront] = useState<string | null>(null);
   const [previewBack, setPreviewBack] = useState<string | null>(null);
 
@@ -318,7 +317,7 @@ const DriverVerification = () => {
                   <Label htmlFor="licenseFront">Driver's License (Front)</Label>
                   <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                     {previewFront ? (
-                      <img src={previewFront} alt="Front Preview" className="h-full w-auto object-contain" />
+                      <img src={previewFront} alt="Front Preview" className="h-full w-auto object-cover" />
                     ) : (
                       <span className="text-sm text-muted-foreground">Click to upload front image</span>
                     )}
@@ -336,7 +335,7 @@ const DriverVerification = () => {
                   <Label htmlFor="licenseBack">Driver's License (Back)</Label>
                   <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                     {previewBack ? (
-                      <img src={previewBack} alt="Back Preview" className="h-full w-auto object-contain" />
+                      <img src={previewBack} alt="Back Preview" className="h-full w-auto object-cover" />
                     ) : (
                       <span className="text-sm text-muted-foreground">Click to upload back image</span>
                     )}
