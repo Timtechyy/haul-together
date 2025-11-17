@@ -39,13 +39,13 @@ serve(async (req) => {
     // Get user profile from Supabase
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_id")
+      .select("stripe_customer_id")
       .eq("id", user.id)
       .single();
 
     if (profileError) throw profileError;
 
-    let stripeCustomerId = profile?.stripe_id;
+    let stripeCustomerId = profile?.stripe_customer_id;
 
     // Create Stripe customer if it doesn't exist
     if (!stripeCustomerId) {
@@ -54,13 +54,13 @@ serve(async (req) => {
         name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
         metadata: { supabase_user_id: user.id },
       });
-
+      console.log("New Stripe customer created:", customer.id);
       stripeCustomerId = customer.id;
 
       // Update Supabase profile with new Stripe customer ID
       const { error: updateError } = await supabaseClient
         .from("profiles")
-        .update({ stripe_id: stripeCustomerId })
+        .update({ stripe_customer_id: stripeCustomerId })
         .eq("id", user.id);
 
       if (updateError) throw updateError;

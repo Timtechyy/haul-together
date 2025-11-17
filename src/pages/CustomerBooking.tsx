@@ -452,7 +452,7 @@ const CustomerBooking = () => {
                       <Label htmlFor="receipt">Order Receipt</Label>
                       <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                         {receiptFile? (
-                          <img src={URL.createObjectURL(receiptFile)} alt="Receipt Preview" className="h-full w-auto object-cover" />
+                          <img src={URL.createObjectURL(receiptFile)} alt="Receipt Preview" className="h-full w-full object-cover" />
                         ) : (
                           <span className="text-sm text-muted-foreground">Click to upload Receipt</span>
                         )}
@@ -466,7 +466,7 @@ const CustomerBooking = () => {
                           onChange={handleFileChange}
                         />
                       </div>
-                   </div>
+                    </div>
                     {calculatedPrice && (
                       <Card className="bg-muted/50">
                         <CardContent className="p-4">
