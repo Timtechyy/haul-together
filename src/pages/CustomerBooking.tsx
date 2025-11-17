@@ -450,7 +450,7 @@ const CustomerBooking = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="receipt">Order Receipt</Label>
-                      <div className="w-full h-[100px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                      <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                         {receiptFile? (
                           <img src={URL.createObjectURL(receiptFile)} alt="Receipt Preview" className="h-full w-full object-cover" />
                         ) : (
