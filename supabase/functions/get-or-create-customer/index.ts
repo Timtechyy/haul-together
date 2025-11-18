@@ -29,10 +29,10 @@ serve(async (req) => {
 
     console.log("Checking for existing Stripe customer for user:", user.id);
 
-    // Check if user already has a stripe_customer_id in the database
+    // Check if user already has a stripe_id in the database
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_customer_id, first_name, last_name")
+      .select("stripe_id, first_name, last_name")
       .eq("id", user.id)
       .single();
 
@@ -41,11 +41,11 @@ serve(async (req) => {
       throw new Error("Failed to fetch user profile");
     }
 
-    // If stripe_customer_id exists, return it
-    if (profile.stripe_customer_id) {
-      console.log("Found existing Stripe customer:", profile.stripe_customer_id);
+    // If stripe_id exists, return it
+    if (profile.stripe_id) {
+      console.log("Found existing Stripe customer:", profile.stripe_id);
       return new Response(
-        JSON.stringify({ customerId: profile.stripe_customer_id }),
+        JSON.stringify({ customerId: profile.stripe_id }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -71,14 +71,14 @@ serve(async (req) => {
 
     console.log("Created Stripe customer:", customer.id);
 
-    // Save stripe_customer_id to the database
+    // Save stripe_id to the database
     const { error: updateError } = await supabaseClient
       .from("profiles")
-      .update({ stripe_customer_id: customer.id })
+      .update({ stripe_id: customer.id })
       .eq("id", user.id);
 
     if (updateError) {
-      console.error("Error updating profile with stripe_customer_id:", updateError);
+      console.error("Error updating profile with stripe_id:", updateError);
       throw new Error("Failed to save Stripe customer ID");
     }
 
