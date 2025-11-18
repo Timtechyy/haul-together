@@ -41,7 +41,7 @@ serve(async (req) => {
       .from("profiles")
       .select("stripe_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (profileError) throw profileError;
 
