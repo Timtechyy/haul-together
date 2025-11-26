@@ -30,6 +30,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import PaymentMethods from "@/components/ui/addpaymentmethod";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -659,35 +660,9 @@ const Profile = () => {
            
           {/* </div>  */}
           {/* Payment Methods */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Methods
-                </CardTitle>
-                <CardDescription>
-                  Manage your payment options
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-12 bg-muted rounded flex items-center justify-center text-xs font-medium">
-                      VISA
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">•••• 4242</div>
-                      <div className="text-xs text-muted-foreground">Expires 12/25</div>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">Default</Badge>
-                </div>
-                
-                <Button variant="outline" className="w-full">
-                  Add Payment Method
-                </Button>
-              </CardContent>
-            </Card>
+          <PaymentMethods customerId={""} />
+          
+           
 
             {/* Verification Card - Only for Drivers */}
             {userRole === 'driver' && !isVerified && (
