@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { z } from "zod";
 import PaymentForm from "@/components/PaymentElement";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import logo from "@/assets/logo.png";
+import ResponsivePaymentModal  from "@/components/ui/modal";
+
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
@@ -38,10 +38,16 @@ const CustomerBooking = () => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [showPayment, setShowPayment] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  type PaymentModalState = {
+    open: boolean;
+    clientSecret?: string;
+    onSuccess?: () => Promise<void>;
+  };
+
+  const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: false });
 
 
   useEffect(() => {
@@ -269,13 +275,14 @@ const CustomerBooking = () => {
 
       if (error) throw error;
 
-      setClientSecret(data.clientSecret);
-      setShowPayment(true);
+     const clientSecret = data.clientSecret;
+     setClientSecret(clientSecret);
 
       toast({
         title: "Payment Ready",
         description: "Please complete payment to notify drivers",
       });
+   
     } catch (err: any) {
       toast({ 
         title: "Error", 
@@ -503,43 +510,20 @@ const CustomerBooking = () => {
                 </CardContent>
               </Card>
             </>
-          ) : showPayment && clientSecret ? (
-            <>
-              <div>
-                <h1 className="text-3xl font-bold mb-2">Complete Payment</h1>
-                <p className="text-muted-foreground">
-                  Complete payment to notify {drivers.length} matched drivers
-                </p>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-6 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Delivery Fee:</span>
-                      <span className="font-semibold">${calculatedPrice?.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total:</span>
-                      <span>${calculatedPrice?.toFixed(2)}</span>
-                    </div>
-                  </div>
-                  
-                  <Elements stripe={loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)} options={{ clientSecret }}>
-                    <PaymentForm 
-                      clientSecret={clientSecret} 
-                      onSuccess={handlePaymentSuccess}
-                    />
-                  </Elements>
-                </CardContent>
-              </Card>
-            </>
+          ) : clientSecret ? (
+              <ResponsivePaymentModal
+                      isOpen={!!clientSecret}
+                      onClose={() => setClientSecret(null)}
+                      title="Add Payment Method"
+                      clientSecret={clientSecret}
+                    >
+                        <PaymentForm
+                          onSuccess={handlePaymentSuccess}
+                        />
+                    </ResponsivePaymentModal>
           ) : (
             <>
-              <div className="flex items-center justify-between">
+             {drivers.length !=0 &&  <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
                   <p className="text-muted-foreground">
@@ -552,14 +536,14 @@ const CustomerBooking = () => {
                   <Button variant="outline" onClick={() => {
                     setShowForm(true);
                     setDrivers([]);
-                    setShowPayment(false);
+                    setPaymentModal({open:false});
                   }}>
                     Back to Form
                   </Button>
                 )}
-              </div>
+              </div>}
 
-              {countdown !== null && countdown > 0 && (
+              {drivers.length !=0 && countdown !== null && countdown > 0 && (
                 <Card className="border-primary">
                   <CardContent className="pt-6">
                     <div className="text-center space-y-4">
@@ -582,10 +566,21 @@ const CustomerBooking = () => {
               <div className="grid gap-4">
                 {drivers.length === 0 ? (
                   <Card className="shadow-medium">
+                    <CardHeader> 
+                      <CardTitle className="text-3xl font-bold mb-2">
+                        Available Drivers
+                      </CardTitle>
+                    </CardHeader>
                     <CardContent className="p-6 text-center">
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground mb-10">
                         No drivers available with the selected vehicle type at the moment.
                       </p>
+                       <Button variant="outline" onClick={() => {
+                        setShowForm(true);
+                        setDrivers([]);
+                      }}>
+                        Back to Form
+                      </Button>
                     </CardContent>
                   </Card>
                 ) : (

@@ -132,16 +132,17 @@ const CustomerDashboard = () => {
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Welcome Section */}
           <Card className="shadow-medium">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex gap-4">
+            <CardContent className="p-6 ">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={profile?.avatar_url} />
                     <AvatarFallback>
                       {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="space-y-2">
+
+                  <div className="space-y-2 align-content-center">
                     <div>
                       <h2 className="text-2xl font-bold">
                         Welcome back, {profile?.first_name || 'Customer'}!
@@ -158,12 +159,14 @@ const CustomerDashboard = () => {
                     </p>
                   </div>
                 </div>
+
                 <Button variant="hero" onClick={() => navigate("/customer/booking")}>
                   Book New Delivery
                 </Button>
               </div>
             </CardContent>
           </Card>
+
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

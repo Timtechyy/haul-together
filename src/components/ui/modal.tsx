@@ -1,0 +1,36 @@
+import React from "react";
+import { X } from "lucide-react";
+import { Elements } from "@stripe/react-stripe-js";
+import { stripePromise } from "@/stripe";
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  title?: string;
+  clientSecret?: string;
+}
+
+export default function ResponsivePaymentModal({ isOpen, onClose, children, title = "Payment", clientSecret }: Props) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white w-full md:w-[430px] rounded-t-2xl md:rounded-xl p-6 shadow-xl animate-slide-up md:animate-fade-in">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button onClick={onClose}><X className="h-5 w-5" /></button>
+        </div>
+            <Elements
+                stripe={stripePromise}
+                options={{ clientSecret: clientSecret! }}
+            >  
+                {children}
+            </Elements>
+        
+      </div>
+    </div>
+  );
+}
+
