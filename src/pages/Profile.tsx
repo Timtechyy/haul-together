@@ -40,6 +40,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [stripeId, setStripeId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [verification, setVerification] = useState<any>(null);
   const [driverStats, setDriverStats] = useState({
@@ -106,6 +107,9 @@ const Profile = () => {
         avatarUrl: profileData.avatar_url || "",
         gender: profileData.gender || ""
       });
+
+
+      setStripeId(profileData.stripe_id);
 
       // Fetch vehicle info if driver
       if (roleData?.role === 'driver') {
@@ -660,10 +664,7 @@ const Profile = () => {
            
           {/* </div>  */}
           {/* Payment Methods */}
-          <PaymentMethods customerId={""} />
-          
-           
-
+          <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
             {/* Verification Card - Only for Drivers */}
             {userRole === 'driver' && !isVerified && (
               <Card className="h-46">
