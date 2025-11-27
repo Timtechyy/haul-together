@@ -14,8 +14,8 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_URL"),
+      Deno.env.get("SUPABASE_ANON_KEY")
     );
 
     // Get user from Authorization header
@@ -77,7 +77,7 @@ serve(async (req) => {
         user_id: user.id,
         delivery_id: deliveryId || "",
       },
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { enabled: true, allow_redirects:'never' },
     });
 
     console.log("Created payment intent:", paymentIntent.id);

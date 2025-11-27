@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function usePaymentMethods(customerId: string | null) {
+export function usePaymentMethods() {
   const [methods, setMethods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!customerId) return;
+    // if () return;
 
     const load = async () => {
       setLoading(true);
@@ -17,7 +17,7 @@ export function usePaymentMethods(customerId: string | null) {
     };
 
     load();
-  }, [customerId]);
+  });
 
   return { methods, loading, reload: () => setLoading(true) };
 }

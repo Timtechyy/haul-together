@@ -6,23 +6,24 @@ import { CreditCard } from "lucide-react";
 import { usePaymentMethods } from "@/hooks/PaymentMethods";
 import ResponsivePaymentModal  from "@/components/ui/modal";
 import SetupIntentModal from "@/components/PaymentMethod";
+// import PayoutAccountCollectionButton  from "@/components/ui/payoutmethod";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
-  customerId: string | null;
+  role: string | null;
+  name: string;
+  email: string;
 }
 
-export default function PaymentMethods({ customerId }: Props) {
-  const { methods, loading, reload } = usePaymentMethods(customerId);
+export default function PaymentMethods({ role,name, email }: Props) {
+  const { methods, loading, reload } = usePaymentMethods();
   const [modalSecret, setModalSecret] = useState<string | null>(null);
 
   const handleAddPaymentMethod = async () => {
     // if (!customerId) return;
 
     // Create a SetupIntent via Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke("create-setup-intent", {
-      body: { customerId },
-    });
+    const { data, error } = await supabase.functions.invoke("create-setup-intent");
 
     if (error) {
       alert(error.message);
@@ -72,22 +73,33 @@ export default function PaymentMethods({ customerId }: Props) {
             </div>
           )))}
 
+
           <Button variant="outline" className="w-full" onClick={handleAddPaymentMethod}>
-            Add Payment Method
+          Add Payment Method
           </Button>
+          {/* {role==='driver'?
+          <PayoutAccountCollectionButton
+            clientSecret={modalSecret}
+            name={name}
+            email={email}/>:
+            <Button variant="outline" className="w-full" onClick={handleAddPaymentMethod}>
+            Add Payment Method
+          </Button>} */}
         </CardContent>
       </Card>
 
       {modalSecret && (
-        <ResponsivePaymentModal
+         <ResponsivePaymentModal
           isOpen={!!modalSecret}
           onClose={() => setModalSecret(null)}
           title="Add Payment Method"
           clientSecret={modalSecret}
         >
-          <SetupIntentModal/>
+          <SetupIntentModal role={role}/>
         </ResponsivePaymentModal>
-      )}
+        )
+      }
+
     </>
   );
 }
