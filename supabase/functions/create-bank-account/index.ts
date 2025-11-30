@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"));
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
 
     // Get user from Authorization header
     const authHeader = req.headers.get("Authorization")!;
@@ -39,30 +39,18 @@ serve(async (req) => {
     if (profileError) throw profileError;
 
     let stripeId = profile?.stripe_id;
-    let stripeConncectId = profile?.stripe_connected_account_id;
     // Create Payment Intent
-    const tokenId = await stripe.tokens.create(
-      {
-        bank_account: {
-          payment_method: paymentMethodId,
-        },
-        customer: stripeId,
+    const tokenId = await stripe.tokens.create({
+      bank_account: {
+        payment_method: paymentMethodId,
       },
-      {
-        stripeAccount: stripeConncectId!,
-      },
-    );
+      customer: stripeId,
+    });
 
-    console.log("Created payment intent:", token.id);
-    const account = await stripe.accounts.update(
-      stripeConncectId!,
-      {
-        external_account: tokenId.id,
-      },
-      {
-        stripeAccount: stripeConncectId!,
-      },
-    );
+    console.log("Created token:", tokenId.id);
+    const account = await stripe.accounts.update(stripeId!, {
+      external_account: tokenId.id,
+    });
 
     return new Response(
       JSON.stringify({
