@@ -389,8 +389,9 @@ const CustomerBooking = () => {
                       label="Pickup Location"
                       placeholder="Enter pickup address"
                       value={pickupLocation}
-                      onChange={(value, lat, lng) => {
+                      onChange={(value, addressData,lat, lng) => {
                         setPickupLocation(value);
+                        
                         setPickupLat(lat);
                         setPickupLng(lng);
                       }}
@@ -402,7 +403,7 @@ const CustomerBooking = () => {
                       label="Delivery Location"
                       placeholder="Enter delivery address"
                       value={deliveryLocation}
-                      onChange={(value, lat, lng) => {
+                      onChange={(value,addressData, lat, lng) => {
                         setDeliveryLocation(value);
                         setDeliveryLat(lat);
                         setDeliveryLng(lng);

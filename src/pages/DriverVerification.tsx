@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
+import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
+import { add } from "date-fns";
 const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
@@ -20,10 +22,13 @@ const DriverVerification = () => {
     lastName: "",
     gender: "",
     dateOfBirth: "",
+    address: "",
+    addressData: {} as any,
     ssnLastFour: "",
     licenseNumber: "",
     licenseState: "",
   });
+  const [address, setAddress] = useState<string | null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
   const [licenseFrontBase64, setLicenseFrontBase64] = useState<{ base64: string; mimeType: string } | null>(null);
@@ -77,6 +82,7 @@ const DriverVerification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -113,19 +119,30 @@ const DriverVerification = () => {
         title: "Creating verification session...",
         description: "Please wait",
       });
-
+      const [ dobYear, dobMonth, dobDay, ] = formData.dateOfBirth.split("-");
+       console.log("address:", formData.address);
+      console.log("addressData:", formData.addressData);
       const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-veriff-session', {
         body: {
           verification: {
             firstName: formData.firstName,
             lastName: formData.lastName,
             dateOfBirth: formData.dateOfBirth,
+            dobday: parseInt(dobDay, 10),
+            dobmonth: parseInt(dobMonth, 10),
+            dobyear: parseInt(dobYear, 10), 
             phoneNumber: user?.phone,
             gender: formData.gender,
             email: user?.email,
             licenseNumber: formData.licenseNumber,
             ssnLastFour: formData.ssnLastFour,
             licenseState: formData.licenseState,
+            address: formData.address,
+            line: formData.addressData.line1,
+            city: formData.addressData.city,
+            state: formData.addressData.state,
+            postal_code: formData.addressData.postal_code,
+            country: formData.addressData.country,
           },
         },
       });
@@ -280,6 +297,7 @@ const DriverVerification = () => {
                     type="number"
                     id="ssnLastFour"
                     name="ssnLastFour"
+                    minLength={4}
                     maxLength={4}
                     pattern="\d{4}"
                     value={formData.ssnLastFour}
@@ -287,13 +305,33 @@ const DriverVerification = () => {
                     required
                   />
                 </div>
-
+                <div>  
+                  <Label htmlFor="address">Enter Your Address</Label>
+                  <GooglePlacesAutocomplete
+                    id="address"
+                    label=""
+                    placeholder="Enter address"
+                    value={formData.address}
+                    onChange={(value, addressData,) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: value,
+                      addressData: {
+                        ...addressData,
+                      },
+                    }));
+                      console.log("Selected address:", addressData.line1, addressData.city, addressData.state, addressData.postal_code, addressData.country);
+                    }}
+                    required
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="licenseNumber">Driver's License Number</Label>
                     <Input
                       id="licenseNumber"
                       name="licenseNumber"
+                      type="text"
                       value={formData.licenseNumber}
                       onChange={handleInputChange}
                       required
