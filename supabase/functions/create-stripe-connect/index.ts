@@ -53,12 +53,12 @@ serve(async (req:Request) => {
       account: {
         business_type: 'individual',
         individual: {
-          first_name: user.user_metadata?.first_name,
-          last_name: user.user_metadata?.last_name,
-          phone: user.user_metadata?.phone,
-          email: user.email,  
-          gender:user.user_metadata?.gender,
-          id_numbers:verification.idNumbers,
+          first_name: verification.firstName,
+          last_name: verification.last_name,
+          phone: verification.phoneNumber,
+          email: verification.email,  
+          gender:verification.gender,
+          id_numbers:verification.licenseNumber,
           ssn_last_4: verification.ssnLastFour,
           dob: {
             day: verification.dobday,
@@ -72,7 +72,6 @@ serve(async (req:Request) => {
             postal_code: verification.postal_code,
             state: verification.state,
           },
-
           verification: {
             document: {
               back: backImageId.id,

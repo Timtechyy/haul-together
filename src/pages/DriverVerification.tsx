@@ -128,21 +128,10 @@ const DriverVerification = () => {
             firstName: formData.firstName,
             lastName: formData.lastName,
             dateOfBirth: formData.dateOfBirth,
-            dobday: parseInt(dobDay, 10),
-            dobmonth: parseInt(dobMonth, 10),
-            dobyear: parseInt(dobYear, 10), 
             phoneNumber: user?.phone,
             gender: formData.gender,
             email: user?.email,
             licenseNumber: formData.licenseNumber,
-            ssnLastFour: formData.ssnLastFour,
-            licenseState: formData.licenseState,
-            address: formData.address,
-            line: formData.addressData.line1,
-            city: formData.addressData.city,
-            state: formData.addressData.state,
-            postal_code: formData.addressData.postal_code,
-            country: formData.addressData.country,
           },
         },
       });
@@ -205,6 +194,37 @@ const DriverVerification = () => {
       });
 
       if (submitError) throw submitError;
+
+      const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
+          body: {
+          verification: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            dobday: parseInt(dobDay, 10),
+            dobmonth: parseInt(dobMonth, 10),
+            dobyear: parseInt(dobYear, 10), 
+            phoneNumber: user?.phone,
+            gender: formData.gender,
+            email: user?.email,
+            licenseNumber: formData.licenseNumber,
+            ssnLastFour: formData.ssnLastFour,
+            licenseState: formData.licenseState,
+            address: formData.address,
+            line: formData.addressData.line1,
+            city: formData.addressData.city,
+            state: formData.addressData.state,
+            postal_code: formData.addressData.postal_code,
+            country: formData.addressData.country,
+            licenseFrontPath:licenseFront,
+            licenseBackPath:licenseBack
+          },
+        },
+      });
+
+      if (stripeError) throw sessionError;
+      if (!accountData?.accountId) throw new Error("Failed to create Connect account");
+
+      console.log("Stripe connect account created:", accountData?.accountId);
 
       toast({
         title: "Success!",
