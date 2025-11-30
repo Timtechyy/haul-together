@@ -11,13 +11,15 @@ const corsHeaders = {
       apiVersion: "2025-08-27.basil",
     });
 
-  async function uploadFile(PicturePath: string){
-    const fp = fs.readFileSync(PicturePath);
+  async function uploadFile(PicturePath: File){
+    // const fp = deno.readFileSync(PicturePath);
+      const buffer = Buffer.from(await PicturePath.arrayBuffer());
+
     const upload = await stripe.files.create({
       file: {
-        data: fp,
-        name: 'file.jpg',
-        type: 'application.octet-stream',
+        data: buffer,
+        name: PicturePath.name,
+        type: PicturePath.type || 'application.octet-stream',
       },
       purpose: 'identity_document',
     });
