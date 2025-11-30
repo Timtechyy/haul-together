@@ -41,7 +41,29 @@ serve(async (req: Request) => {
     const {
       data: { user },
     } = await supabaseClient.auth.getUser(token);
-    const { verification } = await req.json();
+
+    const form = await req.formData();
+
+    // TEXT FIELDS
+    const verification = {
+      firstName: form.get("firstName"),
+      lastName: form.get("lastName"),
+      dobday: Number(form.get("dobday")),
+      dobmonth: Number(form.get("dobmonth")),
+      dobyear: Number(form.get("dobyear")),
+      phoneNumber: form.get("phoneNumber"),
+      email: form.get("email"),
+      gender: form.get("gender"),
+      licenseNumber: form.get("licenseNumber"),
+      ssnLastFour: form.get("ssnLastFour"),
+      licenseState: form.get("licenseState"),
+      address: form.get("address"),
+      line: form.get("line"),
+      city: form.get("city"),
+      state: form.get("state"),
+      postal_code: form.get("postal_code"),
+      country: form.get("country"),
+    };
 
     if (!user?.email) {
       throw new Error("User not authenticated");
@@ -52,24 +74,24 @@ serve(async (req: Request) => {
       account: {
         business_type: "individual",
         individual: {
-          first_name: verification.firstName,
-          last_name: verification.last_name,
-          phone: verification.phoneNumber,
-          email: verification.email,
-          gender: verification.gender,
-          id_numbers: verification.licenseNumber,
-          ssn_last_4: verification.ssnLastFour,
+          first_name: form.get("firstName"),
+          last_name: form.get("lastName"),
+          phone: form.get("phoneNumber"),
+          email: form.get("email"),
+          gender: form.get("gender"),
+          id_numbers:  form.get("licenseNumber"),
+          ssn_last_4: form.get("ssnLastFour"),
           dob: {
-            day: verification.dobday,
-            month: verification.dobmonth,
-            year: verification.dobyear,
+            day: Number(form.get("dobday")),
+            month: Number(form.get("dobmonth")),
+            year: Number(form.get("dobyear")),
           },
           address: {
-            city: verification.city,
-            country: verification.country,
-            line1: verification.line,
-            postal_code: verification.postal_code,
-            state: verification.state,
+            city: form.get("city"),
+            country: form.get("country"),
+            line1: form.get("line"),
+            postal_code: form.get("postal_code"),
+            state: form.get("state"),
           },
           verification: {
             document: {
