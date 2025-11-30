@@ -13,15 +13,14 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL"),
-      Deno.env.get("SUPABASE_ANON_KEY")
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"));
 
     // Get user from Authorization header
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data:{ user } } = await supabaseClient.auth.getUser(token);
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser(token);
 
     if (!user) throw new Error("User not authenticated");
 
@@ -43,26 +42,26 @@ serve(async (req) => {
     let stripeConncectId = profile?.stripe_connected_account_id;
     // Create Payment Intent
     const tokenId = await stripe.tokens.create(
-        {
-            bank_account: {
-            payment_method: paymentMethodId,
-            },
-            customer: stripeId,
+      {
+        bank_account: {
+          payment_method: paymentMethodId,
         },
-        {
-            stripeAccount: stripeConncectId!,
-        }
+        customer: stripeId,
+      },
+      {
+        stripeAccount: stripeConncectId!,
+      },
     );
 
-    console.log("Created payment intent:",token.id);
+    console.log("Created payment intent:", token.id);
     const account = await stripe.accounts.update(
-        stripeConncectId!,
-        {
-            external_account: tokenId.id,
-        },
-        {
-            stripeAccount: stripeConncectId!,
-        }
+      stripeConncectId!,
+      {
+        external_account: tokenId.id,
+      },
+      {
+        stripeAccount: stripeConncectId!,
+      },
     );
 
     return new Response(
@@ -72,13 +71,13 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error: any) {
     console.error("Error in create-payment-intent:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal Server Error" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+    return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
