@@ -13,7 +13,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"));
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -22,7 +22,7 @@ serve(async (req: Request) => {
     } = await supabaseClient.auth.getUser(token);
     const { details } = await req.json();
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
       apiVersion: "2025-08-27.basil",
     });
 
@@ -36,6 +36,14 @@ serve(async (req: Request) => {
       destination: details.account,
       transfer_group: details.orderId,
     });
+
+    return new Response(
+      JSON.stringify({ success: true, transfer }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Error in get-or-create-customer:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
