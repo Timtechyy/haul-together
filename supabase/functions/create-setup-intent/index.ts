@@ -17,8 +17,8 @@ serve(async (req: Request) => {
   }
   try {
       const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL"),
-      Deno.env.get("SUPABASE_ANON_KEY")
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
     const authHeader = req.headers.get("Authorization");
@@ -67,9 +67,8 @@ serve(async (req: Request) => {
     // 3. Create SetupIntent for saving new cards
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
-      payment_method_types: role === 'driver'?["us_bank_account"]: ["card"],
-      flow_directions: role === 'driver'? ["outbound"]:[""]
-     
+      payment_method_types: role?.role === 'driver' ? ["us_bank_account"] : ["card"],
+      flow_directions: role?.role === 'driver' ? ["outbound"] : undefined
     });
 
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
