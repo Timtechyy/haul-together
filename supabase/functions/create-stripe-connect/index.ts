@@ -20,7 +20,7 @@ const corsHeaders = {
         data: buffer,
         name: PicturePath.name,
         type: PicturePath.type || 'application.octet-stream',
-      },
+      }, 
       purpose: 'identity_document',
     });
 
