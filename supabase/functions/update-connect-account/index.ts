@@ -33,7 +33,7 @@ serve(async ( req: Request ) => {
     });
 
     // Create new Stripe customer
-    const account = await stripe.v2.core.accounts.create({
+    const account = await stripe.v2.core.accounts.update({
       contact_email: user.email,
       display_name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
       identity: {

@@ -7,7 +7,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
+      apiVersion: "2025-08-27.basil",
+    });
+
+  async function uploadFile(PicturePath: string){
+    const fp = fs.readFileSync(PicturePath);
+    const upload = await stripe.files.create({
+      file: {
+        data: fp,
+        name: 'file.jpg',
+        type: 'application.octet-stream',
+      },
+      purpose: 'identity_document',
+    });
+
+    return upload.id;
+  }
+
+  
+
+serve(async (req:Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,74 +41,95 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: { user } } = await supabaseClient.auth.getUser(token);
+    const { verification } = await req.json();
   
 
     if (!user?.email) {
       throw new Error("User not authenticated");
     }
-
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
-
-    // Create new Stripe customer
-    const account = await stripe.v2.core.accounts.create({
-      contact_email: user.email,
-      display_name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
-      identity: {
-        country: 'us',
-        entity_type: 'individual',
+    const frontImageId = await uploadFile(verification.licenseFrontPath);
+    const backImageId = await uploadFile(verification.licenseBackPath);
+    const tokenId = await stripe.tokens.create({
+      account: {
+        business_type: 'individual',
         individual: {
-          given_name: user.user_metadata?.first_name,
-          surname: user.user_metadata?.last_name,
+          first_name: user.user_metadata?.first_name,
+          last_name: user.user_metadata?.last_name,
           phone: user.user_metadata?.phone,
           email: user.email,  
-          legal_gender:user.user_metadata?.gender,
+          gender:user.user_metadata?.gender,
+          id_numbers:verification.idNumbers,
+          ssn_last_4: verification.ssnLastFour,
+          dob: {
+            day: verification.dobday,
+            month: verification.dobmonth,
+            year: verification.dobyear,
+          },
+          address:{
+            city: verification.city,
+            country: verification.country,
+            line1: verification.line,
+            postal_code: verification.postal_code,
+            state: verification.state,
+          },
+
+          verification: {
+            document: {
+              back: backImageId.id,
+              front: frontImageId.id,
+              
+            },
+          },
+        },
+        tos_shown_and_accepted: true,
+      },
+    });
+
+    const account = await stripe.accounts.create({
+      country: 'US',
+      type: 'custom',
+      capabilities: {
+        bank_transfer_payments: {
+          requested: true,
+        },
+        card_payments: {
+          requested: true,
+        },
+        transfers: {
+          requested: true,
+        },
+        us_bank_transfer_payments: {
+          requested: true,
         },
       },
-      configuration: {
-        recipient: {
-          capabilities: {
-            bank_accounts: {
-              local: {
-                requested: true
-              },
-              wire: {
-                requested: true
-              }
-            },  
-            
-            cards: {
-              card_payments: {
-                requested: true
-              } ,
-            },
+      controller: {
+        fees: {
+          payer: 'application',
+        },
+        losses: {
+          payments: 'application',
+        },
+        stripe_dashboard: {
+          type: 'none',
+        },
+      },
+      account_token: tokenId.id,
+      settings: {
+        payments: {
+          statement_descriptor: 'WEHAULER',
+        },
+        payouts:{
+          statement_descriptor: 'WEHAULER',
+        },
 
-            stripe_balance: {
-              stripe_transfers: {
-                requested: true
-              }
-            },
-          
-            
-          }
+        card_payments:{
+          statement_descriptor_prefix: 'WEHAULER',
         }
       },
-      defaults: {
-        responsibilities: {
-          fees_collector: 'application',
-          losses_collector: 'application',
-        },
-      },
-      dashboard: 'none',
-      include: [
-        'configuration.recipient',
-        'identity',
-        'defaults',
-      ],
+      tos_acceptance: {
+        service_agreement: 'full',
+      }
     });
-    console.log("Created new Stripe customer:", account.id);
 
     // Save stripe_id to the database
     const { error: updateError } = await supabaseClient
@@ -120,3 +161,31 @@ serve(async (req) => {
     );
   }
 });
+
+
+
+// {
+//   "requirements": {
+//     "currently_due": [
+//       "configuration.merchant.mcc",
+//       "configuration.merchant.statement_descriptor.descriptor",
+//       "defaults.profile.business_url",
+//       "external_account",
+//       "identity.attestations.terms_of_service.account.date",
+//       "identity.attestations.terms_of_service.account.ip",
+//       "identity.individual.address.city",
+//       "identity.individual.address.line1",
+//       "identity.individual.address.postal_code",
+//       "identity.individual.address.state",
+//       "identity.individual.date_of_birth.day",
+//       "identity.individual.date_of_birth.month",
+//       "identity.individual.date_of_birth.year",
+//       "identity.individual.email",
+//       "identity.individual.given_name",
+//       "identity.individual.id_numbers.us_ssn_last_4",
+//       "identity.individual.phone",
+//       "identity.individual.surname"
+//     ],
+//     "eventually_due": []
+//   }
+// }
