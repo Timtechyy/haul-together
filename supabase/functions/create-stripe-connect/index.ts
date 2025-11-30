@@ -7,44 +7,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
-      apiVersion: "2025-08-27.basil",
-    });
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
+  apiVersion: "2025-08-27.basil",
+});
 
-  async function uploadFile(PicturePath: File){
-    // const fp = deno.readFileSync(PicturePath);
-      const buffer = Buffer.from(await PicturePath.arrayBuffer());
+async function uploadFile(PicturePath: File) {
+  // const fp = deno.readFileSync(PicturePath);
+  const buffer = Buffer.from(await PicturePath.arrayBuffer());
 
-    const upload = await stripe.files.create({
-      file: {
-        data: buffer,
-        name: PicturePath.name,
-        type: PicturePath.type || 'application.octet-stream',
-      }, 
-      purpose: 'identity_document',
-    });
+  const upload = await stripe.files.create({
+    file: {
+      data: buffer,
+      name: PicturePath.name,
+      type: PicturePath.type || "application.octet-stream",
+    },
+    purpose: "identity_document",
+    date: "123456",
+  });
 
-    return upload.id;
-  }
+  return upload.id;
+}
 
-  
-
-serve(async (req:Request) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL"),
-      Deno.env.get("SUPABASE_ANON_KEY")
-    );
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"));
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser(token);
     const { verification } = await req.json();
-  
 
     if (!user?.email) {
       throw new Error("User not authenticated");
@@ -53,21 +50,21 @@ serve(async (req:Request) => {
     const backImageId = await uploadFile(verification.licenseBackPath);
     const tokenId = await stripe.tokens.create({
       account: {
-        business_type: 'individual',
+        business_type: "individual",
         individual: {
           first_name: verification.firstName,
           last_name: verification.last_name,
           phone: verification.phoneNumber,
-          email: verification.email,  
-          gender:verification.gender,
-          id_numbers:verification.licenseNumber,
+          email: verification.email,
+          gender: verification.gender,
+          id_numbers: verification.licenseNumber,
           ssn_last_4: verification.ssnLastFour,
           dob: {
             day: verification.dobday,
             month: verification.dobmonth,
             year: verification.dobyear,
           },
-          address:{
+          address: {
             city: verification.city,
             country: verification.country,
             line1: verification.line,
@@ -78,7 +75,6 @@ serve(async (req:Request) => {
             document: {
               back: backImageId.id,
               front: frontImageId.id,
-              
             },
           },
         },
@@ -87,8 +83,8 @@ serve(async (req:Request) => {
     });
 
     const account = await stripe.accounts.create({
-      country: 'US',
-      type: 'custom',
+      country: "US",
+      type: "custom",
       capabilities: {
         bank_transfer_payments: {
           requested: true,
@@ -105,31 +101,31 @@ serve(async (req:Request) => {
       },
       controller: {
         fees: {
-          payer: 'application',
+          payer: "application",
         },
         losses: {
-          payments: 'application',
+          payments: "application",
         },
         stripe_dashboard: {
-          type: 'none',
+          type: "none",
         },
       },
       account_token: tokenId.id,
       settings: {
         payments: {
-          statement_descriptor: 'WEHAULER',
+          statement_descriptor: "WEHAULER",
         },
-        payouts:{
-          statement_descriptor: 'WEHAULER',
+        payouts: {
+          statement_descriptor: "WEHAULER",
         },
 
-        card_payments:{
-          statement_descriptor_prefix: 'WEHAULER',
-        }
+        card_payments: {
+          statement_descriptor_prefix: "WEHAULER",
+        },
       },
       tos_acceptance: {
-        service_agreement: 'full',
-      }
+        service_agreement: "full",
+      },
     });
 
     // Save stripe_id to the database
@@ -143,27 +139,19 @@ serve(async (req:Request) => {
       throw new Error("Failed to save Stripe customer ID");
     }
 
-    return new Response(
-      JSON.stringify({ accountId: account.id }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return new Response(JSON.stringify({ accountId: account.id }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     console.error("Error in get-or-create-customer:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
-
-
 
 // {
 //   "requirements": {
