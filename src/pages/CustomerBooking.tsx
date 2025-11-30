@@ -519,6 +519,7 @@ const CustomerBooking = () => {
                       clientSecret={clientSecret}
                     >
                         <PaymentForm
+                          clientSecret={clientSecret}
                           onSuccess={handlePaymentSuccess}
                         />
                     </ResponsivePaymentModal>
