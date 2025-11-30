@@ -34,7 +34,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_ANON_KEY"));
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -68,8 +68,17 @@ serve(async (req: Request) => {
     if (!user?.email) {
       throw new Error("User not authenticated");
     }
-    const frontImageId = await uploadFile(verification.licenseFrontPath);
-    const backImageId = await uploadFile(verification.licenseBackPath);
+    
+    // Get image files from form data
+    const frontImage = form.get("licenseFrontPath") as File;
+    const backImage = form.get("licenseBackPath") as File;
+    
+    if (!frontImage || !backImage) {
+      throw new Error("License images are required");
+    }
+    
+    const frontImageId = await uploadFile(frontImage);
+    const backImageId = await uploadFile(backImage);
     const tokenId = await stripe.tokens.create({
       account: {
         business_type: "individual",
