@@ -44,27 +44,6 @@ serve(async (req: Request) => {
 
     const form = await req.formData();
 
-    // TEXT FIELDS
-    const verification = {
-      firstName: form.get("firstName"),
-      lastName: form.get("lastName"),
-      dobday: Number(form.get("dobday")),
-      dobmonth: Number(form.get("dobmonth")),
-      dobyear: Number(form.get("dobyear")),
-      phoneNumber: form.get("phoneNumber"),
-      email: form.get("email"),
-      gender: form.get("gender"),
-      licenseNumber: form.get("licenseNumber"),
-      ssnLastFour: form.get("ssnLastFour"),
-      licenseState: form.get("licenseState"),
-      address: form.get("address"),
-      line: form.get("line"),
-      city: form.get("city"),
-      state: form.get("state"),
-      postal_code: form.get("postal_code"),
-      country: form.get("country"),
-    };
-
     if (!user?.email) {
       throw new Error("User not authenticated");
     }

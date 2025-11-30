@@ -220,14 +220,37 @@ const DriverVerification = () => {
       formDataToSend.append("licenseBack", licenseBack!);
 
 
-      const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
+      // const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
+      //     body: formDataToSend,
+      // });
+      // Get session correctly in Supabase v2
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("No session available");
+      }
+
+      // Send to Edge Function
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-stripe-connect`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: formDataToSend,
-      });
+        }
+      );
 
-      if (stripeError) throw sessionError;
-      if (!accountData?.accountId) throw new Error("Failed to create Connect account");
+      const data = await res.json();
+      console.log("Stripe response:", data);
 
-      console.log("Stripe connect account created:", accountData?.accountId);
+      // if (stripeError) throw sessionError;
+      // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
+
+      // console.log("Stripe connect account created:", accountData?.accountId);
 
       toast({
         title: "Success!",
