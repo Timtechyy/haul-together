@@ -22,7 +22,6 @@ async function uploadFile(PicturePath: File) {
       type: PicturePath.type || "application.octet-stream",
     },
     purpose: "identity_document",
-    date: "123456",
   });
 
   return upload.id;
