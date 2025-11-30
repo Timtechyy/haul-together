@@ -194,31 +194,34 @@ const DriverVerification = () => {
       });
 
       if (submitError) throw submitError;
+      const formDataToSend = new FormData();
+
+      // Add text fields
+      formDataToSend.append("firstName", formData.firstName);
+      formDataToSend.append("lastName", formData.lastName);
+      formDataToSend.append("dobday", dobDay);
+      formDataToSend.append("dobmonth", dobMonth);
+      formDataToSend.append("dobyear", dobYear);
+      formDataToSend.append("phoneNumber", user?.phone ?? "");
+      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("email", user?.email ?? "");
+      formDataToSend.append("licenseNumber", formData.licenseNumber);
+      formDataToSend.append("ssnLastFour", formData.ssnLastFour);
+      formDataToSend.append("licenseState", formData.licenseState);
+      formDataToSend.append("address", formData.address);
+      formDataToSend.append("line", formData.addressData.line1);
+      formDataToSend.append("city", formData.addressData.city);
+      formDataToSend.append("state", formData.addressData.state);
+      formDataToSend.append("postal_code", formData.addressData.postal_code);
+      formDataToSend.append("country", formData.addressData.country);
+
+      // Add the actual files
+      formDataToSend.append("licenseFront", licenseFront!);
+      formDataToSend.append("licenseBack", licenseBack!);
+
 
       const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
-          body: {
-          verification: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            dobday: parseInt(dobDay, 10),
-            dobmonth: parseInt(dobMonth, 10),
-            dobyear: parseInt(dobYear, 10), 
-            phoneNumber: user?.phone,
-            gender: formData.gender,
-            email: user?.email,
-            licenseNumber: formData.licenseNumber,
-            ssnLastFour: formData.ssnLastFour,
-            licenseState: formData.licenseState,
-            address: formData.address,
-            line: formData.addressData.line1,
-            city: formData.addressData.city,
-            state: formData.addressData.state,
-            postal_code: formData.addressData.postal_code,
-            country: formData.addressData.country,
-            licenseFrontPath:licenseFront,
-            licenseBackPath:licenseBack
-          },
-        },
+          body: formDataToSend,
       });
 
       if (stripeError) throw sessionError;
