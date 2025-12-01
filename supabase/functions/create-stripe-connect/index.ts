@@ -64,6 +64,10 @@ serve(async (req: Request) => {
     if (!frontImage || !backImage) {
       throw new Error("License images are required");
     }
+
+    console.log("Front:", frontImage?.name, frontImage?.size);
+    console.log("Back:", backImage?.name, backImage?.size);
+
     console.log("ABOUT TO uploaded IMAGE Id:");
     const frontImageId = await uploadFile(frontImage);
     const backImageId = await uploadFile(backImage);
