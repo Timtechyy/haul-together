@@ -26,6 +26,7 @@ const DriverVerification = () => {
     ssnLastFour: "",
     licenseNumber: "",
     licenseState: "",
+    phone: "",
   });
   const [address, setAddress] = useState<string | null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
