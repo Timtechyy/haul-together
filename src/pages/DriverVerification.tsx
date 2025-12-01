@@ -16,7 +16,6 @@ const DriverVerification = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [profileData, setProfileData] = useState<any>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -63,17 +62,17 @@ const DriverVerification = () => {
       // Fetch profile data to auto-populate fields
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name, gender")
+        .select("first_name, last_name, phone, gender")
         .eq("id", session.user.id)
         .single();
 
       if (profile) {
-        setProfileData(profile);
         setFormData((prev) => ({
           ...prev,
           firstName: profile.first_name || "",
           lastName: profile.last_name || "",
           gender: profile.gender || "",
+          phone: profile.phone,
         }));
       }
     };
@@ -204,7 +203,7 @@ const DriverVerification = () => {
       formDataToSend.append("dobday", dobDay);
       formDataToSend.append("dobmonth", dobMonth);
       formDataToSend.append("dobyear", dobYear);
-      formDataToSend.append("phoneNumber", user?.phone ?? "");
+      formDataToSend.append("phoneNumber", formData.phone);
       formDataToSend.append("gender", formData.gender);
       formDataToSend.append("email", user?.email ?? "");
       formDataToSend.append("licenseNumber", formData.licenseNumber);
