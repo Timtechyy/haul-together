@@ -24,7 +24,7 @@ async function uploadFile(PicturePath: File) {
     },
     purpose: "identity_document",
   });
-
+  console.log("Image uploaded Id:", upload.id);
   return upload.id;
 }
 
@@ -58,6 +58,7 @@ serve(async (req: Request) => {
 
     const frontImageId = await uploadFile(frontImage);
     const backImageId = await uploadFile(backImage);
+
     const tokenId = await stripe.tokens.create({
       account: {
         business_type: "individual",
