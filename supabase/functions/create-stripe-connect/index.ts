@@ -47,15 +47,15 @@ serve(async (req: Request) => {
     if (!user?.email) {
       throw new Error("User not authenticated");
     }
-    
+
     // Get image files from form data
-    const frontImage = form.get("licenseFrontPath") as File;
-    const backImage = form.get("licenseBackPath") as File;
-    
+    const frontImage = form.get("licenseFront") as File;
+    const backImage = form.get("licenseBack") as File;
+
     if (!frontImage || !backImage) {
       throw new Error("License images are required");
     }
-    
+
     const frontImageId = await uploadFile(frontImage);
     const backImageId = await uploadFile(backImage);
     const tokenId = await stripe.tokens.create({
@@ -67,7 +67,7 @@ serve(async (req: Request) => {
           phone: form.get("phoneNumber"),
           email: form.get("email"),
           gender: form.get("gender"),
-          id_numbers:  form.get("licenseNumber"),
+          id_numbers: form.get("licenseNumber"),
           ssn_last_4: form.get("ssnLastFour"),
           dob: {
             day: Number(form.get("dobday")),
