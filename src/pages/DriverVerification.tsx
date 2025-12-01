@@ -221,24 +221,7 @@ const DriverVerification = () => {
       formDataToSend.append("licenseFront", licenseFront!);
       formDataToSend.append("licenseBack", licenseBack!);
 
-      // const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
-      //     body: formDataToSend,
-      // });
-      // Get session correctly in Supabase v2
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error("No session available");
-      }
-
-      // Send to Edge Function
-      const res = await fetch(`https://xetmpurtfpdgwysynnil.supabase.co/functions/v1/create-stripe-connect`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+      const { data: accountData, error: stripeError } = await supabase.functions.invoke("create-stripe-connect", {
         body: formDataToSend,
       });
 
