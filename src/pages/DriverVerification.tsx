@@ -234,7 +234,7 @@ const DriverVerification = () => {
       }
 
       // Send to Edge Function
-      const res = await fetch(`${process.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-connect`, {
+      const res = await fetch(`https://xetmpurtfpdgwysynnil.supabase.co/functions/v1/create-stripe-connect`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
