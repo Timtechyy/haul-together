@@ -13,18 +13,28 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
 });
 
 async function uploadFile(PicturePath: File) {
-  // const fp = deno.readFileSync(PicturePath);
-  const buffer = Buffer.from(await PicturePath.arrayBuffer());
+  try {
+    // const fp = deno.readFileSync(PicturePath);
+    const arrayBuf = await PicturePath.arrayBuffer();
+    const buffer = Buffer.from(arrayBuf);
 
-  const upload = await stripe.files.create({
-    file: {
-      data: buffer,
-      name: PicturePath.name,
-      type: PicturePath.type || "application.octet-stream",
-    },
-    purpose: "identity_document",
-  });
-  return upload.id;
+    const upload = await stripe.files.create({
+      file: {
+        data: buffer,
+        name: PicturePath.name,
+        type: PicturePath.type || "application.octet-stream",
+      },
+      purpose: "identity_document",
+    });
+    return upload.id;
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
 }
 
 serve(async (req: Request) => {
@@ -194,12 +204,12 @@ serve(async (req: Request) => {
     //   throw new Error("Failed to save Stripe customer ID");
     // }
 
-    return new Response(JSON.stringify({ }), {
+    return new Response(JSON.stringify({}), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error in get-or-create-customer:", error);
+    console.error("Error in creating connect account:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
