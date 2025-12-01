@@ -61,39 +61,76 @@ serve(async (req: Request) => {
     console.log("Image uploaded Id:", frontImageId);
     console.log("back Image uploaded Id:", backImageId);
 
-    const tokenId = await stripe.tokens.create({
-      account: {
-        business_type: "individual",
-        individual: {
-          first_name: form.get("firstName"),
-          last_name: form.get("lastName"),
-          phone: form.get("phoneNumber"),
-          email: form.get("email"),
-          gender: form.get("gender"),
-          id_numbers: form.get("licenseNumber"),
-          ssn_last_4: form.get("ssnLastFour"),
-          dob: {
-            day: Number(form.get("dobday")),
-            month: Number(form.get("dobmonth")),
-            year: Number(form.get("dobyear")),
-          },
-          address: {
-            city: form.get("city"),
-            country: form.get("country"),
-            line1: form.get("line"),
-            postal_code: form.get("postal_code"),
-            state: form.get("state"),
-          },
-          verification: {
-            document: {
-              back: backImageId,
-              front: frontImageId,
-            },
+    // --- Add this logging right here ---
+    const accountTokenParams = {
+      business_type: "individual",
+      individual: {
+        first_name: form.get("firstName"),
+        last_name: form.get("lastName"),
+        phone: form.get("phoneNumber"),
+        email: form.get("email"),
+        gender: form.get("gender"),
+        // Note: For US, this is often 'ssn_last_4' instead of generic 'id_numbers' in token creation
+        id_numbers: form.get("licenseNumber"),
+        ssn_last_4: form.get("ssnLastFour"),
+        dob: {
+          day: Number(form.get("dobday")),
+          month: Number(form.get("dobmonth")),
+          year: Number(form.get("dobyear")),
+        },
+        address: {
+          city: form.get("city"),
+          country: form.get("country"),
+          line1: form.get("line"),
+          postal_code: form.get("postal_code"),
+          state: form.get("state"),
+        },
+        verification: {
+          document: {
+            back: backImageId,
+            front: frontImageId,
           },
         },
-        tos_shown_and_accepted: true,
       },
+      tos_shown_and_accepted: true,
+    };
+    console.log("Stripe Token Params:", JSON.stringify(accountTokenParams, null, 2));
+
+    const tokenId = await stripe.tokens.create({
+      account: accountTokenParams,
     });
+
+    // const tokenId = await stripe.tokens.create({
+    //   account: {
+    //     business_type: "individual",
+    //     individual: {
+    //       first_name: form.get("firstName"),
+    //       last_name: form.get("lastName"),
+    //       phone: form.get("phoneNumber"),
+    //       email: form.get("email"),
+    //       gender: form.get("gender"),
+    //       dob: {
+    //         day: Number(form.get("dobday")),
+    //         month: Number(form.get("dobmonth")),
+    //         year: Number(form.get("dobyear")),
+    //       },
+    //       address: {
+    //         city: form.get("city"),
+    //         country: form.get("country"),
+    //         line1: form.get("line"),
+    //         postal_code: form.get("postal_code"),
+    //         state: form.get("state"),
+    //       },
+    //       verification: {
+    //         document: {
+    //           back: backImageId,
+    //           front: frontImageId,
+    //         },
+    //       },
+    //     },
+    //     tos_shown_and_accepted: true,
+    //   },
+    // });
 
     const account = await stripe.accounts.create({
       country: "US",
