@@ -51,27 +51,29 @@ const DriverVerification = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         navigate("/login");
         return;
       }
       setUser(session.user);
-      
+
       // Fetch profile data to auto-populate fields
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, gender')
-        .eq('id', session.user.id)
+        .from("profiles")
+        .select("first_name, last_name, gender")
+        .eq("id", session.user.id)
         .single();
-      
+
       if (profile) {
         setProfileData(profile);
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           firstName: profile.first_name || "",
           lastName: profile.last_name || "",
-          gender: profile.gender || ""
+          gender: profile.gender || "",
         }));
       }
     };
@@ -82,7 +84,6 @@ const DriverVerification = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -92,11 +93,11 @@ const DriverVerification = () => {
     if (side === "front") {
       setLicenseFront(file);
       setPreviewFront(previewURL);
-      convertWithWorker(file, workerFront.current!).then(result => setLicenseFrontBase64(result));
+      convertWithWorker(file, workerFront.current!).then((result) => setLicenseFrontBase64(result));
     } else {
       setLicenseBack(file);
       setPreviewBack(previewURL);
-      convertWithWorker(file, workerBack.current!).then(result => setLicenseBackBase64(result));
+      convertWithWorker(file, workerBack.current!).then((result) => setLicenseBackBase64(result));
     }
   };
   const convertWithWorker = (file: File, worker: Worker) => {
@@ -114,15 +115,14 @@ const DriverVerification = () => {
     setLoading(true);
 
     try {
-
       toast({
         title: "Creating verification session...",
         description: "Please wait",
       });
-      const [ dobYear, dobMonth, dobDay, ] = formData.dateOfBirth.split("-");
-       console.log("address:", formData.address);
+      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.split("-");
+      console.log("address:", formData.address);
       console.log("addressData:", formData.addressData);
-      const { data: sessionData, error: sessionError } = await supabase.functions.invoke('create-veriff-session', {
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
         body: {
           verification: {
             firstName: formData.firstName,
@@ -147,10 +147,11 @@ const DriverVerification = () => {
         description: "Please wait",
       });
 
-      const front = licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
-      
+      const front =
+        licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
+
       if (front) {
-        const { error: frontError } = await supabase.functions.invoke('upload-veriff-image', {
+        const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
           body: {
             sessionId: sessionData.sessionId,
             imageBase64: front.base64,
@@ -167,10 +168,11 @@ const DriverVerification = () => {
         description: "Please wait",
       });
 
-      const back = licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
-      
+      const back =
+        licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
+
       if (back) {
-        const { error: backError } = await supabase.functions.invoke('upload-veriff-image', {
+        const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
           body: {
             sessionId: sessionData.sessionId,
             imageBase64: back.base64,
@@ -187,7 +189,7 @@ const DriverVerification = () => {
         description: "Almost done",
       });
 
-      const { error: submitError } = await supabase.functions.invoke('submit-veriff-session', {
+      const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
         body: {
           sessionId: sessionData.sessionId,
         },
@@ -219,7 +221,6 @@ const DriverVerification = () => {
       formDataToSend.append("licenseFront", licenseFront!);
       formDataToSend.append("licenseBack", licenseBack!);
 
-
       // const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
       //     body: formDataToSend,
       // });
@@ -233,16 +234,13 @@ const DriverVerification = () => {
       }
 
       // Send to Edge Function
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-stripe-connect`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formDataToSend,
-        }
-      );
+      const res = await fetch(`${process.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-connect`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: formDataToSend,
+      });
 
       const data = await res.json();
       console.log("Stripe response:", data);
@@ -285,32 +283,18 @@ const DriverVerification = () => {
           <Card>
             <CardHeader>
               <CardTitle>Driver Verification</CardTitle>
-              <CardDescription>
-                Complete your verification to start accepting deliveries
-              </CardDescription>
+              <CardDescription>Complete your verification to start accepting deliveries</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      disabled
-                      className="bg-muted"
-                    />
+                    <Input id="firstName" name="firstName" value={formData.firstName} disabled className="bg-muted" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      disabled
-                      className="bg-muted"
-                    />
+                    <Input id="lastName" name="lastName" value={formData.lastName} disabled className="bg-muted" />
                   </div>
                 </div>
 
@@ -351,22 +335,29 @@ const DriverVerification = () => {
                     required
                   />
                 </div>
-                <div>  
+                <div>
                   <Label htmlFor="address">Enter Your Address</Label>
                   <GooglePlacesAutocomplete
                     id="address"
                     label=""
                     placeholder="Enter address"
                     value={formData.address}
-                    onChange={(value, addressData,) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      address: value,
-                      addressData: {
-                        ...addressData,
-                      },
-                    }));
-                      console.log("Selected address:", addressData.line1, addressData.city, addressData.state, addressData.postal_code, addressData.country);
+                    onChange={(value, addressData) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        address: value,
+                        addressData: {
+                          ...addressData,
+                        },
+                      }));
+                      console.log(
+                        "Selected address:",
+                        addressData.line1,
+                        addressData.city,
+                        addressData.state,
+                        addressData.postal_code,
+                        addressData.country,
+                      );
                     }}
                     required
                   />
@@ -413,7 +404,7 @@ const DriverVerification = () => {
                     />
                   </div>
                 </div>
-                
+
                 {/* BACK IMAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="licenseBack">Driver's License (Back)</Label>
