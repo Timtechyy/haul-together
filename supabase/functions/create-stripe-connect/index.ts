@@ -54,7 +54,7 @@ serve(async (req: Request) => {
     if (!frontImage || !backImage) {
       throw new Error("License images are required");
     }
-
+    console.log("ABOUT TO uploaded IMAGE Id:");
     const frontImageId = await uploadFile(frontImage);
     const backImageId = await uploadFile(backImage);
 
@@ -137,64 +137,64 @@ serve(async (req: Request) => {
     //   },
     // });
 
-    const account = await stripe.accounts.create({
-      country: "US",
-      type: "custom",
-      capabilities: {
-        bank_transfer_payments: {
-          requested: true,
-        },
-        card_payments: {
-          requested: true,
-        },
-        transfers: {
-          requested: true,
-        },
-        us_bank_transfer_payments: {
-          requested: true,
-        },
-      },
-      controller: {
-        fees: {
-          payer: "application",
-        },
-        losses: {
-          payments: "application",
-        },
-        stripe_dashboard: {
-          type: "none",
-        },
-      },
-      account_token: tokenId.id,
-      settings: {
-        payments: {
-          statement_descriptor: "WEHAULER",
-        },
-        payouts: {
-          statement_descriptor: "WEHAULER",
-        },
+    // const account = await stripe.accounts.create({
+    //   country: "US",
+    //   type: "custom",
+    //   capabilities: {
+    //     bank_transfer_payments: {
+    //       requested: true,
+    //     },
+    //     card_payments: {
+    //       requested: true,
+    //     },
+    //     transfers: {
+    //       requested: true,
+    //     },
+    //     us_bank_transfer_payments: {
+    //       requested: true,
+    //     },
+    //   },
+    //   controller: {
+    //     fees: {
+    //       payer: "application",
+    //     },
+    //     losses: {
+    //       payments: "application",
+    //     },
+    //     stripe_dashboard: {
+    //       type: "none",
+    //     },
+    //   },
+    //   account_token: tokenId.id,
+    //   settings: {
+    //     payments: {
+    //       statement_descriptor: "WEHAULER",
+    //     },
+    //     payouts: {
+    //       statement_descriptor: "WEHAULER",
+    //     },
 
-        card_payments: {
-          statement_descriptor_prefix: "WEHAULER",
-        },
-      },
-      tos_acceptance: {
-        service_agreement: "full",
-      },
-    });
+    //     card_payments: {
+    //       statement_descriptor_prefix: "WEHAULER",
+    //     },
+    //   },
+    //   tos_acceptance: {
+    //     service_agreement: "full",
+    //   },
+    // });
 
-    // Save stripe_id to the database
-    const { error: updateError } = await supabaseClient
-      .from("profiles")
-      .update({ stripe_Connect_id: account.id })
-      .eq("id", user.id);
+    // // Save stripe_id to the database
+    // const { error: updateError } = await supabaseClient
+    //   .from("profiles")
+    //   .update({ stripe_Connect_id: account.id })
+    //   .eq("id", user.id);
 
-    if (updateError) {
-      console.error("Error updating profile with stripe_id:", updateError);
-      throw new Error("Failed to save Stripe customer ID");
-    }
+    // if (updateError) {
+    //   console.error("Error updating profile with stripe_id:", updateError);
+    //   throw new Error("Failed to save Stripe customer ID");
+    // }
 
-    return new Response(JSON.stringify({ accountId: account.id }), {
+    return new Response(JSON.stringify({ }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
