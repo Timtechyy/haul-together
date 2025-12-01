@@ -96,9 +96,14 @@ serve(async (req: Request) => {
     };
     console.log("Stripe Token Params:", JSON.stringify(accountTokenParams, null, 2));
 
-    const tokenId = await stripe.tokens.create({
-      account: accountTokenParams,
-    });
+    let tokenId;
+    try {
+      tokenId = await stripe.tokens.create({ account: accountTokenParams });
+      console.log("Token created:", tokenId.id);
+    } catch (err) {
+      console.error("Stripe token creation failed:", err);
+      throw err;
+    }
 
     // const tokenId = await stripe.tokens.create({
     //   account: {
