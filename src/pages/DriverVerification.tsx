@@ -225,8 +225,37 @@ const DriverVerification = () => {
         body: formDataToSend,
       });
 
+<<<<<<< HEAD
       if (stripeError) throw stripeError;
       console.log("Stripe response:", accountData);
+=======
+      // const{data: accountData, error: stripeError } = await supabase.functions.invoke('create-stripe-connect', {
+      //     body: formDataToSend,
+      // });
+      // Get session correctly in Supabase v2
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("No session available");
+      }
+
+      // Send to Edge Function
+      const res = await fetch(
+        `${process.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-connect`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: formDataToSend,
+        }
+      );
+
+      const data = await res.json();
+      console.log("Stripe response:", data);
+>>>>>>> a13e20b (updated stripe connect function)
 
       // if (stripeError) throw sessionError;
       // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
