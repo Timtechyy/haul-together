@@ -225,8 +225,8 @@ const DriverVerification = () => {
         body: formDataToSend,
       });
 
-      const data = await res.json();
-      console.log("Stripe response:", data);
+      if (stripeError) throw stripeError;
+      console.log("Stripe response:", accountData);
 
       // if (stripeError) throw sessionError;
       // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
