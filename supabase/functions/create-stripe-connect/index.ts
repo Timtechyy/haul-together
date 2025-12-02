@@ -60,6 +60,8 @@ serve(async (req: Request) => {
     // Get image files from form data
     const frontImage = form.get("licenseFront") as File;
     const backImage = form.get("licenseBack") as File;
+    console.log(frontImage);
+    console.log(backImage);
 
     if (!frontImage || !backImage) {
       throw new Error("License images are required");
