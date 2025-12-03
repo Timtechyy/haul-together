@@ -122,80 +122,80 @@ const DriverVerification = () => {
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.split("-");
       console.log("address:", formData.address);
       console.log("addressData:", formData.addressData);
-      // const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
-      //   body: {
-      //     verification: {
-      //       firstName: formData.firstName,
-      //       lastName: formData.lastName,
-      //       dateOfBirth: formData.dateOfBirth,
-      //       phoneNumber: user?.phone,
-      //       gender: formData.gender,
-      //       email: user?.email,
-      //       licenseNumber: formData.licenseNumber,
-      //     },
-      //   },
-      // });
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
+        body: {
+          verification: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            dateOfBirth: formData.dateOfBirth,
+            phoneNumber: user?.phone,
+            gender: formData.gender,
+            email: user?.email,
+            licenseNumber: formData.licenseNumber,
+          },
+        },
+      });
 
-      // if (sessionError) throw sessionError;
-      // if (!sessionData?.sessionId) throw new Error("Failed to create session");
+      if (sessionError) throw sessionError;
+      if (!sessionData?.sessionId) throw new Error("Failed to create session");
 
-      // console.log("Session created:", sessionData.sessionId);
+      console.log("Session created:", sessionData.sessionId);
 
-      // // Step 2: Upload front image
-      // toast({
-      //   title: "Uploading front of license...",
-      //   description: "Please wait",
-      // });
+      // Step 2: Upload front image
+      toast({
+        title: "Uploading front of license...",
+        description: "Please wait",
+      });
 
-      // const front =
-      //   licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
+      const front =
+        licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
 
-      // if (front) {
-      //   const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
-      //     body: {
-      //       sessionId: sessionData.sessionId,
-      //       imageBase64: front.base64,
-      //       mimeType: front.mimeType,
-      //       imageType: "document-front",
-      //     },
-      //   });
-      //   if (frontError) throw frontError;
-      // }
+      if (front) {
+        const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
+          body: {
+            sessionId: sessionData.sessionId,
+            imageBase64: front.base64,
+            mimeType: front.mimeType,
+            imageType: "document-front",
+          },
+        });
+        if (frontError) throw frontError;
+      }
 
-      // // Step 3: Upload back image
-      // toast({
-      //   title: "Uploading back of license...",
-      //   description: "Please wait",
-      // });
+      // Step 3: Upload back image
+      toast({
+        title: "Uploading back of license...",
+        description: "Please wait",
+      });
 
-      // const back =
-      //   licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
+      const back =
+        licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
 
-      // if (back) {
-      //   const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
-      //     body: {
-      //       sessionId: sessionData.sessionId,
-      //       imageBase64: back.base64,
-      //       mimeType: back.mimeType,
-      //       imageType: "document-back",
-      //     },
-      //   });
-      //   if (backError) throw backError;
-      // }
+      if (back) {
+        const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
+          body: {
+            sessionId: sessionData.sessionId,
+            imageBase64: back.base64,
+            mimeType: back.mimeType,
+            imageType: "document-back",
+          },
+        });
+        if (backError) throw backError;
+      }
 
-      // // Step 4: Submit session
-      // toast({
-      //   title: "Submitting verification...",
-      //   description: "Almost done",
-      // });
+      // Step 4: Submit session
+      toast({
+        title: "Submitting verification...",
+        description: "Almost done",
+      });
 
-      // const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
-      //   body: {
-      //     sessionId: sessionData.sessionId,
-      //   },
-      // });
+      const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
+        body: {
+          sessionId: sessionData.sessionId,
+        },
+      });
 
-      // if (submitError) throw submitError;
+      if (submitError) throw submitError;
       const formDataToSend = new FormData();
 
       // Add text fields
