@@ -7,8 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-hmac-signature",
 };
 
-serve(async ( req: Request ) => {
-  if (req.method === "OPTIONS") {
+serve(async (req: Request) => {
+  if (req.method === "POST") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -21,23 +21,19 @@ serve(async ( req: Request ) => {
     // Verify webhook signature
     const signature = req.headers.get("x-hmac-signature");
     const payload = await req.text();
-    
+
     if (signature) {
       const encoder = new TextEncoder();
       const keyData = encoder.encode(VERIFF_SHARED_SECRET);
       const messageData = encoder.encode(payload);
-      const cryptoKey = await crypto.subtle.importKey(
-        "raw",
-        keyData,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-      );
+      const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, [
+        "sign",
+      ]);
       const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
       const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
       if (signature !== expectedSignature) {
         console.error("Invalid webhook signature");
         return new Response(JSON.stringify({ error: "Invalid signature" }), {
@@ -51,7 +47,7 @@ serve(async ( req: Request ) => {
     console.log("Veriff webhook received:", webhookData);
 
     const { verification } = webhookData;
-    
+
     if (!verification) {
       throw new Error("No verification data in webhook");
     }
@@ -69,10 +65,7 @@ serve(async ( req: Request ) => {
     }
 
     // Initialize Supabase client with service role key for admin operations
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
     // Update driver verification status
     const { data, error } = await supabase
@@ -92,26 +85,22 @@ serve(async ( req: Request ) => {
     console.log(`Updated verification status to ${verificationStatus} for session ${sessionId}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         status: verificationStatus,
-        sessionId 
+        sessionId,
       }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
-
   } catch (error) {
     console.error("Error in veriff-webhook:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
