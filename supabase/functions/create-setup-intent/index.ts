@@ -17,6 +17,7 @@ serve(async (req: Request) => {
 
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "");
+    
     if (!authHeader) return new Response("Unauthorized", { status: 401 });
 
     const {
@@ -40,7 +41,7 @@ serve(async (req: Request) => {
     let customerId = profile?.stripe_id;
 
     console.log("user stripe id:", customerId);
-
+    console.log("user id:", user.id);
     const { data: role, error: roleError } = await supabaseClient
       .from("user_roles")
       .select("role")
