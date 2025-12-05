@@ -30,7 +30,7 @@ async function uploadFile(PicturePath: File) {
 
   const data = await response.json();
   if (!response.ok) {
-    console.error("Stripe error:", data);
+    console.error("Stripe upload error:", data);
     throw new Error("Stripe file upload failed");
   }
 
