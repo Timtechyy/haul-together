@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  if (req.method === "POST") {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -71,11 +71,11 @@ serve(async (req: Request) => {
     const { data, error } = await supabase
       .from("driver_verifications")
       .update({
+        veriff_session_id:sessionId,
         verification_status: verificationStatus,
         verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
-      })
-      .eq("veriff_session_id", sessionId);
+      });
 
     if (error) {
       console.error("Error updating driver verification:", error);
