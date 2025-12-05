@@ -92,7 +92,7 @@ export default function PaymentMethods({ role,name, email }: Props) {
          <ResponsivePaymentModal
           isOpen={!!modalSecret}
           onClose={() => setModalSecret(null)}
-          title="Add Payment Method"
+          title="Add Payout Method"
           clientSecret={modalSecret}
         >
           <SetupIntentModal role={role}/>
