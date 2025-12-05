@@ -13,11 +13,14 @@ serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "");
-    
+
     if (!authHeader) return new Response("Unauthorized", { status: 401 });
 
     const {
@@ -73,7 +76,7 @@ serve(async (req: Request) => {
     });
     console.log("secret:", setupIntent.client_secret);
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
     console.error("Error in create-setup-intent:", error);
