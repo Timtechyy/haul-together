@@ -45,7 +45,7 @@ serve(async (req: Request) => {
     });
 
     return new Response(JSON.stringify({ methods: paymentMethods.data }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e:any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
