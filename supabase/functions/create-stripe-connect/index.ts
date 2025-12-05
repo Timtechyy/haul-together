@@ -87,7 +87,7 @@ serve(async (req: Request) => {
         email: form.get("email"),
         gender: form.get("gender"),
         // Note: For US, this is often 'ssn_last_4' instead of generic 'id_numbers' in token creation
-        id_numbers: form.get("licenseNumber"),
+        id_number: form.get("licenseNumber"),
         ssn_last_4: form.get("ssnLastFour"),
         dob: {
           day: Number(form.get("dobday")),
