@@ -25,29 +25,32 @@ serve(async (req: Request) => {
     const token = authHeader?.replace("Bearer ", "");
     if (!authHeader) return new Response("Unauthorized", { status: 401 });
 
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    const { data:{ user } } = await supabaseClient.auth.getUser(token);
 
       if (!user) throw new Error("User not authenticated");
+    
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
     apiVersion: "2025-08-27.basil",
     });
     // 1. Check if user already has a Stripe customer ID
     
-    let { data: profile } = await supabaseClient
+    let { data: profile, error: profileError  } = await supabaseClient
       .from("profiles")
       .select("stripe_id")
       .eq("id", user.id)
       .maybeSingle();
-
+    
+    if (profileError) throw profileError;
     let customerId = profile?.stripe_id;
 
-    const { data: role } = await supabaseClient
+    const { data: role, error: roleError  } = await supabaseClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .single();
 
-
+    if (roleError) throw roleError;
+    
     // 2. If no customer, create one
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -67,8 +70,8 @@ serve(async (req: Request) => {
     // 3. Create SetupIntent for saving new cards
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
-      payment_method_types: role?.role === 'driver' ? ["us_bank_account"] : ["card"],
-      flow_directions: role?.role === 'driver' ? ["outbound"] : undefined
+      payment_method_types: role === 'driver'?["us_bank_account"]: ["card"],
+      flow_directions: role === 'driver'? ["outbound"]:[""]
     });
 
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
