@@ -28,6 +28,10 @@ async function uploadFile(PicturePath: File) {
     };
 
     const contentType = mimeTypes[PicturePath.type] || "application/octet-stream";
+    console.log("image buffer:", buffer);
+    console.log("image name:", PicturePath);
+    console.log("image conteent type:", contentType);
+
     const upload = await stripe.files.create({
       file: {
         data: buffer,
