@@ -39,12 +39,14 @@ serve(async (req: Request) => {
     if (profileError) throw profileError;
     let customerId = profile?.stripe_id;
 
+    console.log("user stripe id:", customerId);
+
     const { data: role, error: roleError } = await supabaseClient
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .maybeSingle();
-
+    console.log("user role:", role.role);
     if (roleError) throw roleError;
 
     // 2. If no customer, create one
