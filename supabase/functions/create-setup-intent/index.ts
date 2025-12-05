@@ -68,7 +68,7 @@ serve(async (req: Request) => {
       payment_method_types: role?.role === "driver" ? ["us_bank_account"] : ["card"],
       ...(role?.role === "driver" && { flow_directions: ["outbound"] }),
     });
-
+    console.log("secret:", setupIntent.client_secret);
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
       headers: { "Content-Type": "application/json" },
     });
