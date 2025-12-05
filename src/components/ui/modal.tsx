@@ -30,7 +30,7 @@ export default function ResponsivePaymentModal({ isOpen, onClose, children, titl
                 theme: 'night', // 'flat', 'stripe', or 'night'
                 variables: {
                   colorPrimary: '#62B6CB',
-                  colorText: '#30313d',
+                  colorText: '#ffffff',
                   colorBackground: '#344056',
                   colorDanger: '#df1b41',
                   fontFamily: 'Arial, sans-serif',
@@ -39,7 +39,7 @@ export default function ResponsivePaymentModal({ isOpen, onClose, children, titl
                 rules: {
                   '.Input': {
                     border: '1px solid #ccc',
-                    borderRadius: '4px',
+                    borderRadius: '10px',
                     padding: '10px',
                   },
                   '.Label': {
