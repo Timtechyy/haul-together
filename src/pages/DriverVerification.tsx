@@ -351,6 +351,7 @@ const DriverVerification = () => {
                     <Input
                       id="licenseNumber"
                       name="licenseNumber"
+                      minLength={9}
                       type="text"
                       value={formData.licenseNumber}
                       onChange={handleInputChange}
