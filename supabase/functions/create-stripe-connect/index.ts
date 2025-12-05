@@ -13,45 +13,28 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
 });
 
 async function uploadFile(PicturePath: File) {
-  try {
-    const arrayBuf = await PicturePath.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
+  const arrayBuffer = await PicturePath.arrayBuffer();
+  const blob = new Blob([arrayBuffer], { type: PicturePath.type });
 
-    // FIX: Correct MIME
-    const contentType = PicturePath.type || "application/octet-stream";
+  const form = new FormData();
+  form.append("purpose", "identity_document");
+  form.append("file", blob, PicturePath.name);
 
-    console.log("image buffer:", buffer);
-    console.log("image name:", PicturePath.name);
-    console.log("image content type:", contentType);
+  const response = await fetch("https://files.stripe.com/v1/files", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+    },
+    body: form,
+  });
 
-    const upload = await stripe.files.create(
-      {
-        file: {
-          data: buffer,
-          name: PicturePath.name,
-          type: contentType,
-        },
-        purpose: "identity_document",
-      },
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
-    );
-
-    console.log(upload.id);
-    return upload.id;
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    console.error("Stripe SDK error:", {
-      type: error.type,
-      code: error.code,
-      param: error.param,
-      message: error.message,
-      statusCode: error.statusCode,
-    });
-
-    throw error;
+  const data = await response.json();
+  if (!response.ok) {
+    console.error("Stripe error:", data);
+    throw new Error("Stripe file upload failed");
   }
+
+  return data.id;
 }
 
 serve(async (req: Request) => {
