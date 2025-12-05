@@ -24,14 +24,19 @@ async function uploadFile(PicturePath: File) {
     console.log("image name:", PicturePath.name);
     console.log("image content type:", contentType);
 
-    const upload = await stripe.files.create({
-      file: {
-        data: buffer,
-        name: PicturePath.name,
-        type: contentType,
+    const upload = await stripe.files.create(
+      {
+        file: {
+          data: buffer,
+          name: PicturePath.name,
+          type: contentType,
+        },
+        purpose: "identity_document",
       },
-      purpose: "identity_document",
-    });
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
 
     console.log(upload.id);
     return upload.id;
