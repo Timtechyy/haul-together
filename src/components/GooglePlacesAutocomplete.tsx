@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loadGoogleMaps } from "@/utils/loadGoogleMap";
 
-
-
 interface AddressData {
   line1: string;
   city: string;
@@ -16,13 +14,12 @@ interface AddressData {
   lng?: number;
 }
 
-
 interface Props {
   id: string;
   label: string;
   placeholder: string;
   value: string;
-  onChange: (value:string, components?:AddressData, lat?: number, lng?: number) => void;
+  onChange: (value: string, components?: AddressData, lat?: number, lng?: number) => void;
   disabled?: boolean;
   required?: boolean;
 }
@@ -53,13 +50,12 @@ export default function GooglePlacesAutocomplete({
         console.error("Maps failed to load:", err);
       });
 
-     return () => {
+    return () => {
       if (autocompleteRef.current) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-
   }, []);
 
   const initAutocomplete = () => {
@@ -76,52 +72,51 @@ export default function GooglePlacesAutocomplete({
         const place = autocompleteRef.current?.getPlace();
         if (!place) return;
 
-          const components = place.address_components;
+        const components = place.address_components;
 
-          const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name || "";
-          
-          const addressData = {
-            line1: "",
-            city: "",
-            state: "",
-            postal_code: "",
-            country: ""
-          };
+        const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name || "";
 
+        const addressData = {
+          line1: "",
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "",
+        };
 
-          components.forEach((comp) => {
-            if (comp.types.includes("street_number")) {
-              addressData.line1 = comp.long_name + " ";
-            }
-            if (comp.types.includes("route")) {
-              addressData.line1 = (addressData.line1 || "") + comp.long_name;
-            }
-            if (comp.types.includes("locality")) {
-              addressData.city = comp.long_name;
-            }
-            if (comp.types.includes("sublocality") && !addressData.city) {
-              addressData.city = comp.long_name;
-            }
-            if (comp.types.includes("administrative_area_level_2") && !addressData.city) {
-              addressData.city = comp.long_name;
-            }
-            if (comp.types.includes("administrative_area_level_1")) {
-              addressData.state = comp.long_name;
-            }
-            if (comp.types.includes("postal_code")) {
-              addressData.postal_code = comp.long_name;
-            }
-            if (comp.types.includes("country")) {
-              addressData.country = comp.long_name;
-            }
-          });
-          const lat = place.geometry?.location?.lat();
-          const lng = place.geometry?.location?.lng();
+        components.forEach((comp) => {
+          if (comp.types.includes("street_number")) {
+            addressData.line1 = comp.long_name + " ";
+          }
+          if (comp.types.includes("route")) {
+            addressData.line1 = (addressData.line1 || "") + comp.long_name;
+          }
+          if (comp.types.includes("locality")) {
+            addressData.city = comp.long_name;
+          }
+          if (comp.types.includes("sublocality") && !addressData.city) {
+            addressData.city = comp.long_name;
+          }
+          if (comp.types.includes("administrative_area_level_2") && !addressData.city) {
+            addressData.city = comp.long_name;
+          }
+          if (comp.types.includes("administrative_area_level_1")) {
+            addressData.state = comp.long_name;
+          }
+          if (comp.types.includes("postal_code")) {
+            addressData.postal_code = comp.long_name;
+          }
+          if (comp.types.includes("country")) {
+            addressData.country = comp.short_name;
+          }
+        });
+        const lat = place.geometry?.location?.lat();
+        const lng = place.geometry?.location?.lng();
 
-          // onChange(place.formatted_address, addressData, lat, lng);
+        // onChange(place.formatted_address, addressData, lat, lng);
 
-          onChange(place.formatted_address, addressData, lat, lng);
-        }, 500);
+        onChange(place.formatted_address, addressData, lat, lng);
+      }, 500);
     });
   };
 
@@ -139,9 +134,7 @@ export default function GooglePlacesAutocomplete({
         required={required}
       />
 
-      {!loaded && (
-        <p className="text-xs text-muted-foreground">Loading Google Maps…</p>
-      )}
+      {!loaded && <p className="text-xs text-muted-foreground">Loading Google Maps…</p>}
     </div>
   );
 }
