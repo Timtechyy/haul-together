@@ -24,7 +24,29 @@ export default function ResponsivePaymentModal({ isOpen, onClose, children, titl
         </div>
             <Elements
                 stripe={stripePromise}
-                options={{ clientSecret: clientSecret! }}
+                options={{ 
+                clientSecret: clientSecret!, appearance: {
+                theme: 'night', // 'flat', 'stripe', or 'night'
+                variables: {
+                  colorPrimary: '#62B6CB',
+                  colorText: '#30313d',
+                  colorBackground: '#f6f9fc',
+                  colorDanger: '#df1b41',
+                  fontFamily: 'Arial, sans-serif',
+                },
+                rules: {
+                  '.Input': {
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '10px',
+                  },
+                  '.Label': {
+                    fontWeight: 'bold',
+                    marginBottom: '5px',
+                  },
+                },
+              }, 
+            }}
             >  
                 {children}
             </Elements>

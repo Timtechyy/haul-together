@@ -1,7 +1,7 @@
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useState } from "react";
 
-export default function PaymentForm({ clientSecret, onSuccess }) {
+export default function PaymentForm({ onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -13,6 +13,7 @@ export default function PaymentForm({ clientSecret, onSuccess }) {
 
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
+      confirmParams: { return_url: window.location.href },
       redirect: "if_required",
     });
 
@@ -43,3 +44,16 @@ export default function PaymentForm({ clientSecret, onSuccess }) {
     </div>
   );
 }
+
+
+import React from "react";
+import { X } from "lucide-react";
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  title?: string;
+}
+
+
