@@ -14,23 +14,15 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
 
 async function uploadFile(PicturePath: File) {
   try {
-    // const fp = deno.readFileSync(PicturePath);
     const arrayBuf = await PicturePath.arrayBuffer();
     const buffer = Buffer.from(arrayBuf);
-    const mimeTypes: Record<string, string> = {
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-      png: "image/png",
-      gif: "image/gif",
-      pdf: "application/pdf",
-      heic: "image/heic",
-      heif: "image/heif",
-    };
 
-    const contentType = mimeTypes[PicturePath.type] || "application/octet-stream";
+    // FIX: Correct MIME
+    const contentType = PicturePath.type || "application/octet-stream";
+
     console.log("image buffer:", buffer);
     console.log("image name:", PicturePath.name);
-    console.log("image conteent type:", contentType);
+    console.log("image content type:", contentType);
 
     const upload = await stripe.files.create({
       file: {
@@ -40,15 +32,20 @@ async function uploadFile(PicturePath: File) {
       },
       purpose: "identity_document",
     });
+
     console.log(upload.id);
     return upload.id;
   } catch (error) {
     console.error("Error uploading image:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+    console.error("Stripe SDK error:", {
+      type: error.type,
+      code: error.code,
+      param: error.param,
+      message: error.message,
+      statusCode: error.statusCode,
     });
+
+    throw error;
   }
 }
 
