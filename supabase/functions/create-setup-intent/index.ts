@@ -46,7 +46,7 @@ serve(async (req: Request) => {
       .select("role")
       .eq("user_id", user.id)
       .maybeSingle();
-    console.log("user role:", role.role);
+    console.log("user role:", role?.role);
     if (roleError) throw roleError;
 
     // 2. If no customer, create one
