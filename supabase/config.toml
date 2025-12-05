@@ -9,9 +9,6 @@ verify_jwt = true
 [functions.create-veriff-session]
 verify_jwt = true
 
-[functions.upload-to-veriff]
-verify_jwt = true
-
 [functions.get-mapbox-token]
 verify_jwt = false
 
@@ -22,4 +19,22 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.submit-veriff-session]
+verify_jwt = true
+
+[functions.get-payment-methods]
+verify_jwt = true
+
+[functions.create-setup-intent]
+verify_jwt = true
+
+[functions.create-bank-account]
+verify_jwt = true
+
+[functions.create-stripe-connect]
+verify_jwt = true
+
+[functions.update-connect-account]
+verify_jwt = true
+
+[functions.create-transfer]
 verify_jwt = true
