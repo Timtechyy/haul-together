@@ -22,7 +22,7 @@ async function uploadFile(PicturePath: File) {
       file: {
         data: buffer,
         name: PicturePath.name,
-        type: PicturePath.type,
+        type: "png",
       },
       purpose: "identity_document",
     });
