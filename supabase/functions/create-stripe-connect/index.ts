@@ -43,7 +43,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -112,92 +112,154 @@ serve(async (req: Request) => {
     };
     console.log("Stripe Token Params:", JSON.stringify(accountTokenParams, null, 2));
 
-    let tokenId;
-    try {
-      tokenId = await stripe.tokens.create({ account: accountTokenParams });
-      console.log("Token created:", tokenId.id);
-    } catch (err) {
-      console.error("Stripe token creation failed:", err);
-      throw err;
-    }
+    // let tokenId;
+    // try {
+    //   tokenId = await stripe.tokens.create({ account: accountTokenParams });
+    //   console.log("Token created:", tokenId.id);
+    // } catch (err) {
+    //   console.error("Stripe token creation failed:", err);
+    //   throw err;
+    // }
 
-    // const tokenId = await stripe.tokens.create({
-    //   account: {
-    //     business_type: "individual",
-    //     individual: {
-    //       first_name: form.get("firstName"),
-    //       last_name: form.get("lastName"),
-    //       phone: form.get("phoneNumber"),
-    //       email: form.get("email"),
-    //       gender: form.get("gender"),
-    //       dob: {
-    //         day: Number(form.get("dobday")),
-    //         month: Number(form.get("dobmonth")),
-    //         year: Number(form.get("dobyear")),
-    //       },
-    //       address: {
-    //         city: form.get("city"),
-    //         country: form.get("country"),
-    //         line1: form.get("line"),
-    //         postal_code: form.get("postal_code"),
-    //         state: form.get("state"),
-    //       },
-    //       verification: {
-    //         document: {
-    //           back: backImageId,
-    //           front: frontImageId,
-    //         },
-    //       },
+    const tokenId = await stripe.tokens.create({
+      account: {
+        business_type: "individual",
+        individual: {
+          first_name: form.get("firstName"),
+          last_name: form.get("lastName"),
+          phone: form.get("phoneNumber"),
+          email: form.get("email"),
+          gender: form.get("gender"),
+          // Note: For US, this is often 'ssn_last_4' instead of generic 'id_numbers' in token creation
+          // id_number: form.get("licenseNumber"),
+          ssn_last_4: form.get("ssnLastFour"),
+          dob: {
+            day: Number(form.get("dobday")),
+            month: Number(form.get("dobmonth")),
+            year: Number(form.get("dobyear")),
+          },
+          address: {
+            city: form.get("city"),
+            country: form.get("country"),
+            line1: form.get("line"),
+            postal_code: form.get("postal_code"),
+            state: form.get("state"),
+          },
+          verification: {
+            document: {
+              back: backImageId,
+              front: frontImageId,
+            },
+          },
+        },
+        tos_shown_and_accepted: true,
+      },
+    });
+
+    // const account = await stripe.accounts.create({
+    //   country: "US",
+    //   type: "custom",
+    //   capabilities: {
+    //     bank_transfer_payments: {
+    //       requested: true,
     //     },
-    //     tos_shown_and_accepted: true,
+    //     card_payments: {
+    //       requested: true,
+    //     },
+    //     transfers: {
+    //       requested: true,
+    //     },
+    //     us_bank_transfer_payments: {
+    //       requested: true,
+    //     },
+    //   },
+    //   // controller: {
+    //   //   fees: {
+    //   //     payer: "application",
+    //   //   },
+    //   //   losses: {
+    //   //     payments: "application",
+    //   //   },
+    //   //   stripe_dashboard: {
+    //   //     type: "none",
+    //   //   },
+    //   // },
+    //   account_token: tokenId.id,
+    //   settings: {
+    //     payments: {
+    //       statement_descriptor: "WEHAULER",
+    //     },
+    //     payouts: {
+    //       statement_descriptor: "WEHAULER",
+    //     },
+
+    //     card_payments: {
+    //       statement_descriptor_prefix: "WEHAULER",
+    //     },
+    //   },
+    //   tos_acceptance: {
+    //     service_agreement: "full",
     //   },
     // });
 
-    const account = await stripe.accounts.create({
-      country: "US",
-      type: "custom",
-      capabilities: {
-        bank_transfer_payments: {
-          requested: true,
-        },
-        card_payments: {
-          requested: true,
-        },
-        transfers: {
-          requested: true,
-        },
-        us_bank_transfer_payments: {
-          requested: true,
-        },
-      },
-      // controller: {
-      //   fees: {
-      //     payer: "application",
-      //   },
-      //   losses: {
-      //     payments: "application",
-      //   },
-      //   stripe_dashboard: {
-      //     type: "none",
+
+      const account = await stripe.v2.core.accounts.create({
+      contact_email: user.email,
+      display_name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
+      account_token: tokenId.id,
+      // identity: {
+      //   individual: {
+      //     attestations: {
+      //       terms_of_service: {
+      //         account: {
+      //           date: Math.trunc(Date.now() / 1000),
+      //           ip: req.headers.get("x-forwarded-for") ??
+      //               req.headers.get("cf-connecting-ip") ??
+      //               "unknown",
+      //         }    
+      //       }
+      //     }
       //   },
       // },
-      account_token: tokenId.id,
-      settings: {
-        payments: {
-          statement_descriptor: "WEHAULER",
-        },
-        payouts: {
-          statement_descriptor: "WEHAULER",
-        },
+      configuration: {
+          recipient: {
+            capabilities: {
+              bank_accounts: {
+                local: {
+                  requested: true
+                },
+                wire: {
+                  requested: true
+                }
+              },  
+              
+              cards: {
+                card_payments: {
+                  requested: true
+                } ,
+              },
 
-        card_payments: {
-          statement_descriptor_prefix: "WEHAULER",
+              stripe_balance: {
+                stripe_transfers: {
+                  requested: true
+                }
+              },
+            }
+          }
         },
-      },
-      tos_acceptance: {
-        service_agreement: "full",
-      },
-    });
+        defaults: {
+          responsibilities: {
+            fees_collector: 'application',
+            losses_collector: 'application',
+          },
+        },
+        dashboard: 'none',
+        include: [
+          'configuration.recipient',
+          'defaults',
+        ],
+      });
+
 
     // Save stripe_id to the database
     const { error: updateError } = await supabaseClient
