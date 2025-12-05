@@ -17,12 +17,22 @@ async function uploadFile(PicturePath: File) {
     // const fp = deno.readFileSync(PicturePath);
     const arrayBuf = await PicturePath.arrayBuffer();
     const buffer = Buffer.from(arrayBuf);
+    const mimeTypes: Record<string, string> = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      pdf: "application/pdf",
+      heic: "image/heic",
+      heif: "image/heif",
+    };
 
+    const contentType = mimeTypes[PicturePath.type] || "application/octet-stream";
     const upload = await stripe.files.create({
       file: {
         data: buffer,
         name: PicturePath.name,
-        type: "png",
+        type: contentType,
       },
       purpose: "identity_document",
     });
