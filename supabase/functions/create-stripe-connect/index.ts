@@ -23,7 +23,7 @@ async function uploadFile(PicturePath: File) {
   const response = await fetch("https://files.stripe.com/v1/files", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      Authorization: `Bearer ${Deno.env.get("STRIPE_SECRET_KEY")}`,
     },
     body: form,
   });
