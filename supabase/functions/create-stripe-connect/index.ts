@@ -26,6 +26,7 @@ async function uploadFile(PicturePath: File) {
       },
       purpose: "identity_document",
     });
+    console.log(upload.id);
     return upload.id;
   } catch (error) {
     console.error("Error uploading image:", error);
@@ -121,37 +122,37 @@ serve(async (req: Request) => {
       throw err;
     }
 
-    const tokenId = await stripe.tokens.create({
-      account: {
-        business_type: "individual",
-        individual: {
-          first_name: form.get("firstName"),
-          last_name: form.get("lastName"),
-          phone: form.get("phoneNumber"),
-          email: form.get("email"),
-          gender: form.get("gender"),
-          dob: {
-            day: Number(form.get("dobday")),
-            month: Number(form.get("dobmonth")),
-            year: Number(form.get("dobyear")),
-          },
-          address: {
-            city: form.get("city"),
-            country: form.get("country"),
-            line1: form.get("line"),
-            postal_code: form.get("postal_code"),
-            state: form.get("state"),
-          },
-          verification: {
-            document: {
-              back: backImageId,
-              front: frontImageId,
-            },
-          },
-        },
-        tos_shown_and_accepted: true,
-      },
-    });
+    // const tokenId = await stripe.tokens.create({
+    //   account: {
+    //     business_type: "individual",
+    //     individual: {
+    //       first_name: form.get("firstName"),
+    //       last_name: form.get("lastName"),
+    //       phone: form.get("phoneNumber"),
+    //       email: form.get("email"),
+    //       gender: form.get("gender"),
+    //       dob: {
+    //         day: Number(form.get("dobday")),
+    //         month: Number(form.get("dobmonth")),
+    //         year: Number(form.get("dobyear")),
+    //       },
+    //       address: {
+    //         city: form.get("city"),
+    //         country: form.get("country"),
+    //         line1: form.get("line"),
+    //         postal_code: form.get("postal_code"),
+    //         state: form.get("state"),
+    //       },
+    //       verification: {
+    //         document: {
+    //           back: backImageId,
+    //           front: frontImageId,
+    //         },
+    //       },
+    //     },
+    //     tos_shown_and_accepted: true,
+    //   },
+    // });
 
     const account = await stripe.accounts.create({
       country: "US",
