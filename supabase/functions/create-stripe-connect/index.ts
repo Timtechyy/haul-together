@@ -183,17 +183,17 @@ serve(async (req: Request) => {
           requested: true,
         },
       },
-      controller: {
-        fees: {
-          payer: "application",
-        },
-        losses: {
-          payments: "application",
-        },
-        stripe_dashboard: {
-          type: "none",
-        },
-      },
+      // controller: {
+      //   fees: {
+      //     payer: "application",
+      //   },
+      //   losses: {
+      //     payments: "application",
+      //   },
+      //   stripe_dashboard: {
+      //     type: "none",
+      //   },
+      // },
       account_token: tokenId.id,
       settings: {
         payments: {
