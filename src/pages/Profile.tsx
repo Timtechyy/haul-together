@@ -10,13 +10,13 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Star, 
-  Shield, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Star,
+  Shield,
   CreditCard,
   Bell,
   Settings,
@@ -27,17 +27,12 @@ import {
   Award,
   ArrowLeft,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import PaymentMethods from "@/components/ui/addpaymentmethod";
-import PhoneInput, {
-	formatPhoneNumber,
-	formatPhoneNumberIntl,
-	isPossiblePhoneNumber,
-} from 'react-phone-number-input'
+import PhoneInput, { formatPhoneNumber, formatPhoneNumberIntl, isPossiblePhoneNumber } from "react-phone-number-input";
 import PhoneInputField from "@/components/ui/phoneinput";
-
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -66,13 +61,12 @@ const Profile = () => {
   });
   const [profile, setProfile] = useState({
     firstName: "",
-    lastName: "", 
+    lastName: "",
     email: "",
     phone: "",
     avatarUrl: "",
-    gender: ""
+    gender: "",
   });
-
 
   useEffect(() => {
     loadProfile();
@@ -80,7 +74,9 @@ const Profile = () => {
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         navigate("/login");
         return;
@@ -89,20 +85,12 @@ const Profile = () => {
       setUserId(user.id);
 
       // Get user role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
+      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
 
       setUserRole(roleData?.role || null);
 
       // Get profile data
-      const { data: profileData, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      const { data: profileData, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
       if (error) throw error;
 
@@ -112,18 +100,17 @@ const Profile = () => {
         email: user.email || "",
         phone: profileData.phone || "",
         avatarUrl: profileData.avatar_url || "",
-        gender: profileData.gender || ""
+        gender: profileData.gender || "",
       });
-
 
       setStripeId(profileData.stripe_id);
 
       // Fetch vehicle info if driver
-      if (roleData?.role === 'driver') {
+      if (roleData?.role === "driver") {
         const { data: vehicleData } = await supabase
-          .from('driver_vehicles')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("driver_vehicles")
+          .select("*")
+          .eq("user_id", user.id)
           .single();
 
         if (vehicleData) {
@@ -140,32 +127,36 @@ const Profile = () => {
 
         // Fetch verification status
         const { data: verificationData } = await supabase
-          .from('driver_verifications')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("driver_verifications")
+          .select("*")
+          .eq("user_id", user.id)
           .single();
 
         setVerification(verificationData);
 
         // Fetch driver stats
         const { data: allDeliveries } = await supabase
-          .from('deliveries')
-          .select('customer_rating')
-          .eq('driver_id', user.id)
-          .eq('status', 'delivered');
+          .from("deliveries")
+          .select("customer_rating")
+          .eq("driver_id", user.id)
+          .eq("status", "delivered");
 
         const totalDeliveries = allDeliveries?.length || 0;
-        
+
         // Calculate average rating from all completed deliveries
-        const ratingsData = allDeliveries?.filter(d => d.customer_rating) || [];
-        const avgRating = ratingsData.length > 0
-          ? ratingsData.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsData.length
-          : 0;
+        const ratingsData = allDeliveries?.filter((d) => d.customer_rating) || [];
+        const avgRating =
+          ratingsData.length > 0
+            ? ratingsData.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsData.length
+            : 0;
 
         setDriverStats({
           totalDeliveries,
           rating: Number(avgRating.toFixed(1)),
-          memberSince: new Date(profileData.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          memberSince: new Date(profileData.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+          }),
         });
       }
     } catch (error) {
@@ -173,7 +164,7 @@ const Profile = () => {
       toast({
         title: "Error",
         description: "Failed to load profile",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -189,18 +180,18 @@ const Profile = () => {
         .update({
           first_name: profile.firstName,
           last_name: profile.lastName,
-          phone: profile.phone
+          phone: profile.phone,
         })
         .eq("id", userId);
 
       if (error) throw error;
 
       // Save vehicle info if driver
-      if (userRole === 'driver') {
+      if (userRole === "driver") {
         // Get current location if tracking consent is enabled
         let currentLat = null;
         let currentLng = null;
-        
+
         if (vehicle.trackingConsent) {
           try {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -213,9 +204,8 @@ const Profile = () => {
           }
         }
 
-        const { error: vehicleError } = await supabase
-          .from('driver_vehicles')
-          .upsert({
+        const { error: vehicleError } = await supabase.from("driver_vehicles").upsert(
+          {
             user_id: userId,
             vehicle_type: vehicle.vehicleType,
             make: vehicle.make,
@@ -227,14 +217,16 @@ const Profile = () => {
             current_lat: currentLat,
             current_lng: currentLng,
             last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
-          }, { onConflict: 'user_id' });
+          },
+          { onConflict: "user_id" },
+        );
 
         if (vehicleError) throw vehicleError;
       }
 
       toast({
         title: "Success",
-        description: "Profile updated successfully"
+        description: "Profile updated successfully",
       });
       setIsEditing(false);
     } catch (error) {
@@ -242,7 +234,7 @@ const Profile = () => {
       toast({
         title: "Error",
         description: "Failed to update profile",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -259,25 +251,20 @@ const Profile = () => {
       setUploading(true);
 
       // Upload to storage
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const filePath = `${userId}/avatar.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId);
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", userId);
 
       if (updateError) throw updateError;
 
@@ -285,14 +272,14 @@ const Profile = () => {
 
       toast({
         title: "Success",
-        description: "Profile picture updated successfully"
+        description: "Profile picture updated successfully",
       });
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
         title: "Error",
         description: "Failed to upload image",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
@@ -303,7 +290,7 @@ const Profile = () => {
     await supabase.auth.signOut();
     toast({
       title: "Logged out",
-      description: "You have been logged out successfully"
+      description: "You have been logged out successfully",
     });
     navigate("/login");
   };
@@ -316,7 +303,7 @@ const Profile = () => {
     }
   };
 
-  const isVerified = verification?.verification_status === 'approved';
+  const isVerified = verification?.verification_status === "approved";
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
@@ -334,7 +321,7 @@ const Profile = () => {
                 Back to Dashboard
               </Button>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -356,7 +343,8 @@ const Profile = () => {
                     <AvatarImage src={profile.avatarUrl} alt="Profile" />
                   ) : (
                     <AvatarFallback className="text-2xl">
-                      {profile.firstName[0]}{profile.lastName[0]}
+                      {profile.firstName[0]}
+                      {profile.lastName[0]}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -381,7 +369,9 @@ const Profile = () => {
               <div className="flex-1 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h1 className="text-2xl font-bold">{profile.firstName} {profile.lastName}</h1>
+                    <h1 className="text-2xl font-bold">
+                      {profile.firstName} {profile.lastName}
+                    </h1>
                     <div className="flex items-center gap-2 mt-2">
                       {isVerified && (
                         <Badge variant="default" className="flex items-center gap-1">
@@ -389,7 +379,7 @@ const Profile = () => {
                           Verified {userRole === "driver" ? "Driver" : "Customer"}
                         </Badge>
                       )}
-                      {!isVerified && userRole === 'driver' && verification?.verification_status === 'pending' && (
+                      {!isVerified && userRole === "driver" && verification?.verification_status === "pending" && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Verification Pending
@@ -408,7 +398,7 @@ const Profile = () => {
                 </div>
 
                 {/* Stats - Only show for drivers */}
-                {userRole === 'driver' && (
+                {userRole === "driver" && (
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center justify-center gap-1 text-lg font-semibold">
@@ -420,7 +410,7 @@ const Profile = () => {
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center justify-center gap-1 text-lg font-semibold">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span>{driverStats.rating || 'N/A'}</span>
+                        <span>{driverStats.rating || "N/A"}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">Rating</div>
                     </div>
@@ -446,9 +436,7 @@ const Profile = () => {
                 <User className="h-5 w-5" />
                 Personal Information
               </CardTitle>
-              <CardDescription>
-                Manage your account details and contact information
-              </CardDescription>
+              <CardDescription>Manage your account details and contact information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -476,13 +464,7 @@ const Profile = () => {
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className="pl-10 bg-muted"
-                  />
+                  <Input id="email" type="email" value={profile.email} disabled className="pl-10 bg-muted" />
                 </div>
               </div>
 
@@ -494,9 +476,9 @@ const Profile = () => {
                     id="phone"
                     placeholder={profile.phone}
                     value={profile.phone}
-                    onChange={(value) => setProfile({ ...profile, phone: value})}
+                    onChange={(value) => setProfile({ ...profile, phone: value })}
                     disabled={!isEditing}
-                      // className="pl-10"
+                    // className="pl-10"
                   />
                   {/* <Input
                     id="phone"
@@ -533,16 +515,14 @@ const Profile = () => {
           </Card>
 
           {/* Vehicle Information Card - Only for Drivers */}
-          {userRole === 'driver' && (
+          {userRole === "driver" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Truck className="h-5 w-5" />
                   Vehicle Information
                 </CardTitle>
-                <CardDescription>
-                  Enter your vehicle details to accept deliveries
-                </CardDescription>
+                <CardDescription>Enter your vehicle details to accept deliveries</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -618,9 +598,7 @@ const Profile = () => {
                   <Checkbox
                     id="trackingConsent"
                     checked={vehicle.trackingConsent}
-                    onCheckedChange={(checked) => 
-                      setVehicle({ ...vehicle, trackingConsent: checked as boolean })
-                    }
+                    onCheckedChange={(checked) => setVehicle({ ...vehicle, trackingConsent: checked as boolean })}
                     disabled={!isEditing}
                   />
                   <Label htmlFor="trackingConsent" className="text-sm">
@@ -633,75 +611,66 @@ const Profile = () => {
 
           {/* Settings & Preferences */}
           {/* <div className="space-y-6"> */}
-            {/* Notification Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notifications
-                </CardTitle>
-                <CardDescription>
-                  Manage how you receive notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="text-sm font-medium">Delivery Updates</div>
-                    <div className="text-xs text-muted-foreground">Get notified about your deliveries</div>
-                  </div>
-                  <Switch defaultChecked />
+          {/* Notification Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notifications
+              </CardTitle>
+              <CardDescription>Manage how you receive notifications</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">Delivery Updates</div>
+                  <div className="text-xs text-muted-foreground">Get notified about your deliveries</div>
                 </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="text-sm font-medium">New Driver Offers</div>
-                    <div className="text-xs text-muted-foreground">Notifications when drivers accept your requests</div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="text-sm font-medium">Marketing Emails</div>
-                    <div className="text-xs text-muted-foreground">Promotional offers and updates</div>
-                  </div>
-                  <Switch />
-                </div>
-              </CardContent>
-            </Card>
+                <Switch defaultChecked />
+              </div>
 
-           
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">New Driver Offers</div>
+                  <div className="text-xs text-muted-foreground">Notifications when drivers accept your requests</div>
+                </div>
+                <Switch defaultChecked />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">Marketing Emails</div>
+                  <div className="text-xs text-muted-foreground">Promotional offers and updates</div>
+                </div>
+                <Switch />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* </div>  */}
           {/* Payment Methods */}
           <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
-            {/* Verification Card - Only for Drivers */}
-            {userRole === 'driver' && !isVerified && (
-              <Card className="h-46">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Driver Verification
-                  </CardTitle>
-                  <CardDescription>
-                    Complete verification to start accepting deliveries
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    variant="hero" 
-                    className="w-full"
-                    onClick={() => navigate("/driver/verification")}
-                  >
-                    {verification?.verification_status === 'pending' ? 'View Verification Status' : 'Verify Now'}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+          {/* Verification Card - Only for Drivers */}
+          {userRole === "driver" && !isVerified && (
+            <Card className="h-46">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Driver Verification
+                </CardTitle>
+                <CardDescription>Complete verification to start accepting deliveries</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="hero" className="w-full" onClick={() => navigate("/driver/verification")}>
+                  {verification?.verification_status === "pending" ? "View Verification Status" : "Verify Now"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Account Actions */}
@@ -710,10 +679,9 @@ const Profile = () => {
             <CardTitle>Account Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-    
             <Button variant="destructive" className="w-full justify-start">
               Delete Account
-            </Button>  
+            </Button>
             {/* <Separator />
             <Button variant="outline" className="w-full justify-start">
               Download My Data
@@ -721,7 +689,6 @@ const Profile = () => {
             <Button variant="outline" className="w-full justify-start">
               Privacy Settings
             </Button> */}
-          
           </CardContent>
         </Card>
       </main>
