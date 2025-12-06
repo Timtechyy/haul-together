@@ -159,107 +159,107 @@ serve(async (req: Request) => {
       },
     });
 
-    // const account = await stripe.accounts.create({
-    //   country: "US",
-    //   type: "custom",
-    //   capabilities: {
-    //     bank_transfer_payments: {
-    //       requested: true,
-    //     },
-    //     card_payments: {
-    //       requested: true,
-    //     },
-    //     transfers: {
-    //       requested: true,
-    //     },
-    //     us_bank_transfer_payments: {
-    //       requested: true,
-    //     },
-    //   },
-    //   // controller: {
-    //   //   fees: {
-    //   //     payer: "application",
-    //   //   },
-    //   //   losses: {
-    //   //     payments: "application",
-    //   //   },
-    //   //   stripe_dashboard: {
-    //   //     type: "none",
-    //   //   },
-    //   // },
-    //   account_token: tokenId.id,
-    //   settings: {
-    //     payments: {
-    //       statement_descriptor: "WEHAULER",
-    //     },
-    //     payouts: {
-    //       statement_descriptor: "WEHAULER",
-    //     },
-
-    //     card_payments: {
-    //       statement_descriptor_prefix: "WEHAULER",
-    //     },
-    //   },
-    //   tos_acceptance: {
-    //     service_agreement: "full",
-    //   },
-    // });
-
-    const account = await stripe.v2.core.accounts.create({
-      contact_email: user.email,
-      display_name:
-        user.user_metadata?.full_name ||
-        `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
-      account_token: tokenId.id,
-      // identity: {
-      //   individual: {
-      //     attestations: {
-      //       terms_of_service: {
-      //         account: {
-      //           date: Math.trunc(Date.now() / 1000),
-      //           ip: req.headers.get("x-forwarded-for") ??
-      //               req.headers.get("cf-connecting-ip") ??
-      //               "unknown",
-      //         }
-      //       }
-      //     }
+    const account = await stripe.accounts.create({
+      country: "US",
+      type: "custom",
+      capabilities: {
+        bank_transfer_payments: {
+          requested: true,
+        },
+        card_payments: {
+          requested: true,
+        },
+        transfers: {
+          requested: true,
+        },
+        us_bank_transfer_payments: {
+          requested: true,
+        },
+      },
+      // controller: {
+      //   fees: {
+      //     payer: "application",
+      //   },
+      //   losses: {
+      //     payments: "application",
+      //   },
+      //   stripe_dashboard: {
+      //     type: "none",
       //   },
       // },
-      configuration: {
-        recipient: {
-          capabilities: {
-            bank_accounts: {
-              local: {
-                requested: true,
-              },
-              wire: {
-                requested: true,
-              },
-            },
+      account_token: tokenId.id,
+      settings: {
+        payments: {
+          statement_descriptor: "WEHAULER",
+        },
+        payouts: {
+          statement_descriptor: "WEHAULER",
+        },
 
-            cards: {
-              card_payments: {
-                requested: true,
-              },
-            },
-
-            stripe_balance: {
-              stripe_transfers: {
-                requested: true,
-              },
-            },
-          },
+        card_payments: {
+          statement_descriptor_prefix: "WEHAULER",
         },
       },
-      defaults: {
-        responsibilities: {
-          fees_collector: "application",
-          losses_collector: "application",
-        },
+      tos_acceptance: {
+        service_agreement: "full",
       },
-      dashboard: "none",
-      include: ["configuration.recipient", "defaults"],
     });
+
+    // const account = await stripe.v2.core.accounts.create({
+    //   contact_email: user.email,
+    //   display_name:
+    //     user.user_metadata?.full_name ||
+    //     `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
+    //   account_token: tokenId.id,
+    //   // identity: {
+    //   //   individual: {
+    //   //     attestations: {
+    //   //       terms_of_service: {
+    //   //         account: {
+    //   //           date: Math.trunc(Date.now() / 1000),
+    //   //           ip: req.headers.get("x-forwarded-for") ??
+    //   //               req.headers.get("cf-connecting-ip") ??
+    //   //               "unknown",
+    //   //         }
+    //   //       }
+    //   //     }
+    //   //   },
+    //   // },
+    //   configuration: {
+    //     recipient: {
+    //       capabilities: {
+    //         bank_accounts: {
+    //           local: {
+    //             requested: true,
+    //           },
+    //           wire: {
+    //             requested: true,
+    //           },
+    //         },
+
+    //         cards: {
+    //           card_payments: {
+    //             requested: true,
+    //           },
+    //         },
+
+    //         stripe_balance: {
+    //           stripe_transfers: {
+    //             requested: true,
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    //   defaults: {
+    //     responsibilities: {
+    //       fees_collector: "application",
+    //       losses_collector: "application",
+    //     },
+    //   },
+    //   dashboard: "none",
+    //   include: ["configuration.recipient", "defaults"],
+    // });
 
     console.log("account response:", JSON.stringify(account, null, 2));
     // Save stripe_connect_id to the database
