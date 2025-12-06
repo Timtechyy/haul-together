@@ -227,7 +227,7 @@ const Profile = () => {
             current_lat: currentLat,
             current_lng: currentLng,
             last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
-          });
+          }, { onConflict: 'user_id' });
 
         if (vehicleError) throw vehicleError;
       }
