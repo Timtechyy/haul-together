@@ -1,0 +1,13 @@
+.PhoneInputInput{
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    background-color: transparent;
+    border: 1px solid #445470;
+    border-radius: 10px;
+}
+.PhoneInputInput:active{
+    outline-offset: 1;
+    border: 1px solid #445470;
+    border-radius: 10px;
+}

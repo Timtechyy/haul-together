@@ -31,6 +31,13 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import PaymentMethods from "@/components/ui/addpaymentmethod";
+import PhoneInput, {
+	formatPhoneNumber,
+	formatPhoneNumberIntl,
+	isPossiblePhoneNumber,
+} from 'react-phone-number-input'
+import PhoneInputField from "@/components/ui/phoneinput";
+
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -483,13 +490,20 @@ const Profile = () => {
                 <Label htmlFor="phone">Phone</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
+                  <PhoneInputField
+                    id="phone"
+                    placeholder={profile.phone}
+                    value={profile.phone}
+                    onChange={(value) => setProfile({ ...profile, phone: value})}
+                    disabled={!isEditing}
+                      // className="pl-10"
+                  />
+                  {/* <Input
                     id="phone"
                     value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    disabled={!isEditing}
-                    className="pl-10"
-                  />
+                    
+                  /> */}
                 </div>
               </div>
 
