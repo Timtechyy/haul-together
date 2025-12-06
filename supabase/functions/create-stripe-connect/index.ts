@@ -127,7 +127,7 @@ serve(async (req: Request) => {
     const tokenId = await stripe.tokens.create({
       account: {
         business_type: "individual",
-        
+
         individual: {
           first_name: form.get("firstName"),
           last_name: form.get("lastName"),
@@ -135,8 +135,8 @@ serve(async (req: Request) => {
           email: form.get("email"),
           gender: form.get("gender"),
           // Note: For US, this is often 'ssn_last_4' instead of generic 'id_numbers' in token creation
-          // id_number: form.get("licenseNumber"),
-          ssn_last_4: form.get("ssnLastFour"),
+          id_number: form.get("licenseNumber"),
+          // ssn_last_4: form.get("ssnLastFour"),
           dob: {
             day: Number(form.get("dobday")),
             month: Number(form.get("dobmonth")),
@@ -163,7 +163,7 @@ serve(async (req: Request) => {
     const account = await stripe.accounts.create({
       country: "US",
       type: "custom",
-       business_profile: {
+      business_profile: {
         name: "Wehauler Inc",
         url: "https://wehauler.app",
         mcc: "4214",
@@ -197,14 +197,14 @@ serve(async (req: Request) => {
       account_token: tokenId.id,
       settings: {
         payments: {
-          statement_descriptor: "WEHAULER Inc",
+          statement_descriptor: "WEHAULER",
         },
         payouts: {
-          statement_descriptor: "WEHAULER Inc",
+          statement_descriptor: "WEHAULER",
         },
 
         card_payments: {
-          statement_descriptor_prefix: "WEHAULER Inc",
+          statement_descriptor_prefix: "WEHAULER",
         },
       },
       tos_acceptance: {
