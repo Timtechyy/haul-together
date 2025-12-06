@@ -261,7 +261,7 @@ serve(async (req: Request) => {
       include: ["configuration.recipient", "defaults"],
     });
 
-    console.log("account response:", JSON.stringify(account, null, 2));
+    // console.log("account response:", JSON.stringify(account, null, 2));
     // Save stripe_connect_id to the database
     const { error: updateError } = await supabaseClient
       .from("profiles")
