@@ -264,7 +264,7 @@ serve(async (req: Request) => {
     // Save stripe_id to the database
     const { error: updateError } = await supabaseClient
       .from("profiles")
-      .update({ stripe_Connect_id: account.id })
+      .update({ stripe_id: account.id })
       .eq("id", user.id);
 
     if (updateError) {
