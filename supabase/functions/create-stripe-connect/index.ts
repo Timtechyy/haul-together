@@ -127,6 +127,7 @@ serve(async (req: Request) => {
     const tokenId = await stripe.tokens.create({
       account: {
         business_type: "individual",
+        
         individual: {
           first_name: form.get("firstName"),
           last_name: form.get("lastName"),
@@ -162,6 +163,12 @@ serve(async (req: Request) => {
     const account = await stripe.accounts.create({
       country: "US",
       type: "custom",
+       business_profile: {
+        name: "Wehauler Inc",
+        url: "https://wehauler.app"
+        mcc:"4214"
+        support_email:"wehaulerinc@gmail.com"
+      },
       capabilities: {
         bank_transfer_payments: {
           requested: true,
@@ -176,28 +183,28 @@ serve(async (req: Request) => {
           requested: true,
         },
       },
-      // controller: {
-      //   fees: {
-      //     payer: "application",
-      //   },
-      //   losses: {
-      //     payments: "application",
-      //   },
-      //   stripe_dashboard: {
-      //     type: "none",
-      //   },
-      // },
+      controller: {
+        fees: {
+          payer: "application",
+        },
+        losses: {
+          payments: "application",
+        },
+        stripe_dashboard: {
+          type: "none",
+        },
+      },
       account_token: tokenId.id,
       settings: {
         payments: {
-          statement_descriptor: "WEHAULER",
+          statement_descriptor: "WEHAULER Inc",
         },
         payouts: {
-          statement_descriptor: "WEHAULER",
+          statement_descriptor: "WEHAULER Inc",
         },
 
         card_payments: {
-          statement_descriptor_prefix: "WEHAULER",
+          statement_descriptor_prefix: "WEHAULER Inc",
         },
       },
       tos_acceptance: {
