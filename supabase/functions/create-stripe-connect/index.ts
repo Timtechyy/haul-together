@@ -43,7 +43,10 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -202,10 +205,11 @@ serve(async (req: Request) => {
     //   },
     // });
 
-
-      const account = await stripe.v2.core.accounts.create({
+    const account = await stripe.v2.core.accounts.create({
       contact_email: user.email,
-      display_name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
+      display_name:
+        user.user_metadata?.full_name ||
+        `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
       account_token: tokenId.id,
       // identity: {
       //   individual: {
@@ -216,51 +220,48 @@ serve(async (req: Request) => {
       //           ip: req.headers.get("x-forwarded-for") ??
       //               req.headers.get("cf-connecting-ip") ??
       //               "unknown",
-      //         }    
+      //         }
       //       }
       //     }
       //   },
       // },
       configuration: {
-          recipient: {
-            capabilities: {
-              bank_accounts: {
-                local: {
-                  requested: true
-                },
-                wire: {
-                  requested: true
-                }
-              },  
-              
-              cards: {
-                card_payments: {
-                  requested: true
-                } ,
+        recipient: {
+          capabilities: {
+            bank_accounts: {
+              local: {
+                requested: true,
               },
+              wire: {
+                requested: true,
+              },
+            },
 
-              stripe_balance: {
-                stripe_transfers: {
-                  requested: true
-                }
+            cards: {
+              card_payments: {
+                requested: true,
               },
-            }
-          }
-        },
-        defaults: {
-          responsibilities: {
-            fees_collector: 'application',
-            losses_collector: 'application',
+            },
+
+            stripe_balance: {
+              stripe_transfers: {
+                requested: true,
+              },
+            },
           },
         },
-        dashboard: 'none',
-        include: [
-          'configuration.recipient',
-          'defaults',
-        ],
-      });
+      },
+      defaults: {
+        responsibilities: {
+          fees_collector: "application",
+          losses_collector: "application",
+        },
+      },
+      dashboard: "none",
+      include: ["configuration.recipient", "defaults"],
+    });
 
-
+    console.log("acount", account);
     // Save stripe_connect_id to the database
     const { error: updateError } = await supabaseClient
       .from("profiles")
