@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
+import PhoneInputField from "@/components/ui/phoneinput"
 
 const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(50),
@@ -183,6 +184,7 @@ const Signup = () => {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
+                    type="text"
                     placeholder="John"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
@@ -193,6 +195,7 @@ const Signup = () => {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
+                    type="text"
                     placeholder="Doe"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -205,7 +208,7 @@ const Signup = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  type="email"
+                  // type="email"
                   placeholder="john@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -215,12 +218,13 @@ const Signup = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
+                <PhoneInputField
                   id="phone"
-                  type="tel"
                   placeholder="(555) 123-4567"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, phone: value })
+                  }
                   required
                 />
               </div>
@@ -246,8 +250,9 @@ const Signup = () => {
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
+                    className="bg-transparent"
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? "text" : "password"} 
                     placeholder="Create a strong password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -256,7 +261,7 @@ const Signup = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="sm" 
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
