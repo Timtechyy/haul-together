@@ -206,6 +206,7 @@ export type Database = {
           id: string
           last_name: string | null
           phone: string | null
+          stripe_connect_id: string | null
           stripe_id: string | null
           updated_at: string
         }
@@ -217,6 +218,7 @@ export type Database = {
           id: string
           last_name?: string | null
           phone?: string | null
+          stripe_connect_id?: string | null
           stripe_id?: string | null
           updated_at?: string
         }
@@ -228,6 +230,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
+          stripe_connect_id?: string | null
           stripe_id?: string | null
           updated_at?: string
         }
