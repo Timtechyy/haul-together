@@ -165,9 +165,9 @@ serve(async (req: Request) => {
       type: "custom",
        business_profile: {
         name: "Wehauler Inc",
-        url: "https://wehauler.app"
-        mcc:"4214"
-        support_email:"wehaulerinc@gmail.com"
+        url: "https://wehauler.app",
+        mcc: "4214",
+        support_email: "wehaulerinc@gmail.com",
       },
       capabilities: {
         bank_transfer_payments: {
