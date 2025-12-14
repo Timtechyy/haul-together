@@ -29,6 +29,8 @@ const DriverVerification = () => {
     phone: "",
   });
   const [address, setAddress] = useState<string | null>(null);
+  const[stripeConnect, setStripeConnect] = useState<string| null>(null);
+
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
   const [licenseFrontBase64, setLicenseFrontBase64] = useState<{ base64: string; mimeType: string } | null>(null);
@@ -63,11 +65,12 @@ const DriverVerification = () => {
       // Fetch profile data to auto-populate fields
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name, phone, gender")
+        .select("first_name, last_name, phone, gender, stripe_connect_id")
         .eq("id", session.user.id)
         .single();
 
       if (profile) {
+        setStripeConnect(profile.stripe_connect_id);
         setFormData((prev) => ({
           ...prev,
           firstName: profile.first_name || "",
@@ -196,43 +199,45 @@ const DriverVerification = () => {
       });
 
       if (submitError) throw submitError;
-      const formDataToSend = new FormData();
 
-      // Add text fields
-      formDataToSend.append("firstName", formData.firstName);
-      formDataToSend.append("lastName", formData.lastName);
-      formDataToSend.append("dobday", dobDay);
-      formDataToSend.append("dobmonth", dobMonth);
-      formDataToSend.append("dobyear", dobYear);
-      formDataToSend.append("phoneNumber", formData.phone);
-      formDataToSend.append("gender", formData.gender);
-      formDataToSend.append("email", user?.email ?? "");
-      formDataToSend.append("licenseNumber", formData.licenseNumber);
-      formDataToSend.append("ssnLastFour", formData.ssnLastFour);
-      formDataToSend.append("licenseState", formData.licenseState);
-      formDataToSend.append("address", formData.address);
-      formDataToSend.append("line", formData.addressData.line1);
-      formDataToSend.append("city", formData.addressData.city);
-      formDataToSend.append("state", formData.addressData.state);
-      formDataToSend.append("postal_code", formData.addressData.postal_code);
-      formDataToSend.append("country", formData.addressData.country);
+      if (stripeConnect==null) {
+        const formDataToSend = new FormData();
+        // Add text fields
+        formDataToSend.append("firstName", formData.firstName);
+        formDataToSend.append("lastName", formData.lastName);
+        formDataToSend.append("dobday", dobDay);
+        formDataToSend.append("dobmonth", dobMonth);
+        formDataToSend.append("dobyear", dobYear);
+        formDataToSend.append("phoneNumber", formData.phone);
+        formDataToSend.append("gender", formData.gender);
+        formDataToSend.append("email", user?.email ?? "");
+        formDataToSend.append("licenseNumber", formData.licenseNumber);
+        formDataToSend.append("ssnLastFour", formData.ssnLastFour);
+        formDataToSend.append("licenseState", formData.licenseState);
+        formDataToSend.append("address", formData.address);
+        formDataToSend.append("line", formData.addressData.line1);
+        formDataToSend.append("city", formData.addressData.city);
+        formDataToSend.append("state", formData.addressData.state);
+        formDataToSend.append("postal_code", formData.addressData.postal_code);
+        formDataToSend.append("country", formData.addressData.country);
 
-      // Add the actual files
-      formDataToSend.append("licenseFront", licenseFront!);
-      formDataToSend.append("licenseBack", licenseBack!);
+        // Add the actual files
+        formDataToSend.append("licenseFront", licenseFront!);
+        formDataToSend.append("licenseBack", licenseBack!);
 
-      const { data: accountData, error: stripeError } = await supabase.functions.invoke("create-stripe-connect", {
-        body: formDataToSend,
-      });
+        const { data: accountData, error: stripeError } = await supabase.functions.invoke("create-stripe-connect", {
+          body: formDataToSend,
+        });
 
-      if (stripeError) throw stripeError;
-      console.log("Stripe response:", accountData);
+        if (stripeError) throw stripeError;
+        console.log("Stripe response:", accountData);
 
-      // if (stripeError) throw sessionError;
-      // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
+        // if (stripeError) throw sessionError;
+        // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
 
-      // console.log("Stripe connect account created:", accountData?.accountId);
-
+        // console.log("Stripe connect account created:", accountData?.accountId);
+      }
+      
       toast({
         title: "Success!",
         description: "Your verification has been submitted successfully.",
