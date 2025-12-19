@@ -13,32 +13,46 @@ import DeliveryMap from "@/components/DeliveryMap";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
 
-interface PendingDelivery {
+// Preview interface for unassigned deliveries (limited data for privacy)
+interface DeliveryPreview {
   id: string;
-  customer_id: string;
-  driver_id?: string | null;
-  pickup_location: string;
-  delivery_location: string;
   item_description: string;
   item_type?: string;
   quantity?: number;
   vehicle_type?: string;
-  receipt_url?: string;
   price: number;
   estimated_distance: number;
   created_at: string;
+  status: string;
+  // These will be null/undefined for unassigned deliveries
+  driver_id?: string | null;
+  pickup_location?: string;
+  delivery_location?: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
+  receipt_url?: string;
+  customer_id?: string;
+}
+
+// Full delivery interface for assigned deliveries
+interface AssignedDelivery extends DeliveryPreview {
+  pickup_location: string;
+  delivery_location: string;
   pickup_lat: number;
   pickup_lng: number;
   delivery_lat: number;
   delivery_lng: number;
-  status: string;
+  receipt_url?: string;
+  customer_id: string;
 }
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
-  const [pendingRequests, setPendingRequests] = useState<PendingDelivery[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<DeliveryPreview[]>([]);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
@@ -91,21 +105,35 @@ const DriverDashboard = () => {
     if (!user) return;
 
     const fetchDriverData = async () => {
-      // Fetch pending deliveries (both unassigned and assigned to this driver)
-      const { data: pendingData, error: pendingError } = await supabase
+      // Fetch unassigned pending deliveries with LIMITED fields for privacy
+      // Only fetch essential info - no addresses or GPS coordinates
+      const { data: unassignedData, error: unassignedError } = await supabase
+        .from("deliveries")
+        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, status")
+        .eq("status", "pending")
+        .is("driver_id", null);
+
+      // Fetch deliveries assigned to this driver with FULL details
+      const { data: assignedData, error: assignedError } = await supabase
         .from("deliveries")
         .select("*")
-        .or(`and(status.eq.pending,driver_id.is.null),and(status.eq.assigned,driver_id.eq.${user.id})`);
+        .eq("driver_id", user.id)
+        .in("status", ["assigned", "accepted", "picked_up"]);
 
-      if (pendingError) {
-        console.error("Error fetching deliveries:", pendingError);
+      if (unassignedError || assignedError) {
+        console.error("Error fetching deliveries:", unassignedError || assignedError);
         toast({
           title: "Error",
           description: "Failed to load pending requests",
           variant: "destructive",
         });
       } else {
-        setPendingRequests(pendingData || []);
+        // Combine both lists - unassigned (preview only) and assigned (full details)
+        const allDeliveries: DeliveryPreview[] = [
+          ...(unassignedData || []),
+          ...(assignedData || []),
+        ];
+        setPendingRequests(allDeliveries);
       }
 
       // Fetch today's earnings and trips
@@ -166,16 +194,28 @@ const DriverDashboard = () => {
           filter: "status=eq.pending",
         },
         async (payload) => {
-          const newDelivery = payload.new as PendingDelivery;
+          const newDelivery = payload.new as DeliveryPreview;
           if (!newDelivery.driver_id) {
-            setPendingRequests((prev) => [...prev, newDelivery]);
+            // Only add preview data for new unassigned deliveries (no addresses)
+            const previewDelivery: DeliveryPreview = {
+              id: newDelivery.id,
+              item_description: newDelivery.item_description,
+              item_type: newDelivery.item_type,
+              quantity: newDelivery.quantity,
+              vehicle_type: newDelivery.vehicle_type,
+              price: newDelivery.price,
+              estimated_distance: newDelivery.estimated_distance,
+              created_at: newDelivery.created_at,
+              status: newDelivery.status,
+            };
+            setPendingRequests((prev) => [...prev, previewDelivery]);
             
-            // Send notification for new delivery
+            // Send notification for new delivery (without addresses for privacy)
             if (notificationsEnabled) {
               const { notificationService } = await import('@/utils/notificationService');
               await notificationService.notifyNewDelivery({
-                pickup: newDelivery.pickup_location,
-                delivery: newDelivery.delivery_location,
+                pickup: "New pickup available",
+                delivery: "Delivery location",
                 price: newDelivery.price,
                 distance: newDelivery.estimated_distance,
               });
@@ -192,10 +232,10 @@ const DriverDashboard = () => {
           filter: `driver_id=eq.${user.id}`,
         },
         async (payload) => {
-          const assignedDelivery = payload.new as PendingDelivery;
+          const assignedDelivery = payload.new as AssignedDelivery;
           setPendingRequests((prev) => [...prev, assignedDelivery]);
           
-          // Send notification for assigned delivery
+          // Send notification for assigned delivery (full details allowed since assigned to this driver)
           if (notificationsEnabled) {
             const { notificationService } = await import('@/utils/notificationService');
             await notificationService.showNotification('New Delivery Assigned!', {
@@ -219,9 +259,10 @@ const DriverDashboard = () => {
           table: "deliveries",
         },
         (payload) => {
-          const updatedDelivery = payload.new as PendingDelivery;
-          // Remove from list if no longer pending/assigned or if assigned to another driver
-          if (updatedDelivery.status !== "pending" && updatedDelivery.status !== "assigned") {
+          const updatedDelivery = payload.new as DeliveryPreview;
+          // Remove from list if no longer pending/assigned/accepted/picked_up or if assigned to another driver
+          const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
+          if (!activeStatuses.includes(updatedDelivery.status)) {
             setPendingRequests((prev) =>
               prev.filter((req) => req.id !== updatedDelivery.id)
             );
@@ -447,97 +488,140 @@ const DriverDashboard = () => {
                   No pending requests available
                 </div>
               ) : (
-                filteredAndSortedRequests.map((request) => (
-                  <Collapsible key={request.id}>
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{request.item_description}</span>
-                            <Badge variant="secondary">{request.estimated_distance.toFixed(1)} mi</Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Pickup: {request.pickup_location}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="text-xl font-bold">${request.price.toFixed(2)}</div>
-                            <div className="text-xs text-muted-foreground">Estimated</div>
-                          </div>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              View More
-                              <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
-                      </div>
-                      
-                      <CollapsibleContent className="pt-4">
-                        <div className="space-y-3 border-t pt-3">
-                          <div className="text-sm">
-                            <div className="font-medium mb-1">Full Details</div>
-                            <div className="space-y-1 text-muted-foreground">
-                              <div><span className="font-medium">Item:</span> {request.item_description}</div>
-                              {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
-                              {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
-                              {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
-                              <div><span className="font-medium">Pickup:</span> {request.pickup_location}</div>
-                              <div><span className="font-medium">Dropoff:</span> {request.delivery_location}</div>
-                              <div><span className="font-medium">Distance:</span> {request.estimated_distance.toFixed(1)} mi</div>
-                              <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
+                filteredAndSortedRequests.map((request) => {
+                  // Check if this is an assigned delivery (has full details) or just a preview
+                  const isAssignedToDriver = request.driver_id === user?.id;
+                  const hasFullDetails = isAssignedToDriver && request.pickup_location;
+                  
+                  return (
+                    <Collapsible key={request.id}>
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{request.item_description}</span>
+                              <Badge variant="secondary">{request.estimated_distance.toFixed(1)} mi</Badge>
+                              {isAssignedToDriver && (
+                                <Badge variant="default" className="bg-green-500">Assigned to you</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {hasFullDetails 
+                                ? `Pickup: ${request.pickup_location}`
+                                : "Accept to view full pickup details"
+                              }
                             </div>
                           </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="text-xl font-bold">${request.price.toFixed(2)}</div>
+                              <div className="text-xs text-muted-foreground">Estimated</div>
+                            </div>
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="sm" className="gap-1">
+                                View More
+                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                              </Button>
+                            </CollapsibleTrigger>
+                          </div>
+                        </div>
+                        
+                        <CollapsibleContent className="pt-4">
+                          <div className="space-y-3 border-t pt-3">
+                            <div className="text-sm">
+                              <div className="font-medium mb-1">
+                                {hasFullDetails ? "Full Details" : "Delivery Preview"}
+                              </div>
+                              <div className="space-y-1 text-muted-foreground">
+                                <div><span className="font-medium">Item:</span> {request.item_description}</div>
+                                {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
+                                {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
+                                {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
+                                <div><span className="font-medium">Distance:</span> {request.estimated_distance.toFixed(1)} mi</div>
+                                <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
+                                
+                                {/* Only show addresses for assigned deliveries */}
+                                {hasFullDetails ? (
+                                  <>
+                                    <div><span className="font-medium">Pickup:</span> {request.pickup_location}</div>
+                                    <div><span className="font-medium">Dropoff:</span> {request.delivery_location}</div>
+                                  </>
+                                ) : (
+                                  <div className="mt-2 p-3 bg-muted rounded-lg text-center">
+                                    <span className="text-muted-foreground">
+                                      📍 Accept this delivery to view pickup and dropoff locations
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
 
-                          {/* Order Receipt */}
-                          {request.receipt_url && (
-                            <div className="mt-4">
-                              <div className="font-medium text-sm mb-2">Order Receipt</div>
-                              <img 
-                                src={request.receipt_url} 
-                                alt="Order receipt" 
-                                className="w-full max-w-md rounded-lg border shadow-sm"
-                              />
+                            {/* Order Receipt - only for assigned deliveries */}
+                            {hasFullDetails && request.receipt_url && (
+                              <div className="mt-4">
+                                <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                <img 
+                                  src={request.receipt_url} 
+                                  alt="Order receipt" 
+                                  className="w-full max-w-md rounded-lg border shadow-sm"
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Map View - only for assigned deliveries with coordinates */}
+                            {hasFullDetails && request.pickup_lat && request.pickup_lng && request.delivery_lat && request.delivery_lng && (
+                              <div className="mt-4">
+                                <DeliveryMap
+                                  pickupLat={request.pickup_lat}
+                                  pickupLng={request.pickup_lng}
+                                  deliveryLat={request.delivery_lat}
+                                  deliveryLng={request.delivery_lng}
+                                  pickupAddress={request.pickup_location}
+                                  deliveryAddress={request.delivery_location}
+                                />
+                              </div>
+                            )}
+                            
+                            <div className="flex gap-2 justify-end pt-2">
+                              {isAssignedToDriver ? (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedRequestId(request.id);
+                                    setDeclineDialogOpen(true);
+                                  }}
+                                >
+                                  Cancel Assignment
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedRequestId(request.id);
+                                      setDeclineDialogOpen(true);
+                                    }}
+                                  >
+                                    Decline
+                                  </Button>
+                                  <Button 
+                                    variant="hero" 
+                                    size="sm"
+                                    onClick={() => handleAccept(request.id)}
+                                  >
+                                    Accept
+                                  </Button>
+                                </>
+                              )}
                             </div>
-                          )}
-                          
-                          {/* Map View */}
-                          <div className="mt-4">
-                            <DeliveryMap
-                              pickupLat={request.pickup_lat}
-                              pickupLng={request.pickup_lng}
-                              deliveryLat={request.delivery_lat}
-                              deliveryLng={request.delivery_lng}
-                              pickupAddress={request.pickup_location}
-                              deliveryAddress={request.delivery_location}
-                            />
                           </div>
-                          
-                          <div className="flex gap-2 justify-end pt-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedRequestId(request.id);
-                                setDeclineDialogOpen(true);
-                              }}
-                            >
-                              Decline
-                            </Button>
-                            <Button 
-                              variant="hero" 
-                              size="sm"
-                              onClick={() => handleAccept(request.id)}
-                            >
-                              Accept
-                            </Button>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                ))
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  );
+                })
               )}
             </CardContent>
           </Card>
