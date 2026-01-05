@@ -37,7 +37,7 @@ async function createVeriffSession(userId: string, verification: any) {
           lastName: verification.lastName,
           dateOfBirth: verification.dateOfBirth,
           phoneNumber: verification.phoneNumber,
-          idNumber: verification.licenseNumber,
+          idNumber: verification.idNumber,
           gender: verification.gender,
           email: verification.email,
         },
