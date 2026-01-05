@@ -19,7 +19,7 @@ serve(async (req: Request) => {
     }
 
     // Verify webhook signature
-    const signature = req.headers.get("X-HMAC-SIGNATURE");
+    const signature = req.headers.get("x-hmac-signature");
     const payload = await req.text();
 
     if (signature) {
