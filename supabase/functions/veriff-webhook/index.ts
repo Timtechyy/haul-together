@@ -55,16 +55,16 @@ serve(async (req: Request) => {
     const sessionId = verification.id;
     const status = verification.status;
     const userId = verification.vendorData; // This is the user_id we sent
-    const verifiedAt = verification.decisionTime
-    const submitedAt = verification.acceptanceTime
+    const verifiedAt = verification.decisionTime;
+    const submitedAt = verification.acceptanceTime;
 
     // Map Veriff status to our internal status
     let verificationStatus = "pending";
     if (status === "approved") {
       verificationStatus = "approved";
-    } else if (status === "declined" ) {
+    } else if (status === "declined") {
       verificationStatus = "rejected";
-    } else if (status === "resubmission_requested"){
+    } else if (status === "resubmission_requested") {
       verificationStatus = "resubmit";
     }
 
@@ -88,7 +88,7 @@ serve(async (req: Request) => {
       throw error;
     }
 
-    console.log(`Updated verification status to ${verificationStatus} for session ${sessionId}`);
+    console.log(`Updated verification status to ${verificationStatus} for session ${sessionId} of ${userId}`);
 
     return new Response(
       JSON.stringify({
