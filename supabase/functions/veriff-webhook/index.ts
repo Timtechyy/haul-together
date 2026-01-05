@@ -20,17 +20,16 @@ serve(async (req: Request) => {
 
     // Verify webhook signature
     const signature = req.headers.get("x-hmac-signature");
-    const payload = await req.text();
+    const rawBody = await req.arrayBuffer();
+    const bodyBytes = new Uint8Array(rawBody);
 
     if (signature) {
       const encoder = new TextEncoder();
       const keyData = encoder.encode(VERIFF_SHARED_SECRET);
-      const messageData = encoder.encode(payload);
       const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, [
         "sign",
       ]);
-      const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
-
+      const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, bodyBytes);
       const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
@@ -44,7 +43,7 @@ serve(async (req: Request) => {
       }
     }
 
-    const webhookData = JSON.parse(payload);
+    const webhookData = JSON.parse(new TextDecoder().decode(bodyBytes));
     console.log("Veriff webhook received:", webhookData);
 
     const { verification } = webhookData;
@@ -55,7 +54,7 @@ serve(async (req: Request) => {
 
     const sessionId = verification.id;
     const status = verification.status;
-    const vendorData = verification.vendorData; // This is the user_id we sent
+    const userId = verification.vendorData; // This is the user_id we sent
 
     // Map Veriff status to our internal status
     let verificationStatus = "pending";
@@ -69,12 +68,15 @@ serve(async (req: Request) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
     // Update driver verification status
-    const { data, error } = await supabase.from("driver_verifications").update({
-      veriff_session_id: sessionId,
-      verification_status: verificationStatus,
-      verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    });
+    const { data, error } = await supabase
+      .from("driver_verifications")
+      .update({
+        veriff_session_id: sessionId,
+        verification_status: verificationStatus,
+        verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
 
     if (error) {
       console.error("Error updating driver verification:", error);
