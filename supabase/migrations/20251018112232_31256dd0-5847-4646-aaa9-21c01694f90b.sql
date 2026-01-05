@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS public.driver_verifications (
   license_state text NOT NULL,
   license_front_url text,
   license_back_url text,
-  verification_status text DEFAULT 'pending' NOT NULL CHECK (verification_status IN ('pending', 'approved', 'rejected')),
+  verification_status text DEFAULT 'pending' NOT NULL CHECK (verification_status IN ('pending', 'approved', 'rejected', 'resubmit')),
   veriff_session_id text,
   verified_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
