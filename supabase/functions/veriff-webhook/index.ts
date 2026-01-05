@@ -17,8 +17,8 @@ serve(async (req: Request) => {
     if (!VERIFF_SHARED_SECRET) {
       throw new Error("Veriff shared secret not configured");
     }
-       // Initialize Supabase client with service role key for admin operations
-    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",);
+    // Initialize Supabase client with service role key for admin operations
+    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
     // Verify webhook signature
     const signature = req.headers.get("x-hmac-signature");
@@ -70,25 +70,24 @@ serve(async (req: Request) => {
       verificationStatus = "resubmit";
     }
 
- 
-
     // Update driver verification status
     const { error } = await supabase
       .from("driver_verifications")
-      .upsert({
+      .update({
         session_id: sessionId,
-        user_id:userId,
+        user_id: userId,
         verification_status: verificationStatus,
         verified_at: verifiedAt,
         submitted_at: submitedAt,
         updated_at: new Date().toISOString(),
-      }).eq("user_id", userId);
+      })
+      .eq("user_id", userId);
 
     if (error) {
       console.error("Error updating driver verification:", error);
       throw error;
     }
-      
+
     console.log(`Updated verification status to ${verificationStatus} for session ${sessionId} of ${userId}`);
 
     return new Response(
