@@ -81,7 +81,7 @@ const DriverVerification = () => {
         }));
       }
 
-      const { data: profileVerification } = await supabase.from("driver_verifications").select("session_id, verification_status").eq("id", session.user.id).single();
+      const { data: profileVerification } = await supabase.from("driver_verifications").select("session_id, verification_status").eq("user_id", session.user.id).single();
       if (profileVerification) {
         setVeriffSessionId(profileVerification.session_id);
         setVerificationStatus(profileVerification.verification_status);
