@@ -145,16 +145,8 @@ export type Database = {
       }
       driver_verifications: {
         Row: {
-          created_at: string
-          date_of_birth: string
-          first_name: string
-          id: string
-          last_name: string
-          license_back_url: string | null
-          license_front_url: string | null
-          license_number: string
-          license_state: string
-          ssn_last_four: string
+          session_id: string
+          submitted_at: string
           updated_at: string
           user_id: string
           veriff_session_id: string | null
@@ -162,16 +154,8 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
-          created_at?: string
-          date_of_birth: string
-          first_name: string
-          id?: string
-          last_name: string
-          license_back_url?: string | null
-          license_front_url?: string | null
-          license_number: string
-          license_state: string
-          ssn_last_four: string
+          session_id?: string
+          submitted_at?: string
           updated_at?: string
           user_id: string
           veriff_session_id?: string | null
@@ -179,16 +163,8 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
-          created_at?: string
-          date_of_birth?: string
-          first_name?: string
-          id?: string
-          last_name?: string
-          license_back_url?: string | null
-          license_front_url?: string | null
-          license_number?: string
-          license_state?: string
-          ssn_last_four?: string
+          session_id?: string
+          submitted_at?: string
           updated_at?: string
           user_id?: string
           veriff_session_id?: string | null
