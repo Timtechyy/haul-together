@@ -77,6 +77,7 @@ serve(async (req: Request) => {
       .from("driver_verifications")
       .upsert({
         session_id: sessionId,
+        user_id:userId,
         verification_status: verificationStatus,
         verified_at: verifiedAt,
         submitted_at: submitedAt,
