@@ -13,64 +13,74 @@ serve(async (req: Request) => {
   }
 
   try {
-    const secret = Deno.env.get("VERIFF_SHARED_SECRET");
-    if (!secret) throw new Error("VERIFF_SHARED_SECRET missing");
-
-    // Get raw body as bytes
-    const bodyBuffer = await req.arrayBuffer();
-    const bodyBytes = new Uint8Array(bodyBuffer);
-
-    // Compute HMAC SHA256
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(secret),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
-
-    const signatureBuffer = await crypto.subtle.sign("HMAC", key, bodyBytes);
-    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-
-    const receivedSignature = req.headers.get("X-HMAC-SIGNATURE");
-
-    if (!receivedSignature || receivedSignature !== expectedSignature) {
-      console.error("Invalid Veriff signature");
-      return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401, headers: corsHeaders });
+    const VERIFF_SHARED_SECRET = Deno.env.get("VERIFF_SHARED_SECRET");
+    if (!VERIFF_SHARED_SECRET) {
+      throw new Error("Veriff shared secret not configured");
     }
 
-    // Safe to parse JSON now
-    const payload = JSON.parse(new TextDecoder().decode(bodyBytes));
-    console.log("Veriff webhook payload:", payload);
+    // Verify webhook signature
+    const signature = req.headers.get("X-HMAC-SIGNATURE");
+    const payload = await req.text();
 
-    const verification = payload.verification;
+    if (signature) {
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(VERIFF_SHARED_SECRET);
+      const messageData = encoder.encode(payload);
+      const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, [
+        "sign",
+      ]);
+      const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+      const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      if (signature !== expectedSignature) {
+        console.error("Invalid webhook signature");
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const webhookData = JSON.parse(payload);
+    console.log("Veriff webhook received:", webhookData);
+
+    const { verification } = webhookData;
+
     if (!verification) {
-      throw new Error("Missing verification object");
+      throw new Error("No verification data in webhook");
     }
 
     const sessionId = verification.id;
     const status = verification.status;
-    const userId = verification.vendorData;
+    const vendorData = verification.vendorData; // This is the user_id we sent
 
+    // Map Veriff status to our internal status
     let verificationStatus = "pending";
-    if (status === "approved") verificationStatus = "approved";
-    if (status === "declined" || status === "resubmission_requested") {
+    if (status === "approved") {
+      verificationStatus = "approved";
+    } else if (status === "declined" || status === "resubmission_requested") {
       verificationStatus = "rejected";
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Initialize Supabase client with service role key for admin operations
+    const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
 
-    const { error } = await supabase
-      .from("driver_verifications")
-      .update({
-        veriff_session_id: sessionId,
-        verification_status: verificationStatus,
-        verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    // Update driver verification status
+    const { data, error } = await supabase.from("driver_verifications").update({
+      veriff_session_id: sessionId,
+      verification_status: verificationStatus,
+      verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating driver verification:", error);
+      throw error;
+    }
+
+    console.log(`Updated verification status to ${verificationStatus} for session ${sessionId}`);
 
     return new Response(
       JSON.stringify({
@@ -78,10 +88,17 @@ serve(async (req: Request) => {
         status: verificationStatus,
         sessionId,
       }),
-      { status: 200, headers: corsHeaders },
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
-  } catch (err) {
-    console.error("Veriff webhook error:", err);
-    return new Response(JSON.stringify({ error: "Webhook processing failed" }), { status: 500, headers: corsHeaders });
+  } catch (error) {
+    console.error("Error in veriff-webhook:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
