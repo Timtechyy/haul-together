@@ -55,13 +55,17 @@ serve(async (req: Request) => {
     const sessionId = verification.id;
     const status = verification.status;
     const userId = verification.vendorData; // This is the user_id we sent
+    const verifiedAt = verification.decisionTime
+    const submitedAt = verification.acceptanceTime
 
     // Map Veriff status to our internal status
     let verificationStatus = "pending";
     if (status === "approved") {
       verificationStatus = "approved";
-    } else if (status === "declined" || status === "resubmission_requested") {
+    } else if (status === "declined" ) {
       verificationStatus = "rejected";
+    } else if (status === "resubmission_requested"){
+      verificationStatus = "resubmit";
     }
 
     // Initialize Supabase client with service role key for admin operations
@@ -71,9 +75,10 @@ serve(async (req: Request) => {
     const { data, error } = await supabase
       .from("driver_verifications")
       .update({
-        veriff_session_id: sessionId,
+        session_id: sessionId,
         verification_status: verificationStatus,
-        verified_at: verificationStatus === "approved" ? new Date().toISOString() : null,
+        verified_at: verifiedAt,
+        submitted_at: submitedAt,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
