@@ -74,7 +74,7 @@ serve(async (req: Request) => {
     const { error } = await supabase
       .from("driver_verifications")
       .upsert({
-        session_id: sessionId,
+        veriff_session_id: sessionId,
         user_id: userId,
         verification_status: verificationStatus,
         verified_at: verifiedAt,
