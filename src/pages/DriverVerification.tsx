@@ -81,9 +81,9 @@ const DriverVerification = () => {
         }));
       }
 
-      const { data: profileVerification } = await supabase.from("driver_verifications").select("session_id, verification_status").eq("user_id", session.user.id).single();
-      if (profileVerification) {
-        setVeriffSessionId(profileVerification.session_id);
+      const { data: profileVerification } = await supabase.from("driver_verifications").select("veriff_session_id, verification_status").eq("user_id", session.user.id).maybeSingle();
+      if (profileVerification?.veriff_session_id) {
+        setVeriffSessionId(profileVerification.veriff_session_id);
         setVerificationStatus(profileVerification.verification_status);
       }
     };
