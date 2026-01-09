@@ -48,17 +48,17 @@ serve(async (req: Request) => {
     const webhookData = JSON.parse(new TextDecoder().decode(bodyBytes));
     console.log("Veriff webhook received:", webhookData);
 
-    const { verification } = webhookData;
+    const { sessionId, vendorData, acceptanceTime, time, data, } = webhookData;
 
-    if (!verification) {
+    if (!data) {
       throw new Error("No verification data in webhook");
     }
 
-    const sessionId = verification.id;
-    const status = verification.status;
-    const userId = verification.vendorData; // This is the user_id we sent
-    const verifiedAt = verification.decisionTime;
-    const submitedAt = verification.acceptanceTime;
+    const sessionID = sessionId;
+    const status = data.verification.decision;
+    const userId = vendorData; // This is the user_id we sent
+    const verifiedAt = acceptanceTime;
+    const submitedAt = time;
 
     // Map Veriff status to our internal status
     let verificationStatus = "pending";
@@ -74,7 +74,7 @@ serve(async (req: Request) => {
     const { error } = await supabase
       .from("driver_verifications")
       .upsert({
-        veriff_session_id: sessionId,
+        veriff_session_id: sessionID,
         user_id: userId,
         verification_status: verificationStatus,
         verified_at: verifiedAt,
@@ -110,3 +110,6 @@ serve(async (req: Request) => {
     });
   }
 });
+
+
+
