@@ -6,6 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+interface VerificationPayload {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  phoneNumber: string;
+  idNumber: string;
+  gender: "MALE" | "FEMALE";
+  email: string;
+  licenseNumber: string;
+}
+
 
 // Initialize Supabase client helper
 const initSupabase = (authHeader: string) => {
@@ -16,9 +27,49 @@ const initSupabase = (authHeader: string) => {
   );
 };
 
+function validateVerification(
+  verification: unknown
+): asserts verification is VerificationPayload {
+  if (!verification || typeof verification !== "object") {
+    throw new Error("Verification data is missing");
+  }
+
+  const v = verification as Record<string, unknown>;
+
+  const requiredFields: (keyof VerificationPayload)[] = [
+    "firstName",
+    "lastName",
+    "dateOfBirth",
+    "phoneNumber",
+    "idNumber",
+    "gender",
+    "email",
+    "licenseNumber",
+  ];
+
+  const missingOrInvalid = requiredFields.filter((field) => {
+    const value = v[field];
+
+    if (typeof value !== "string") return true;
+    if (value.trim().length === 0) return true;
+
+    if (field === "gender") {
+      return !["MALE", "FEMALE", "OTHER"].includes(value);
+    }
+
+    return false;
+  });
+
+  if (missingOrInvalid.length > 0) {
+    throw new Error(
+      `Missing or invalid verification fields: ${missingOrInvalid.join(", ")}`
+    );
+  }
+}
+
 
 // Create a Veriff session
-async function createVeriffSession(userId: string, verification: any) {
+async function createVeriffSession(userId: string, verification: VerificationPayload) {
   const VERIFF_BASE_URL = Deno.env.get("VERIFF_BASE_URL");
   if (!VERIFF_BASE_URL) throw new Error("Veriff base URL not configured");
   const VERIFF_API_KEY = Deno.env.get("VERIFF_API_KEY");
@@ -108,6 +159,12 @@ serve(async (req) => {
 
     const { verification } = await req.json();
     console.log("Creating Veriff session for user:", user.id);
+    console.log(
+          "Incoming verification payload:",
+          JSON.stringify(verification, null, 2)
+    );
+
+    validateVerification(verification);
     
     const veriffSession = await createVeriffSession(user.id, verification);
     console.log("Veriff session created:", veriffSession.id);
