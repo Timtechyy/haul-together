@@ -50,7 +50,7 @@ serve(async (req: Request) => {
 
     const { sessionId, vendorData, acceptanceTime, time, data, } = webhookData;
 
-    if (!data) {
+    if (!data ) {
       throw new Error("No verification data in webhook");
     }
 
