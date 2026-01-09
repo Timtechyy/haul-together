@@ -12,7 +12,7 @@ interface VerificationPayload {
   dateOfBirth: string;
   phoneNumber: string;
   idNumber: string;
-  gender: "MALE" | "FEMALE";
+  gender: "male" | "female";
   email: string;
   licenseNumber: string;
 }
