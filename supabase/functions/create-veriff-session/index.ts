@@ -54,7 +54,7 @@ function validateVerification(
     if (value.trim().length === 0) return true;
 
     if (field === "gender") {
-      return !["MALE", "FEMALE", "OTHER"].includes(value);
+      return !["male", "female"].includes(value);
     }
 
     return false;
