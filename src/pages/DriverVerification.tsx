@@ -143,7 +143,7 @@ const DriverVerification = () => {
               firstName: formData.firstName,
               lastName: formData.lastName,
               dateOfBirth: formData.dateOfBirth,
-              phoneNumber: user?.phone,
+              phoneNumber: formData.phone,
               idNumber: formData.ssnLastFour,
               gender: formData.gender,
               email: user?.email,
