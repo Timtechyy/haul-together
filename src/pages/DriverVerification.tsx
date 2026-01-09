@@ -132,27 +132,33 @@ const DriverVerification = () => {
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.split("-");
       console.log("address:", formData.address);
       console.log("addressData:", formData.addressData);
-   if (veriffSessionId==null){  const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
-        body: {
-          verification: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            dateOfBirth: formData.dateOfBirth,
-            phoneNumber: user?.phone,
-            idNumber:formData.ssnLastFour,
-            gender: formData.gender,
-            email: user?.email,
-            licenseNumber: formData.licenseNumber,
+      
+      // Use a local variable to track the session ID throughout this function
+      let currentSessionId = veriffSessionId;
+      
+      if (!currentSessionId) {
+        const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
+          body: {
+            verification: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              dateOfBirth: formData.dateOfBirth,
+              phoneNumber: user?.phone,
+              idNumber: formData.ssnLastFour,
+              gender: formData.gender,
+              email: user?.email,
+              licenseNumber: formData.licenseNumber,
+            },
           },
-        },
-      });
+        });
 
-      if (sessionError) throw sessionError;
-      if (!sessionData?.sessionId) throw new Error("Failed to create session");
-      setVeriffSessionId(sessionData.sessionId);
-
-      console.log("Session created:", sessionData.sessionId);
-    }
+        if (sessionError) throw sessionError;
+        if (!sessionData?.sessionId) throw new Error("Failed to create session");
+        
+        currentSessionId = sessionData.sessionId;
+        setVeriffSessionId(currentSessionId);
+        console.log("Session created:", currentSessionId);
+      }
 
       // Step 2: Upload front image
       toast({
@@ -166,7 +172,7 @@ const DriverVerification = () => {
       if (front) {
         const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
           body: {
-            sessionId: veriffSessionId,
+            sessionId: currentSessionId,
             imageBase64: front.base64,
             mimeType: front.mimeType,
             imageType: "document-front",
@@ -187,7 +193,7 @@ const DriverVerification = () => {
       if (back) {
         const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
           body: {
-            sessionId: veriffSessionId,
+            sessionId: currentSessionId,
             imageBase64: back.base64,
             mimeType: back.mimeType,
             imageType: "document-back",
@@ -204,7 +210,7 @@ const DriverVerification = () => {
 
       const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
         body: {
-          sessionId: veriffSessionId,
+          sessionId: currentSessionId,
         },
       });
 
