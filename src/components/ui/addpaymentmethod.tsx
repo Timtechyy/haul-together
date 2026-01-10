@@ -10,7 +10,7 @@ import SetupIntentModal from "@/components/PaymentMethod";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
-  role: string | null;
+  role: string;
   name: string;
   email: string;
 }
@@ -31,11 +31,6 @@ export default function PaymentMethods({ role,name, email }: Props) {
     }
     console.log('secret:', data.clientSecret);
     setModalSecret(data.clientSecret);
-  };
-
-  const handleSuccess = () => {
-    setModalSecret(null);
-    reload();
   };
 
   return (

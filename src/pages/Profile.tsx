@@ -204,22 +204,15 @@ const Profile = () => {
           }
         }
 
-        const { error: vehicleError } = await supabase.from("driver_vehicles").upsert(
+        const { error: vehicleError } = await supabase.from("driver_vehicles").update(
           {
-            user_id: userId,
-            vehicle_type: vehicle.vehicleType,
-            make: vehicle.make,
-            model: vehicle.model,
-            year: parseInt(vehicle.year),
-            license_plate: vehicle.licensePlate,
             insurance_number: vehicle.insuranceNumber,
             tracking_consent: vehicle.trackingConsent,
             current_lat: currentLat,
             current_lng: currentLng,
             last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
           },
-          { onConflict: "user_id" },
-        );
+        ).eq("user_id", userId);
 
         if (vehicleError) throw vehicleError;
       }
@@ -533,7 +526,8 @@ const Profile = () => {
                       placeholder="e.g., Pickup Truck"
                       value={vehicle.vehicleType}
                       onChange={(e) => setVehicle({ ...vehicle, vehicleType: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                   <div className="space-y-2">
@@ -543,7 +537,8 @@ const Profile = () => {
                       placeholder="e.g., Ford"
                       value={vehicle.make}
                       onChange={(e) => setVehicle({ ...vehicle, make: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                 </div>
@@ -556,7 +551,8 @@ const Profile = () => {
                       placeholder="e.g., F-150"
                       value={vehicle.model}
                       onChange={(e) => setVehicle({ ...vehicle, model: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                   <div className="space-y-2">
@@ -566,7 +562,8 @@ const Profile = () => {
                       placeholder="e.g., 2020"
                       value={vehicle.year}
                       onChange={(e) => setVehicle({ ...vehicle, year: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                 </div>
@@ -579,7 +576,8 @@ const Profile = () => {
                       placeholder="e.g., ABC1234"
                       value={vehicle.licensePlate}
                       onChange={(e) => setVehicle({ ...vehicle, licensePlate: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                   <div className="space-y-2">
@@ -589,7 +587,8 @@ const Profile = () => {
                       placeholder="Optional"
                       value={vehicle.insuranceNumber}
                       onChange={(e) => setVehicle({ ...vehicle, insuranceNumber: e.target.value })}
-                      disabled={!isEditing}
+                      // disabled={!isEditing}
+                      readOnly
                     />
                   </div>
                 </div>
