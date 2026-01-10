@@ -90,7 +90,7 @@ serve(async (req) => {
 
         const PLATES_TO_VIN_API_KEY = Deno.env.get("PLATES_TO_VIN_API_KEY");
         if (!PLATES_TO_VIN_API_KEY ) throw new Error("PLATES TO VIN API KEY not configured");
-        const response = await fetch( PLATES_TO_VIN_API_KEY + "/convert", {
+        const response = await fetch( PLATES_TO_VIN_BASE_URL + "/convert", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
