@@ -84,10 +84,12 @@ export  default function LicensePlate({userId, onComplete}:Details){
         const { data, error } = await supabase.functions.invoke(
             "get-vehicle-info",
             {
-            body: {
-                id: keyword.plateNumber,
-                state: keyword.plateState
-            }
+                body: {
+                    plate: {
+                        id: keyword.plateNumber,
+                        state: keyword.plateState,
+                    },
+                }
             }
         );
 
