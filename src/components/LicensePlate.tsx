@@ -85,7 +85,7 @@ export  default function LicensePlate({userId, onComplete}:Details){
             "get-vehicle-info",
             {
             body: {
-                plate: keyword.plateNumber,
+                id: keyword.plateNumber,
                 state: keyword.plateState
             }
             }
