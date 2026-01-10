@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
 import PhoneInputField from "@/components/ui/phoneinput"
+import LicensePlate from "@/components/LicensePlate";
 
 const signupSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(50),
@@ -37,10 +38,17 @@ const Signup = () => {
     phone: "",
     password: "",
     confirmPassword: "",
-    gender: "" as "male" | "female" | "",
+    gender: "" as "male" | "female",
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showPlateWidget, setShowPlateWidget] = useState(false);
+  const [driverUserId, setDriverUserId] = useState<string | null>(null);
+  const [driverName, setDriverName]=useState({
+    firstName: "",
+    lastName: "",
+  });
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +116,10 @@ const Signup = () => {
 
         // Redirect based on role
         if (userType === 'driver') {
-          navigate("/driver/dashboard");
+          const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", data.user.id).single();
+          setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
+          setDriverUserId(data.user.id);
+          setShowPlateWidget(true);
         } else {
           navigate("/customer/booking");
         }
@@ -135,7 +146,33 @@ const Signup = () => {
           </Link>
         </Button>
 
-        {/* Signup Form */}
+        {showPlateWidget ? (
+         <Card className="shadow-medium"> 
+          <CardHeader className="space-y-1 text-center items-center">
+            <div className="flex flex-col justify-start items-start h-full">
+              <img
+                src={logo}
+                alt="Wehauler Logo"
+                className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+              />
+            </div>
+          
+            <CardTitle className="text-2xl">Welcome {driverName.firstName} {driverName.lastName}</CardTitle>
+            <CardDescription>
+              To Proceed please Enter Your Vehicle Plate Number
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <LicensePlate
+              userId={driverUserId}
+              onComplete={() => navigate("/driver/dashboard")}
+            />
+          </CardContent>
+          </Card>
+        ) : (
+          <>
+          {/* Signup Form */}
         <Card className="shadow-medium">
           <CardHeader className="space-y-1 text-center items-center">
            <div className="flex flex-col justify-start items-start h-full">
@@ -317,6 +354,9 @@ const Signup = () => {
             </Link>
           </p>
         </div>
+        </>
+        )}
+
       </div>
     </div>
   );
