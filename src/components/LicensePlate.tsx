@@ -3,6 +3,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 interface PlateData{
@@ -16,17 +17,19 @@ interface Details{
 export  default function LicensePlate({userId, onComplete}:Details){
 
     const [vehicleResult, setVehicleResult] = useState(null);
+      const [vehicleTracking, setVehicleTracking] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
 
      const saveVehicle = async () => {
     await supabase.from("driver_vehicles").update({
-            vehicle_type: vehicleResult.vehicleType,
-            make: vehicleResult.make,
-            model: vehicleResult.model,
-            year: parseInt(vehicleResult.year),
-            license_plate: keyword.plateNumber,
+        vehicle_type: vehicleResult.vehicleType,
+        make: vehicleResult.make,
+        model: vehicleResult.model,
+        year: parseInt(vehicleResult.year),
+        license_plate: keyword.plateNumber,
+        tracking_consent:vehicleTracking,
     }).eq("user_id", userId);
 
     onComplete();
@@ -181,12 +184,25 @@ export  default function LicensePlate({userId, onComplete}:Details){
                 <Input value={vehicleResult.vin || ""} readOnly />
                 </div>
 
-                <Button variant="hero" onClick={saveVehicle}>
+
+                <div className="flex items-center space-x-2">
+                    <Checkbox
+                    id="trackingConsent"
+                    checked={vehicleTracking}
+                    onCheckedChange={(checked) => setVehicleTracking(checked as boolean )}
+                    
+                    />
+                    <Label htmlFor="trackingConsent" className="text-sm">
+                    I agree to location tracking during active deliveries
+                    </Label>
+                </div>
+
+                <Button variant="hero" onClick={saveVehicle} disabled={!vehicleTracking}>
                     Finish Setup
                 </Button>
 
             </div>
-            ) : (<form onSubmit={handleSubmit}>
+            ) : (<form onSubmit={handleSubmit} className="gap-1 justify-center">
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">

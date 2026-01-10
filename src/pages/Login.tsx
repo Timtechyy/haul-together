@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
+import LicensePlate from "@/components/LicensePlate";
 const loginSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
@@ -21,6 +22,13 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+  });
+  
+  const [showPlateWidget, setShowPlateWidget] = useState(false);
+  const [driverUserId, setDriverUserId] = useState<string | null>(null);
+  const [driverName, setDriverName]=useState({
+    firstName: "",
+    lastName: "",
   });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -63,6 +71,41 @@ const Login = () => {
 
         // Redirect based on role
         if (roleData?.role === 'driver') {
+          const { data: vehicle, error } = await supabase
+          .from("driver_vehicles")
+          .select(`
+            vehicle_type,
+            make,
+            model,
+            year,
+            license_plate,
+            tracking_consent
+          `)
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+          const isVehicleComplete =
+          vehicle &&
+          vehicle.vehicle_type &&
+          vehicle.make &&
+          vehicle.model &&
+          vehicle.year &&
+          vehicle.license_plate &&
+          vehicle.tracking_consent === true;
+          if (!isVehicleComplete) {
+            const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", data.user.id).single();
+            setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
+            setDriverUserId(data.user.id);
+            setShowPlateWidget(true);
+
+            toast({
+              title: "Almost there!",
+              description: "Please add your vehicle details to continue",
+            });
+
+            return;
+          }
+
           navigate("/driver/dashboard");
         } else {
           navigate("/customer/dashboard");
@@ -89,6 +132,34 @@ const Login = () => {
             Back to Home
           </Link>
         </Button>
+
+
+        {showPlateWidget ? (
+          <Card className="shadow-medium"> 
+          <CardHeader className="space-y-1 text-center items-center">
+            <div className="flex flex-col justify-start items-start h-full">
+              <img
+                src={logo}
+                alt="Wehauler Logo"
+                className="h-16 sm:h-20 md:h-24 lg:h-32 object-contain"
+              />
+            </div>
+          
+            <CardTitle className="text-2xl">Welcome {driverName.firstName} {driverName.lastName}</CardTitle>
+            <CardDescription>
+              To Proceed please Enter Your Vehicle Plate Number
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <LicensePlate
+              userId={driverUserId}
+              onComplete={() => navigate("/driver/dashboard")}
+            />
+          </CardContent>
+          </Card>
+        ) : (
+          <>
 
         {/* Login Form */}
         <Card className="shadow-medium">
@@ -184,6 +255,9 @@ const Login = () => {
             </Link>
           </p>
         </div>
+        </>
+        )
+      }
       </div>
     </div>
   );
