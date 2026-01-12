@@ -48,9 +48,9 @@ serve(async (req: Request) => {
     const webhookData = JSON.parse(new TextDecoder().decode(bodyBytes));
     console.log("Veriff webhook received:", webhookData);
 
-    const { sessionId, vendorData, acceptanceTime, time, data, } = webhookData;
+    const { sessionId, vendorData, acceptanceTime, time, data } = webhookData;
 
-    if (!data ) {
+    if (!data) {
       throw new Error("No verification data in webhook");
     }
 
@@ -70,18 +70,19 @@ serve(async (req: Request) => {
       verificationStatus = "resubmit";
     }
 
-    // Update driver verification status
-    const { error } = await supabase
-      .from("driver_verifications")
-      .upsert({
-        veriff_session_id: sessionID,
+    const { error } = await supabase.from("driver_verifications").upsert(
+      {
+        veriff_session_id: sessionId,
         user_id: userId,
         verification_status: verificationStatus,
         verified_at: verifiedAt,
-        submitted_at: submitedAt,
+        submitted_at: submittedAt,
         updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
 
     if (error) {
       console.error("Error updating driver verification:", error);
@@ -110,6 +111,3 @@ serve(async (req: Request) => {
     });
   }
 });
-
-
-
