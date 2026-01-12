@@ -58,7 +58,7 @@ serve(async (req: Request) => {
     const status = data.verification.decision;
     const userId = vendorData; // This is the user_id we sent
     const verifiedAt = acceptanceTime;
-    const submitedAt = time;
+    const submittedAt = time;
 
     // Map Veriff status to our internal status
     let verificationStatus = "pending";
