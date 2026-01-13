@@ -41,7 +41,7 @@ serve(async (req: Request) => {
     const types = ["card", "us_bank_account"];
     const paymentMethods = await stripe.paymentMethods.list({
       customer: stripeId,
-      type: types,
+      // type: types,
     });
 
     return new Response(JSON.stringify({ methods: paymentMethods.data }), {
