@@ -71,7 +71,7 @@ serve(async (req: Request) => {
     // 3. Create SetupIntent for saving new cards
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
-      payment_method_types: role?.role === "driver" ? ["us_bank_account"] : ["card"],
+      payment_method_types: role?.role === "driver" ? ["us_bank_account, card, crypto"] : ["card, crypto"],
       ...(role?.role === "driver" && { flow_directions: ["outbound"] }),
     });
     console.log("secret:", setupIntent.client_secret);
