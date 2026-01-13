@@ -36,12 +36,12 @@ serve(async (req: Request) => {
       .maybeSingle();
 
     if (profileError) throw profileError;
-    let stripeId = profile?.stripe_id;
+    const stripeId = profile?.stripe_id;
         
 
     const paymentMethods = await stripe.paymentMethods.list({
       customer: stripeId,
-      type: "card",
+      type: "",
     });
 
     return new Response(JSON.stringify({ methods: paymentMethods.data }), {

@@ -31,8 +31,9 @@ serve(async (req: Request) => {
     }
 
     const transfer = await stripe.transfers.create({
-      amount: 7000,
+      amount: details.amount,
       currency: "usd",
+      source_transaction: details.chargeId,
       destination: details.account,
       transfer_group: details.orderId,
     });

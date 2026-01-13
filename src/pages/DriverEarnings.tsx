@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/enhanced-button";
 import { ArrowLeft, DollarSign, TrendingUp, Calendar } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import Withdrawal from "@/components/ui/withdrawal";
+import ResponsivePaymentModal from "@/components/ui/modal";
 
 interface EarningsData {
   date: string;
@@ -23,6 +25,19 @@ const DriverEarnings = () => {
   const [monthlyData, setMonthlyData] = useState<EarningsData[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalTrips, setTotalTrips] = useState(0);
+  const [verification, setVerification] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    avatarUrl: "",
+    gender: "",
+  });
+
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
+
 
   useEffect(() => {
     const checkUser = async () => {
@@ -120,10 +135,51 @@ const DriverEarnings = () => {
         };
       });
       setMonthlyData(monthly);
+
+      const { data: verificationData } = await supabase
+      .from("driver_verifications")
+      .select("verification_status")
+      .eq("user_id", user.id)
+      .single();
+
+      setVerification(verificationData);
+
+      // Get user role
+      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
+
+      setUserRole(roleData?.role || null);
+      
+
+      // Get profile data
+      const { data: profileData, error: profileError } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, created_at").eq("id", user.id).single();
+
+      if (profileError) throw error;
+
+      setProfile({
+        firstName: profileData.first_name || "",
+        lastName: profileData.last_name || "",
+        email: user.email || "",
+        phone: profileData.phone || "",
+        avatarUrl: profileData.avatar_url || "",
+        gender: profileData.gender || "",
+      });
+        
     };
 
     fetchEarnings();
+
   }, [user, toast]);
+   const isVerified = verification === "approved";
+   function withdraw() {
+    // if (!isVerified) {
+    //   navigate("/driver/verification");  
+  
+
+    setShowWithdrawal(true);
+  
+
+    
+   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -138,9 +194,14 @@ const DriverEarnings = () => {
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Earnings Analytics</h1>
-            <p className="text-muted-foreground">Track your performance and earnings</p>
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Earnings Analytics</h1>
+              <p className="text-muted-foreground">Track your performance and earnings</p>
+            </div>
+            <div>
+              <Button onClick={withdraw}>Withdraw</Button>
+            </div>
           </div>
 
           {/* Summary Cards */}
@@ -287,6 +348,17 @@ const DriverEarnings = () => {
             </CardContent>
           </Card>
         </div>
+           <ResponsivePaymentModal
+        isOpen={showWithdrawal}
+        onClose={() => setShowWithdrawal(false)}
+        title="Withdraw Funds"
+      >
+        <Withdrawal
+          role="driver"
+          balance="250.00"
+        />
+      </ResponsivePaymentModal>
+  
       </main>
     </div>
   );

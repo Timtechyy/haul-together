@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.create-transfer]
 verify_jwt = true
+
+[functions.create-payout]
+verify_jwt = true

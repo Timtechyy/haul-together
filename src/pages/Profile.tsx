@@ -88,9 +88,10 @@ const Profile = () => {
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
 
       setUserRole(roleData?.role || null);
+     
 
       // Get profile data
-      const { data: profileData, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, stripe_id, created_at").eq("id", user.id).single();
 
       if (error) throw error;
 
@@ -106,10 +107,10 @@ const Profile = () => {
       setStripeId(profileData.stripe_id);
 
       // Fetch vehicle info if driver
-      if (roleData?.role === "driver") {
+      if (isDriver) {
         const { data: vehicleData } = await supabase
           .from("driver_vehicles")
-          .select("*")
+          .select("vehicle_type, make, model, year, license_plate, insurance_number, tracking_consent")
           .eq("user_id", user.id)
           .single();
 
@@ -128,7 +129,7 @@ const Profile = () => {
         // Fetch verification status
         const { data: verificationData } = await supabase
           .from("driver_verifications")
-          .select("*")
+          .select("verification_status")
           .eq("user_id", user.id)
           .single();
 
@@ -187,7 +188,7 @@ const Profile = () => {
       if (error) throw error;
 
       // Save vehicle info if driver
-      if (userRole === "driver") {
+      if (isDriver) {
         // Get current location if tracking consent is enabled
         let currentLat = null;
         let currentLng = null;
@@ -289,14 +290,16 @@ const Profile = () => {
   };
 
   const handleBackNavigation = () => {
-    if (userRole === "driver") {
+    if (isDriver) {
       navigate("/driver/dashboard");
     } else {
       navigate("/customer/dashboard");
     }
   };
-
-  const isVerified = verification?.verification_status === "approved";
+  const isDriver = userRole === "driver"
+  const isVerified = verification === "approved";
+  
+  
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
@@ -369,10 +372,10 @@ const Profile = () => {
                       {isVerified && (
                         <Badge variant="default" className="flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
-                          Verified {userRole === "driver" ? "Driver" : "Customer"}
+                          Verified {isDriver ? "Driver" : "Customer"}
                         </Badge>
                       )}
-                      {!isVerified && userRole === "driver" && verification?.verification_status === "pending" && (
+                      {isDriver && !isVerified  && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Verification Pending
@@ -391,7 +394,7 @@ const Profile = () => {
                 </div>
 
                 {/* Stats - Only show for drivers */}
-                {userRole === "driver" && (
+                {isDriver && (
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center justify-center gap-1 text-lg font-semibold">
@@ -508,7 +511,7 @@ const Profile = () => {
           </Card>
 
           {/* Vehicle Information Card - Only for Drivers */}
-          {userRole === "driver" && (
+          {isDriver && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -654,7 +657,7 @@ const Profile = () => {
           {/* Payment Methods */}
           <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
           {/* Verification Card - Only for Drivers */}
-          {userRole === "driver" && !isVerified && (
+          {isDriver && !isVerified && (
             <Card className="h-46">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { US_STATES } from "@/contants/states";
 
 
 interface PlateData{
@@ -23,14 +24,24 @@ export  default function LicensePlate({userId, onComplete}:Details){
 
 
      const saveVehicle = async () => {
-    await supabase.from("driver_vehicles").update({
-        vehicle_type: vehicleResult.vehicleType,
-        make: vehicleResult.make,
-        model: vehicleResult.model,
-        year: parseInt(vehicleResult.year),
-        license_plate: keyword.plateNumber,
-        tracking_consent:vehicleTracking,
-    }).eq("user_id", userId);
+    await supabase.from("driver_vehicles").upsert(
+        {
+            user_id: userId,
+            vehicle_type: vehicleResult.style,
+            make: vehicleResult.make,
+            model: vehicleResult.model,
+            year: parseInt(vehicleResult.year),
+            color:vehicleResult.color.name,
+            trim:vehicleResult.trim,
+            license_plate: keyword.plateNumber,
+            tracking_consent:vehicleTracking,
+
+        },
+        {
+            onConflict: "user_id",
+        },
+
+    );
 
     onComplete();
   };
@@ -72,7 +83,9 @@ export  default function LicensePlate({userId, onComplete}:Details){
     setKeyword((prev) => ({
       ...prev,
       plateState: e.target.value.toUpperCase()
+
     }));
+    console.log(e.target.value.toUpperCase());
   };
 
     const handleSubmit = async (e) => {
@@ -105,80 +118,64 @@ export  default function LicensePlate({userId, onComplete}:Details){
 
     
 
-    const US_STATES = [
-        { code: "AL", name: "Alabama" },
-        { code: "AK", name: "Alaska" },
-        { code: "AZ", name: "Arizona" },
-        { code: "AR", name: "Arkansas" },
-        { code: "CA", name: "California" },
-        { code: "CO", name: "Colorado" },
-        { code: "CT", name: "Connecticut" },
-        { code: "DE", name: "Delaware" },
-        { code: "FL", name: "Florida" },
-        { code: "GA", name: "Georgia" },
-        { code: "HI", name: "Hawaii" },
-        { code: "ID", name: "Idaho" },
-        { code: "IL", name: "Illinois" },
-        { code: "IN", name: "Indiana" },
-        { code: "IA", name: "Iowa" },
-        { code: "KS", name: "Kansas" },
-        { code: "KY", name: "Kentucky" },
-        { code: "LA", name: "Louisiana" },
-        { code: "ME", name: "Maine" },
-        { code: "MD", name: "Maryland" },
-        { code: "MA", name: "Massachusetts" },
-        { code: "MI", name: "Michigan" },
-        { code: "MN", name: "Minnesota" },
-        { code: "MS", name: "Mississippi" },
-        { code: "MO", name: "Missouri" },
-        { code: "MT", name: "Montana" },
-        { code: "NE", name: "Nebraska" },
-        { code: "NV", name: "Nevada" },
-        { code: "NH", name: "New Hampshire" },
-        { code: "NJ", name: "New Jersey" },
-        { code: "NM", name: "New Mexico" },
-        { code: "NY", name: "New York" },
-        { code: "NC", name: "North Carolina" },
-        { code: "ND", name: "North Dakota" },
-        { code: "OH", name: "Ohio" },
-        { code: "OK", name: "Oklahoma" },
-        { code: "OR", name: "Oregon" },
-        { code: "PA", name: "Pennsylvania" },
-        { code: "RI", name: "Rhode Island" },
-        { code: "SC", name: "South Carolina" },
-        { code: "SD", name: "South Dakota" },
-        { code: "TN", name: "Tennessee" },
-        { code: "TX", name: "Texas" },
-        { code: "UT", name: "Utah" },
-        { code: "VT", name: "Vermont" },
-        { code: "VA", name: "Virginia" },
-        { code: "WA", name: "Washington" },
-        { code: "WV", name: "West Virginia" },
-        { code: "WI", name: "Wisconsin" },
-        { code: "WY", name: "Wyoming" }
-    ];
-
     return(
         <>
         {vehicleResult ? (
             <div className="mt-4 grid grid-cols-2 gap-3">
+
                 <div className="space-y-2">
-                <Label>Make</Label>
-                <Input value={vehicleResult.make || ""} readOnly />
-                </div>
-                <div className="space-y-2">
-                <Label>Model</Label>
-                <Input value={vehicleResult.model || ""} readOnly />
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={vehicleResult.name || ""} readOnly />
                 </div>
 
                 <div className="space-y-2">
-                <Label>Year</Label>
-                <Input value={vehicleResult.year || ""} readOnly />
+                <Label htmlFor="make">Make</Label>
+                <Input id="make" value={vehicleResult.make || ""} readOnly />
                 </div>
 
                 <div className="space-y-2">
-                <Label>Type</Label>
-                <Input value={vehicleResult.type || ""} readOnly />
+                <Label htmlFor="model" >Model</Label>
+                <Input id="model" value={vehicleResult.model || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="trim" >Trim</Label>
+                <Input id="trim" value={vehicleResult.trim || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="year" >Year</Label>
+                <Input id="year" value={vehicleResult.year || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <Input id="color" value={vehicleResult.color.name || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="type" >Type</Label>
+                <Input id="type" value={vehicleResult.style || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="driveType">Drive Type</Label>
+                <Input id="driveType" value={vehicleResult.driveType || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="transmission" >Transmission</Label>
+                <Input id="transmission" value={vehicleResult.transmission || ""} readOnly />
+                </div>
+
+                <div className="space-y-2">
+                <Label htmlFor="engine">Engine</Label>
+                <Input id="engine" value={vehicleResult.engine || ""} readOnly />
+                </div>
+                
+                <div className="space-y-2">
+                <Label htmlFor="fuel">Fuel</Label>
+                <Input id="fuel" value={vehicleResult.fuel|| ""} readOnly />
                 </div>
 
                 <div className="space-y-2">
