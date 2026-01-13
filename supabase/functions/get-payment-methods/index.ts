@@ -38,10 +38,10 @@ serve(async (req: Request) => {
     if (profileError) throw profileError;
     const stripeId = profile?.stripe_id;
         
-
+    const types = ["card", "us_bank_account"];
     const paymentMethods = await stripe.paymentMethods.list({
       customer: stripeId,
-      type: "card, wallet, us_bank_account, crypto",
+      type: types,
     });
 
     return new Response(JSON.stringify({ methods: paymentMethods.data }), {
