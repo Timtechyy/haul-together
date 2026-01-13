@@ -110,7 +110,7 @@ serve(async (req) => {
   }
 
     const data = await response.json();
-  return data;
+  return data.vin;
   } catch (error) {
       console.error(error);
   }

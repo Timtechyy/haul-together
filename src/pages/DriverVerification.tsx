@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload } from "lucide-react";
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { add } from "date-fns";
+import { US_STATES } from "@/contants/states";
 const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
@@ -90,8 +91,9 @@ const DriverVerification = () => {
     checkUser();
   }, [navigate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    console.log(formData.licenseState);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
@@ -381,7 +383,26 @@ const DriverVerification = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="licenseState">State</Label>
-                    <Input
+                        <select
+                          id="licenseState"
+                          value={formData.licenseState}
+                          name="licenseState"
+                          onChange={handleInputChange}
+                          required 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"    
+                      >
+                          <option value="" disabled>
+                          Select state
+                          </option>
+  
+                          {US_STATES.map((state) => (
+                          <option key={state.code} value={state.code}>
+                              {state.name} ({state.code})
+                          </option>
+                          ))}   
+                      </select>
+                      
+                    {/* <Input
                       id="licenseState"
                       name="licenseState"
                       maxLength={2}
@@ -389,7 +410,7 @@ const DriverVerification = () => {
                       value={formData.licenseState}
                       onChange={handleInputChange}
                       required
-                    />
+                    /> */}
                   </div>
                 </div>
                 {/* FRONT IMAGE */}
