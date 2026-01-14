@@ -1,6 +1,6 @@
 type CardMethod = {
   id: string
-  object: "payment_method"
+  object: "card"
   card: {
     brand: string
     last4: string
