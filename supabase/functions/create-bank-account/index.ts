@@ -32,20 +32,26 @@ serve(async (req) => {
     });
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
-      .select("stripe_id")
+      .select("stripe_id, stripe_connect_id")
       .eq("id", user.id)
       .maybeSingle();
 
     if (profileError) throw profileError;
 
-    let stripeId = profile?.stripe_id;
-  
-    const tokenId = await stripe.tokens.create({
-      bank_account: {
-        payment_method: paymentMethodId,
+    const stripeId = profile?.stripe_id;
+    const stripeConnectId = profile?.stripe_connect_id;
+
+    const tokenId = await stripe.tokens.create(
+      {
+        bank_account: {
+          payment_method: paymentMethodId,
+        },
+        customer: stripeId,
       },
-      customer: stripeId,
-    });
+      {
+        stripeAccount: stripeConnectId,
+      },
+    );
 
     console.log("Created token:", tokenId.id);
     const account = await stripe.accounts.update(stripeId!, {
