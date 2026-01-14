@@ -89,7 +89,7 @@ serve(async (req: Request) => {
       customer: customerId,
       // payment_method_types: role?.role === "driver" ? ["us_bank_account", "card"] : ["card", "crypto"],
       ...(role?.role === "driver" && {  flow_directions: ["outbound"],
-        payment_method_options:["card","financial_connections","link","paypal","us_bank_account"],
+        // payment_method_options:["card","financial_connections","link","paypal","us_bank_account"],
        }),
 
     });
