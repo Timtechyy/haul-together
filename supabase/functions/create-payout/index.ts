@@ -50,6 +50,10 @@ serve(async (req: Request) => {
       },
     );
 
+    return new Response(JSON.stringify({}), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
 
   } catch (e:any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
