@@ -93,6 +93,23 @@ serve(async (req: Request) => {
        }),
 
     });
+
+    // const session = await stripe.financialConnections.sessions.create(
+    //   {
+    //     account_holder: {
+    //       type: 'account',
+    //       account: 'acct_1SasesBrAMOOCwzT',
+    //     },
+    //     permissions: ['balances', 'payment_method', 'ownership'],
+    //     prefetch: ['balances', 'ownership'],
+    //     filters: {
+    //       countries: ['us'],
+    //     },
+    //   },
+    //   {
+    //     stripeAccount: 'acct_1SMQSjB8U5OdTNgh/acct_1SasesBrAMOOCwzT',
+    //   }
+    // );
     console.log("secret:", setupIntent.client_secret);
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
