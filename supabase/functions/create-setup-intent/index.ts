@@ -3,6 +3,8 @@ import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
+
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -34,17 +36,8 @@ serve(async (req: Request) => {
     });
     // 1. Check if user already has a Stripe customer ID
 
-    let { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("stripe_id")
-      .eq("id", user.id)
-      .maybeSingle();
+   
 
-    if (profileError) throw profileError;
-    let customerId = profile?.stripe_id;
-
-    console.log("user stripe id:", customerId);
-    console.log("user id:", user.id);
     const { data: role, error: roleError } = await supabaseClient
       .from("user_roles")
       .select("role")
@@ -53,8 +46,24 @@ serve(async (req: Request) => {
     console.log("user role:", role?.role);
     if (roleError) throw roleError;
 
+
+    const action= role?.role === "driver"?"stripe_connect_id":"stripe_id"
+    let { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select(action)
+        .eq("id", user.id)
+        .maybeSingle();
+
+        if (profileError) throw profileError;
+        let customerId = profile?.stripe_id;
+        const connect_id = profile.stripe_connect_id
+
+        console.log("user stripe id:", customerId);
+        console.log("user id:", user.id);
+
+        
     // 2. If no customer, create one
-    if (!customerId) {
+    if (role?.role === "user" && !customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
         name:
@@ -70,9 +79,14 @@ serve(async (req: Request) => {
 
     // 3. Create SetupIntent for saving new cards
     const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      payment_method_types: role?.role === "driver" ? ["us_bank_account, card, crypto"] : ["card, crypto"],
-      ...(role?.role === "driver" && { flow_directions: ["outbound"] }),
+      ...(role?.role === "user" && { 
+      customer: customerId}),
+      // payment_method_types: role?.role === "driver" ? ["us_bank_account", "card"] : ["card", "crypto"],
+      ...(role?.role === "driver" && { customer_account:connect_id ,flow_directions: ["outbound"],
+        payment_method_options:["card","financial_connections","link","paypal","us_bank_account"],
+        permission:["balances","payment_method", "ownership"]
+       }),
+
     });
     console.log("secret:", setupIntent.client_secret);
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {

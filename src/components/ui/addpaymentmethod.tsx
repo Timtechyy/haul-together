@@ -90,7 +90,7 @@ export default function PaymentMethods({ role,name, email }: Props) {
           title="Add Payout Method"
           clientSecret={modalSecret}
         >
-          <SetupIntentModal role={role}/>
+          <SetupIntentModal role={role} clientSecret={modalSecret}/>
         </ResponsivePaymentModal>
         )
       }
