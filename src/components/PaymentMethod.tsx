@@ -81,7 +81,7 @@ export default function SetupIntentForm({ role, clientSecret }: Props) {
     <div className="space-y-4">
       <PaymentElement />
       <button
-        onClick={handleSubmit(role)}
+        onClick={() => handleSubmit(role)}
         disabled={!stripe || loading}
         className="bg-black text-white px-4 py-2 rounded-md w-full"
       >
