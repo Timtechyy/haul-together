@@ -56,8 +56,8 @@ serve(async (req: Request) => {
     if (profileError) throw profileError;
     if (!profile) throw new Error("Profile not found");
 
-    let customerId = profile.stripe_id ?? undefined;
-    const connect_id = profile.stripe_connect_id ?? undefined;
+    let customerId = profile.stripe_id;
+    const connect_id = profile.stripe_connect_id;
 
     if (role?.role === "driver" && !connect_id) {
       throw new Error("Driver is missing Stripe connect account");
