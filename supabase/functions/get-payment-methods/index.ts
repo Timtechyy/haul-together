@@ -28,22 +28,33 @@ serve(async (req: Request) => {
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), { apiVersion: "2025-08-27.basil",});
 
+  const { data: role, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    console.log("user role:", role?.role);
+    
+    if (roleError) throw roleError;
+
+    const action= role?.role === "driver"?"stripe_connect_id":"stripe_id"
 
     const { data: profile, error:profileError } = await supabase
       .from("profiles")
-      .select("stripe_id")
+      .select(action)
       .eq("id", user.id)
       .maybeSingle();
 
     if (profileError) throw profileError;
     const stripeId = profile?.stripe_id;
-        
-    const types = ["card", "us_bank_account"];
-    const paymentMethods = await stripe.paymentMethods.list({
-      customer: stripeId,
-      // type: types,
-    });
+    const connect_id = profile.stripe_connect_id
 
+    // const types = ["card", "us_bank_account"];
+    const paymentMethods = role?.role === "driver"? await stripe.accounts.listExternalAccounts(connect_id): await stripe.paymentMethods.list({
+    customer: stripeId,
+    // type: types,
+    });
+    
     return new Response(JSON.stringify({ methods: paymentMethods.data }), {
       headers: {...corsHeaders, "Content-Type": "application/json" },
     });
