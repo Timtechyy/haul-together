@@ -39,7 +39,7 @@ serve(async (req) => {
     if (profileError) throw profileError;
 
     let stripeId = profile?.stripe_id;
-    // Create Payment Intent
+  
     const tokenId = await stripe.tokens.create({
       bank_account: {
         payment_method: paymentMethodId,
