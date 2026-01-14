@@ -12,7 +12,7 @@ export default function SetupIntentForm({ role, clientSecret }: Props) {
 
   const handleSubmit = async (role: string) => {
     if (!stripe || !elements) return;
-    console.log("adding payment method for:", $role);
+    console.log("adding payment method for:", role);
     const { error, setupIntent } = await stripe.confirmSetup({
       elements,
       confirmParams: { return_url: window.location.href },
