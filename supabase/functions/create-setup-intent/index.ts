@@ -47,16 +47,21 @@ serve(async (req: Request) => {
     if (roleError) throw roleError;
 
 
-    const action= role?.role === "driver"?"stripe_connect_id":"stripe_id"
-    let { data: profile, error: profileError } = await supabaseClient
-        .from("profiles")
-        .select(action)
-        .eq("id", user.id)
-        .maybeSingle();
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("stripe_id, stripe_connect_id")
+      .eq("id", user.id)
+      .maybeSingle();
 
-        if (profileError) throw profileError;
-        let customerId = profile?.stripe_id;
-        const connect_id = profile.stripe_connect_id
+    if (profileError) throw profileError;
+    if (!profile) throw new Error("Profile not found");
+
+    let customerId = profile.stripe_id ?? undefined;
+    const connect_id = profile.stripe_connect_id ?? undefined;
+
+    if (role?.role === "driver" && !connect_id) {
+      throw new Error("Driver is missing Stripe connect account");
+    }
 
         console.log("user stripe id:", customerId);
         console.log("user id:", user.id);
