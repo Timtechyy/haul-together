@@ -42,7 +42,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [stripeId, setStripeId] = useState<string | null>(null);
+
   const [userRole, setUserRole] = useState<string | null>(null);
   const [verification, setVerification] = useState<any>(null);
   const [driverStats, setDriverStats] = useState({
@@ -91,7 +91,7 @@ const Profile = () => {
      
 
       // Get profile data
-      const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, stripe_id, created_at").eq("id", user.id).single();
+      const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, created_at").eq("id", user.id).single();
 
       if (error) throw error;
 
@@ -103,8 +103,6 @@ const Profile = () => {
         avatarUrl: profileData.avatar_url || "",
         gender: profileData.gender || "",
       });
-
-      setStripeId(profileData.stripe_id);
 
       // Fetch vehicle info if driver
       if (isDriver) {
