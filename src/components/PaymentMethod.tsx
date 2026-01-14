@@ -11,6 +11,7 @@ export default function SetupIntentForm({ role, clientSecret }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (role: string) => {
+     console.log("adding payout type";
     if (!stripe || !elements) return;
 
     const { error, setupIntent } = await stripe.confirmSetup({
