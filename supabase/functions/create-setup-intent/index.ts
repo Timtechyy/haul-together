@@ -68,7 +68,7 @@ serve(async (req: Request) => {
 
         
     // 2. If no customer, create one
-    if (role?.role === "user" && !customerId) {
+    // if (role?.role === "user" && !customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
         name:
@@ -80,14 +80,15 @@ serve(async (req: Request) => {
       customerId = customer.id;
 
       await supabaseClient.from("profiles").update({ stripe_id: customerId }).eq("id", user.id);
-    }
+    // }
 
     // 3. Create SetupIntent for saving new cards
     const setupIntent = await stripe.setupIntents.create({
-      ...(role?.role === "user" && { 
-      customer: customerId}),
+      // ...(role?.role === "user" && { 
+      // customer: customerId}),
+      customer: customerId,
       // payment_method_types: role?.role === "driver" ? ["us_bank_account", "card"] : ["card", "crypto"],
-      ...(role?.role === "driver" && { customer_account:connect_id ,flow_directions: ["outbound"],
+      ...(role?.role === "driver" && {  flow_directions: ["outbound"],
         payment_method_options:["card","financial_connections","link","paypal","us_bank_account"],
        }),
 
