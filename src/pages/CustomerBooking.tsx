@@ -41,7 +41,7 @@ const CustomerBooking = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const[driverFound, setDriverFound] = useState(false);
+  const[driverNotFound, setdriverNotFound] = useState(false);
   type PaymentModalState = {
     open: boolean;
     clientSecret?: string;
@@ -196,15 +196,23 @@ const CustomerBooking = () => {
 
       const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
 
-      // Fetch drivers with location data
-      const { data: matchingDrivers } = await supabase
+      // Fetch drivers with location data@£$%^&*()___+¡€#¢∞§¶•ªº-09≠–ºª•¶§∞¢#€¡§§§¡€#¢∞§¶•ªº–“‘‘‘‘‘
+      let query = supabase
         .from("driver_vehicles")
-        .select("user_id, vehicle_type, make, model, year, current_lat, current_lng, profiles:user_id ( first_name, last_name)")
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, profiles:user_id ( first_name, last_name)`)
+        
         .eq("vehicle_type", vehicleType)
         // .in("user_id", verifiedUserIds)
-        .not("user_id", "in", `(${busyDriverIds.join(",")})`)
+        // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
         .not("current_lat", "is", null)
         .not("current_lng", "is", null);
+
+      if (busyDriverIds.length > 0) {
+        query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
+      }
+
+      const { data: matchingDrivers, error } = await query;
+
 
       // Calculate distance and sort by proximity if pickup location has coordinates
       let driversWithDistance = matchingDrivers;
@@ -223,20 +231,23 @@ const CustomerBooking = () => {
 
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
+      setdriverNotFound(driversWithDistance.length === 0);
       setDrivers(driversWithDistance);
-      setDriverFound(driversWithDistance.length != 0);
+      
       // setDrivers(driversWithReceipt);
       setShowForm(false);
       
-      toast({
-        title:driverFound ? "No Driver Currently Not Available": "Drivers Matched!",
-        description: `Found ${driversWithDistance.length} available drivers. ${driverFound ?? 'Payment will show in 1 minute...'} `,
-      });
-
-      if (driverFound) {
+      if (driversWithDistance.length >= 1) {
         // Start 1-minute countdown
         setCountdown(60);
       }
+      
+      toast({
+        title: driverNotFound ? "No Drivers Available" : "Drivers Matched!",
+        description: driverNotFound
+          ? "No nearby drivers are currently available. Please try again shortly."
+          : `Found ${driversWithDistance.length} available drivers. Payment will show in 1 minute.`,
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -247,6 +258,10 @@ const CustomerBooking = () => {
       setLoading(false);
     }
   };
+
+
+  
+
 
   const handleAutoPayment = async () => {
     if (!user || !calculatedPrice) return;
