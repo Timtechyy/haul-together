@@ -224,7 +224,7 @@ const CustomerBooking = () => {
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
       setDrivers(driversWithDistance);
-      setDriverFound(drivers.length !== 0);
+      setDriverFound(driversWithDistance.length !== 0);
       // setDrivers(driversWithReceipt);
       setShowForm(false);
       
