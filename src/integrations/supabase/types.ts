@@ -17,13 +17,16 @@ export type Database = {
       deliveries: {
         Row: {
           accepted_at: string | null
+          completed_at: string | null
           created_at: string
+          customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
           delivery_location: string
+          driver_confirmed_at: string | null
           driver_id: string | null
           estimated_distance: number | null
           id: string
@@ -42,13 +45,16 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
+          customer_confirmed_at?: string | null
           customer_id: string
           customer_rating?: number | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location: string
+          driver_confirmed_at?: string | null
           driver_id?: string | null
           estimated_distance?: number | null
           id?: string
@@ -67,13 +73,16 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
+          customer_confirmed_at?: string | null
           customer_id?: string
           customer_rating?: number | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_location?: string
+          driver_confirmed_at?: string | null
           driver_id?: string | null
           estimated_distance?: number | null
           id?: string
@@ -242,13 +251,16 @@ export type Database = {
         Args: { p_delivery_id: string; p_driver_id: string }
         Returns: {
           accepted_at: string | null
+          completed_at: string | null
           created_at: string
+          customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
           delivery_location: string
+          driver_confirmed_at: string | null
           driver_id: string | null
           estimated_distance: number | null
           id: string
