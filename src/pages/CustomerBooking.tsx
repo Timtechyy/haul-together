@@ -41,7 +41,7 @@ const CustomerBooking = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const[driverFound, setDriverFound] = useState<boolean>(false);
+  const[driverFound, setDriverFound] = useState(false);
   type PaymentModalState = {
     open: boolean;
     clientSecret?: string;
