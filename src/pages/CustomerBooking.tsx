@@ -249,7 +249,7 @@ const CustomerBooking = () => {
           : `Found ${driversWithDistance.length} available drivers. Payment will show in 1 minute.`,
       });
     } catch (error: any) {
-      console.log(error.message);
+      console.log(error.message)
       toast({
         title: "Error",
         description: error.message,
