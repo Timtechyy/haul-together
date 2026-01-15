@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "driver_accepts_if_not_busy" ON public.deliveries;
