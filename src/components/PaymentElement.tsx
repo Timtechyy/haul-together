@@ -1,5 +1,13 @@
+import React from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useState } from "react";
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  title?: string;
+}
 
 export default function PaymentForm({ onSuccess }) {
   const stripe = useStripe();
@@ -46,14 +54,8 @@ export default function PaymentForm({ onSuccess }) {
 }
 
 
-import React from "react";
-import { X } from "lucide-react";
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-  title?: string;
-}
+
+
 
 

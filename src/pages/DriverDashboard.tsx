@@ -317,24 +317,40 @@ const DriverDashboard = () => {
 
   const handleAccept = async (requestId: string) => {
     if (!user) return;
+    const { data, error } = await supabase.rpc("accept_delivery", {
+      p_delivery_id:requestId,
+      p_driver_id:user.id
+    });
 
-    const { error } = await supabase
-      .from("deliveries")
-      .update({ 
-        driver_id: user.id,
-        status: "accepted",
-        accepted_at: new Date().toISOString(),
-      })
-      .eq("id", requestId);
+    // const { data, error } = await supabase
+    //   .from("deliveries")
+    //   .update({ 
+    //     driver_id: user.id,
+    //     status: "accepted",
+    //     accepted_at: new Date().toISOString(),
+    //   })
+    //   .eq("id", requestId)
+    //   .is("driver_id", null)
+    //   .eq("status", "pending")
+    //   .select()
+    //   .single();
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to accept request",
-        variant: "destructive",
-      });
-      return;
-    }
+    //   if (!data) {
+    //       toast({
+    //       title: "Too late",
+    //       description: "Another driver already accepted this delivery",
+    //       variant: "destructive",
+    //     });
+    //     return;
+    //   }
+    //   if (error) {
+    //     toast({
+    //       title: "Error",
+    //       description: "Failed to accept request",
+    //       variant: "destructive",
+    //     });
+    //     return;
+    //   }
 
     setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
     toast({

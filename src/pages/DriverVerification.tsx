@@ -333,12 +333,13 @@ const DriverVerification = () => {
                     type="number"
                     id="ssnLastFour"
                     name="ssnLastFour"
-                    minLength={4}
-                    maxLength={4}
                     pattern="\d{4}"
                     value={formData.ssnLastFour}
                     onChange={handleInputChange}
+                    // minLength={4}
+                    maxLength={10}
                     required
+                    className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </div>
                 <div>
@@ -356,14 +357,6 @@ const DriverVerification = () => {
                           ...addressData,
                         },
                       }));
-                      console.log(
-                        "Selected address:",
-                        addressData.line1,
-                        addressData.city,
-                        addressData.state,
-                        addressData.postal_code,
-                        addressData.country,
-                      );
                     }}
                     required
                   />
