@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "assigned_driver_updates" ON public.deliveries;
