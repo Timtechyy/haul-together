@@ -224,7 +224,7 @@ const CustomerBooking = () => {
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
       setDrivers(driversWithDistance);
-      setDriverFound(drivers.length !== 0)
+      setDriverFound(drivers.length !== 0);
       // setDrivers(driversWithReceipt);
       setShowForm(false);
       
@@ -527,7 +527,7 @@ const CustomerBooking = () => {
               </ResponsivePaymentModal>
           ) : (
             <>
-             {drivers.length !=0 &&  <div className="flex items-center justify-between">
+             {drivers.length !==0 &&  <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
                   <p className="text-muted-foreground">
@@ -547,7 +547,7 @@ const CustomerBooking = () => {
                 )}
               </div>}
 
-              {drivers.length !=0 && countdown !== null && countdown > 0 && (
+              {drivers.length !==0 && countdown !== null && countdown > 0 && (
                 <Card className="border-primary">
                   <CardContent className="pt-6">
                     <div className="text-center space-y-4">
@@ -569,7 +569,7 @@ const CustomerBooking = () => {
 
               <div className="grid gap-4">
                 {drivers.length === 0 ? (
-                  setCountdown(null),
+                  // setCountdown(null),
                   <Card className="shadow-medium">
                     <CardHeader> 
                       <CardTitle className="text-3xl font-bold mb-2">
