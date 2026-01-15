@@ -213,6 +213,8 @@ const CustomerBooking = () => {
 
       const { data: matchingDrivers, error } = await query;
 
+      console.log(matchingDrivers);
+
 
       // Calculate distance and sort by proximity if pickup location has coordinates
       let driversWithDistance = matchingDrivers;
