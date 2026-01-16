@@ -186,6 +186,7 @@ const CustomerBooking = () => {
         .select("user_id");
         // .eq("verification_status", "verified");
         const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
+        console.log("verified drivers",verifiedUserIds);
 
       // Fetch drivers who are currently busy
       
@@ -193,6 +194,8 @@ const CustomerBooking = () => {
         .from("deliveries")
         .select("driver_id")
         .in("status", ["accepted", "in_progress"]);
+
+        console.log("busy drivers",busyDeliveries);
 
       const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
 
@@ -207,13 +210,16 @@ const CustomerBooking = () => {
         .not("current_lat", "is", null)
         .not("current_lng", "is", null);
 
+
+
+
       if (busyDriverIds.length > 0) {
         query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
       }
 
       const { data: matchingDrivers, error } = await query;
 
-      console.log(matchingDrivers);
+      console.log("matcged drivers",matchingDrivers);
 
 
       // Calculate distance and sort by proximity if pickup location has coordinates
