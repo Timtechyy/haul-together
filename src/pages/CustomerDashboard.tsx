@@ -68,10 +68,6 @@ const CustomerDashboard = () => {
         .from("deliveries")
         .select(`
           *,
-          driver:profiles!deliveries_driver_id_fkey(
-            first_name,
-            last_name
-          )
         `)
         .eq("customer_id", session.user.id)
         .order("created_at", { ascending: false })
