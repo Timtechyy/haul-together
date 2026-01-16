@@ -199,7 +199,7 @@ const CustomerBooking = () => {
 
       const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
 
-      // Fetch drivers with location data@£$%^&*()___+¡€#¢∞§¶•ªº-09≠–ºª•¶§∞¢#€¡§§§¡€#¢∞§¶•ªº–“‘‘‘‘‘
+      // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
         .select("user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate")
@@ -208,9 +208,6 @@ const CustomerBooking = () => {
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
         .not("current_lat", "is", null)
         .not("current_lng", "is", null);
-
-
-
 
       if (busyDriverIds.length > 0) {
         query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
