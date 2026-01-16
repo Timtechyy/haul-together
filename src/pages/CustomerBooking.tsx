@@ -202,7 +202,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
-        .select("user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate")
+        .select("user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate,   profiles (first_name,last_name)")
         .eq("vehicle_type", vehicleType.trim())
         // .in("user_id", verifiedUserIds)
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
