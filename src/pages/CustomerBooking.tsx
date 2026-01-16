@@ -203,7 +203,7 @@ const CustomerBooking = () => {
       let query = supabase
         .from("driver_vehicles")
         .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate`)
-        // .eq("vehicle_type", vehicleType.trim())
+        .eq("vehicle_type", vehicleType)
         // .in("user_id", verifiedUserIds)
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
         .not("current_lat", "is", null)
