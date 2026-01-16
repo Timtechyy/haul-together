@@ -24,6 +24,7 @@ const CustomerBooking = () => {
   const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [paymentFailed, setPaymentFailed] = useState(false);
   
   // Form state
   const [pickupLocation, setPickupLocation] = useState("");
@@ -543,10 +544,20 @@ const CustomerBooking = () => {
               >
                   <PaymentForm
                     onSuccess={handlePaymentSuccess}
+                    onFailure={(failed) => setPaymentFailed(failed)}
                   />
               </ResponsivePaymentModal>
           ) : (
             <>
+
+            {paymentFailed && (
+              <button
+                onClick={() => setClientSecret(clientSecret)}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Retry Payment
+              </button>
+            )}
              {drivers.length !==0 &&  <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
@@ -646,6 +657,7 @@ const CustomerBooking = () => {
                       </CardContent>
                     </Card>
                   ))
+                  
                 )}
               </div>
             </>

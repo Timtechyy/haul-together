@@ -1,6 +1,7 @@
 import React from "react";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   isOpen: boolean;
@@ -9,39 +10,62 @@ interface Props {
   title?: string;
 }
 
-export default function PaymentForm({ onSuccess }) {
+type PaymentFormProps = {
+  onSuccess?: () => void;
+  onFailure?: (failed: boolean) => void; // <-- callback to parent
+};
+
+export default function PaymentForm({ onSuccess, onFailure }:PaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [retry, setRetry] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return;
 
     setLoading(true);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.href },
-      redirect: "if_required",
-    });
+    try{    
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.href },
+        redirect: "if_required",
+      });
 
-    if (error) {
-      alert(error.message);
+      if (error) {
+        throw error;
+        // alert(error.message);
+        // setLoading(false);
+        // return;
+      }
+
+      if (paymentIntent.status === "succeeded") {
+        toast({
+          title: "Payment Successfull",
+          description: "Drivers would be Notified ",
+        });
+        onSuccess();
+      }else{ 
+        setRetry(true);
+      }
+    } catch(error){
+      toast({ 
+        title: "Opps Payment Unsuccessful", 
+        description: "Sorry Payment Wasn't successful please retry", 
+        variant: "destructive" 
+      });
+    } finally{
       setLoading(false);
-      return;
     }
 
-    if (paymentIntent.status === "succeeded") {
-      onSuccess();
-    }
-
-    setLoading(false);
+    
   };
 
   return (
     <div className="space-y-4">
       <PaymentElement />
-
       <button
         onClick={handleSubmit}
         disabled={!stripe || loading}
