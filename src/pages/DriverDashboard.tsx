@@ -194,33 +194,51 @@ const DriverDashboard = () => {
           filter: "status=eq.pending",
         },
         async (payload) => {
-          const newDelivery = payload.new as DeliveryPreview;
-          if (!newDelivery.driver_id) {
-            // Only add preview data for new unassigned deliveries (no addresses)
-            const previewDelivery: DeliveryPreview = {
-              id: newDelivery.id,
-              item_description: newDelivery.item_description,
-              item_type: newDelivery.item_type,
-              quantity: newDelivery.quantity,
-              vehicle_type: newDelivery.vehicle_type,
-              price: newDelivery.price,
-              estimated_distance: newDelivery.estimated_distance,
-              created_at: newDelivery.created_at,
-              status: newDelivery.status,
-            };
-            setPendingRequests((prev) => [...prev, previewDelivery]);
-            
-            // Send notification for new delivery (without addresses for privacy)
-            if (notificationsEnabled) {
-              const { notificationService } = await import('@/utils/notificationService');
-              await notificationService.notifyNewDelivery({
-                pickup: "New pickup available",
-                delivery: "Delivery location",
-                price: newDelivery.price,
-                distance: newDelivery.estimated_distance,
-              });
-            }
+          
+          const d = payload.new as DeliveryPreview;
+               // Unassigned pending deliveries (preview only)
+          if (d.status === "pending" && !d.driver_id) {
+            setPendingRequests((prev) => {
+              if (prev.some((p) => p.id === d.id)) return prev;
+              return [...prev, d];
+            });
           }
+
+          // Assigned to this driver
+          if (d.driver_id === user.id) {
+            setPendingRequests((prev) => {
+              if (prev.some((p) => p.id === d.id)) return prev;
+              return [...prev, d];
+            });
+          }
+
+          // const newDelivery = payload.new as DeliveryPreview;
+          // if (!newDelivery.driver_id) {
+          //   // Only add preview data for new unassigned deliveries (no addresses)
+          //   const previewDelivery: DeliveryPreview = {
+          //     id: newDelivery.id,
+          //     item_description: newDelivery.item_description,
+          //     item_type: newDelivery.item_type,
+          //     quantity: newDelivery.quantity,
+          //     vehicle_type: newDelivery.vehicle_type,
+          //     price: newDelivery.price,
+          //     estimated_distance: newDelivery.estimated_distance,
+          //     created_at: newDelivery.created_at,
+          //     status: newDelivery.status,
+          //   };
+          //   setPendingRequests((prev) => [...prev, previewDelivery]);
+            
+          //   // Send notification for new delivery (without addresses for privacy)
+          //   if (notificationsEnabled) {
+          //     const { notificationService } = await import('@/utils/notificationService');
+          //     await notificationService.notifyNewDelivery({
+          //       pickup: "New pickup available",
+          //       delivery: "Delivery location",
+          //       price: newDelivery.price,
+          //       distance: newDelivery.estimated_distance,
+          //     });
+          //   }
+          // }
         }
       )
       .on(
@@ -259,18 +277,43 @@ const DriverDashboard = () => {
           table: "deliveries",
         },
         (payload) => {
-          const updatedDelivery = payload.new as DeliveryPreview;
-          // Remove from list if no longer pending/assigned/accepted/picked_up or if assigned to another driver
+          const d = payload.new as DeliveryPreview;
+
           const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
-          if (!activeStatuses.includes(updatedDelivery.status)) {
-            setPendingRequests((prev) =>
-              prev.filter((req) => req.id !== updatedDelivery.id)
-            );
-          } else if (updatedDelivery.driver_id && updatedDelivery.driver_id !== user.id) {
-            setPendingRequests((prev) =>
-              prev.filter((req) => req.id !== updatedDelivery.id)
-            );
-          }
+
+          setPendingRequests((prev) => {
+            // Remove if no longer active
+            if (!activeStatuses.includes(d.status)) {
+              return prev.filter((p) => p.id !== d.id);
+            }
+
+            // Remove if assigned to another driver
+            if (d.driver_id && d.driver_id !== user.id && d.status !== "pending") {
+              return prev.filter((p) => p.id !== d.id);
+            }
+
+            // Update or insert
+            const exists = prev.some((p) => p.id === d.id);
+            if (exists) {
+              return prev.map((p) => (p.id === d.id ? d : p));
+            }
+
+            return [...prev, d];
+          });
+
+
+          // const updatedDelivery = payload.new as DeliveryPreview;
+          // // Remove from list if no longer pending/assigned/accepted/picked_up or if assigned to another driver
+          // const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
+          // if (!activeStatuses.includes(updatedDelivery.status)) {
+          //   setPendingRequests((prev) =>
+          //     prev.filter((req) => req.id !== updatedDelivery.id)
+          //   );
+          // } else if (updatedDelivery.driver_id && updatedDelivery.driver_id !== user.id) {
+          //   setPendingRequests((prev) =>
+          //     prev.filter((req) => req.id !== updatedDelivery.id)
+          //   );
+          // }
         }
       )
       .subscribe();
