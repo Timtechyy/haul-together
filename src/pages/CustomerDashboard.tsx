@@ -68,7 +68,7 @@ const CustomerDashboard = () => {
         .from("deliveries")
         .select(`
           *,
-          driver:driver_id (
+          driver:profiles!deliveries_driver_id_fkey(
             first_name,
             last_name
           )
