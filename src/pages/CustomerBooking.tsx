@@ -199,7 +199,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data@£$%^&*()___+¡€#¢∞§¶•ªº-09≠–ºª•¶§∞¢#€¡§§§¡€#¢∞§¶•ªº–“‘‘‘‘‘
       let query = supabase
         .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, profiles: ( first_name, last_name)`)
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng`)
         
         // .eq("vehicle_type", vehicleType.trim())
         // .in("user_id", verifiedUserIds)
