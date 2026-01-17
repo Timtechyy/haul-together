@@ -554,7 +554,6 @@ const DriverDashboard = () => {
                   
                   return (
                     <Collapsible key={request.id}>
-                      
                       <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
@@ -578,7 +577,14 @@ const DriverDashboard = () => {
                               <div className="text-xs text-muted-foreground">Estimated</div>
                             </div>
                             <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                >
                                 View More
                                 <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                               </Button>
