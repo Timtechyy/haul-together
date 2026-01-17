@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Package, MapPin, Clock, LogOut, User, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -204,7 +205,7 @@ const CustomerDashboard = () => {
           <Card className="shadow-medium">
             <CardHeader>
               <CardTitle>Recent Bookings</CardTitle>
-              <CardDescription>Your latest delivery requests</CardDescription>
+              <CardDescription>Your latest delivery bookings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {recentBookings.length === 0 ? (
@@ -212,44 +213,86 @@ const CustomerDashboard = () => {
                   No bookings yet. Book your first delivery!
                 </div>
               ) : (
-                recentBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">
-                          Driver: {booking.driver ? `${booking.driver.first_name} ${booking.driver.last_name}` : "Not assigned"}
-                        </span>
-                        <Badge variant={booking.status === "delivered" ? "default" : "secondary"}>
-                          {booking.status}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {booking.pickup_location} → {booking.delivery_location}
+                recentBookings.map((booking) => {
+                  const isAssignedToDriver = booking.driver_id !== null;
+                  const hasFullDetails = isAssignedToDriver;
+                    return (
+                      <Collapsible key={booking.id}>
+                        <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              Driver: {booking.driver ? `${booking.driver.first_name} ${booking.driver.last_name}` : "Not assigned"}
+                            </span>
+                            <Badge variant={booking.status === "delivered" ? "default" : "secondary"}>
+                              {booking.status}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {booking.pickup_location} → {booking.delivery_location}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(booking.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(booking.created_at).toLocaleDateString()}
+                        <div className="text-right">
+                          <div className="text-xl font-bold">
+                            ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
+                          </div>
+
+                          <CollapsibleTrigger>  
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mt-2"
+                              onClick={() => navigate(`/order-tracking?id=${booking.id}`)}
+                            >
+                              View Details
+                            </Button>
+                          </CollapsibleTrigger>
+
+                          <CollapsibleContent>
+                            <div className="space-y-3 border-t pt-3">
+                              <div className="text-sm">
+                                <div className="font-medium mb-1">
+                                  {hasFullDetails ? "Full Details" : "Delivery Preview"}
+                                </div>
+                                <div className="space-y-1 text-muted-foreground">
+                                  <div><span className="font-medium">Item:</span></div>
+                                  {booking.item_type && <div><span className="font-medium">Type:</span> {booking.item_type}</div>}
+                                  {booking.quantity && <div><span className="font-medium">Quantity:</span> {booking.quantity}</div>}
+                                  {booking.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {booking.vehicle_type}</div>}
+                                  <div><span className="font-medium">Distance:</span> {booking.estimated_distance.toFixed(1)} mi</div>
+                                  <div><span className="font-medium">Estimated Payment:</span> ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}</div>
+                                </div>
+                              </div>
+    
+                                {/* Order Receipt - only for assigned deliveries */}
+                                {hasFullDetails && booking.receipt_url && (
+                                  <div className="mt-4">
+                                    <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                    <img 
+                                      src={booking.receipt_url} 
+                                      alt="Order receipt" 
+                                      className="w-full max-w-md rounded-lg border shadow-sm"
+                                    />
+                                  </div>
+                                )}
+                            </div>
+                          </CollapsibleContent>
+                        
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold">
-                        ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={() => navigate(`/order-tracking?id=${booking.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
+                    </Collapsible>
+                  );
+                }
+                )
+              )
+              }
             </CardContent>
           </Card>
         </div>
