@@ -244,12 +244,14 @@ const CustomerDashboard = () => {
                               ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
                             </div>
 
-                            <CollapsibleTrigger>  
+                            <CollapsibleTrigger asChild>  
                               <Button 
                                 variant="outline" 
                                 size="sm" 
                                 className="mt-2"
-                        
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
                               >
                                 View Details
                                 <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
