@@ -249,9 +249,10 @@ const CustomerDashboard = () => {
                               variant="outline" 
                               size="sm" 
                               className="mt-2"
-                              onClick={() => navigate(`/order-tracking?id=${booking.id}`)}
+                      
                             >
                               View Details
+                              <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                             </Button>
                           </CollapsibleTrigger>
 
