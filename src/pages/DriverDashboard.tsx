@@ -592,7 +592,6 @@ const DriverDashboard = () => {
                                 {hasFullDetails ? "Full Details" : "Delivery Preview"}
                               </div>
                               <div className="space-y-1 text-muted-foreground">
-                                <div><span className="font-medium">Item:</span> {request.item_description}</div>
                                 {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
                                 {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
                                 {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
