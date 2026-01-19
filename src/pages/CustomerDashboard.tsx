@@ -218,7 +218,7 @@ const CustomerDashboard = () => {
                   const hasFullDetails = isAssignedToDriver;
                     return (
                       <Collapsible key={booking.id}>
-                        <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg" onClick={() => { if (booking.status === "accepted" && booking.driver_id) { navigate(`/order-tracking?id=${booking.id}`); }}}>
+                        <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg" onClick={() => { if (booking.status === "accepted"|| booking.status === "in_transit" && booking.driver_id !==null) { navigate(`/order-tracking?id=${booking.id}`); }}}>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold">
@@ -273,18 +273,18 @@ const CustomerDashboard = () => {
                                     <div><span className="font-medium">Estimated Payment:</span> ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}</div>
                                   </div>
                                 </div>
-      
-                                  {/* Order Receipt - only for assigned deliveries */}
-                                  {hasFullDetails && booking.receipt_url && (
-                                    <div className="mt-4">
-                                      <div className="font-medium text-sm mb-2">Order Receipt</div>
-                                      <img 
-                                        src={booking.receipt_url} 
-                                        alt="Order receipt" 
-                                        className="w-full max-w-md rounded-lg border shadow-sm"
-                                      />
-                                    </div>
-                                  )}
+    
+                                {/* Order Receipt - only for assigned deliveries */}
+                                {hasFullDetails && booking.receipt_url && (
+                                  <div className="mt-4">
+                                    <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                    <img 
+                                      src={booking.receipt_url} 
+                                      alt="Order receipt" 
+                                      className="w-full max-w-md rounded-lg border shadow-sm"
+                                    />
+                                  </div>
+                                )}
                               </div>
                             </CollapsibleContent>
                           </div>

@@ -286,7 +286,9 @@ const Profile = () => {
     });
     navigate("/login");
   };
-
+  const isDriver = userRole === "driver"
+  const isVerified = verification === "approved";
+  
   const handleBackNavigation = () => {
     if (isDriver) {
       navigate("/driver/dashboard");
@@ -294,9 +296,7 @@ const Profile = () => {
       navigate("/customer/dashboard");
     }
   };
-  const isDriver = userRole === "driver"
-  const isVerified = verification === "approved";
-  
+ 
   
 
   if (loading) {

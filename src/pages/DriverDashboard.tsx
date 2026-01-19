@@ -593,7 +593,7 @@ const DriverDashboard = () => {
                         </div>
                         
                         <CollapsibleContent className="pt-4">
-                          <div className="space-y-3 border-t pt-3">
+                          <div className="space-y-3 border-t pt-3 ">
                             <div className="text-sm">
                               <div className="font-medium mb-1">
                                 {hasFullDetails ? "Full Details" : "Delivery Preview"}
@@ -631,19 +631,23 @@ const DriverDashboard = () => {
                             )}
                             
                             {/* Map View - only for assigned deliveries with coordinates */}
-                            {hasFullDetails && request.pickup_lat && request.pickup_lng && request.delivery_lat && request.delivery_lng && (
+                            {/* {hasFullDetails && request.pickup_lat && request.pickup_lng && request.delivery_lat && request.delivery_lng && (
                               <div className="mt-4">
                                 <DeliveryMap
-                                  pickupLat={request.pickup_lat}
-                                  pickupLng={request.pickup_lng}
-                                  deliveryLat={request.delivery_lat}
-                                  deliveryLng={request.delivery_lng}
-                                  pickupAddress={request.pickup_location}
-                                  deliveryAddress={request.delivery_location}
+                            
+                                booking={{  
+                                  pickupLat:request.pickup_lat,
+                                  pickupLng:request.pickup_lng,
+                                  deliveryLat:request.delivery_lat,
+                                  deliveryLng:request.delivery_lng,
+                                  pickupAddress:request.pickup_location,
+                                  deliveryAddress:request.delivery_location,
+                                }}
+                                mode="driver"
                                 />
                               </div>
                             )}
-                            
+                             */}
                             <div className="flex gap-2 justify-end pt-2">
                               {isAssignedToDriver ? (
                                 <Button 

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Package, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Package, CheckCircle, Car } from "lucide-react";
+import DeliveryMap from "@/components/DeliveryMap";
 
 const OrderTracking = () => {
   const navigate = useNavigate();
@@ -15,9 +16,25 @@ const OrderTracking = () => {
   const [delivery, setDelivery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [driverProfile, setDriverProfile] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const isDriver = userRole === "driver"
 
   useEffect(() => {
     const fetchDelivery = async () => {
+
+      const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          navigate("/login");
+          return;
+        } 
+      setUserId(user.id);
+
+      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
+      setUserRole(roleData.role);
+
       if (!orderId) {
         navigate("/");
         return;
@@ -36,6 +53,20 @@ const OrderTracking = () => {
           variant: "destructive",
         });
         navigate("/");
+        return;
+      }  
+      
+      const isCustomer = data.customer_id === user.id;
+      const isDriver = data.driver_id === user.id;
+
+      if (!isCustomer && !isDriver) {
+        navigate("/unauthorized");
+        return;
+      }
+
+      // Optional: Only allow accepted orders
+      if (data.status !== "accepted") {
+        navigate("/dashboard");
         return;
       }
 
@@ -56,7 +87,7 @@ const OrderTracking = () => {
     };
 
     fetchDelivery();
-
+  
     // Set up realtime subscription for delivery updates
     const channel = supabase
       .channel(`delivery-${orderId}`)
@@ -145,7 +176,13 @@ const OrderTracking = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/")}>
+          <Button variant="ghost" onClick={() => {
+              if (isDriver) {
+                navigate("/driver/dashboard")
+              }else {
+                navigate("/customer/dashboard")
+              }
+            }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
@@ -181,37 +218,7 @@ const OrderTracking = () => {
               )}
 
               {/* Driver Info */}
-              {delivery.driver_id && driverProfile && (
-                <div className="p-4 bg-primary/10 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-semibold">
-                        {driverProfile.first_name} {driverProfile.last_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Your assigned driver</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Waiting for Driver */}
-              {delivery.status === 'pending' && (
-                <div className="p-6 bg-muted/50 rounded-lg text-center space-y-4">
-                  <div className="animate-pulse">
-                    <Package className="h-12 w-12 mx-auto text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Waiting for Driver</h3>
-                    <p className="text-sm text-muted-foreground">
-                      We're notifying available drivers. Someone will accept your delivery soon!
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Driver Info */}
-              {delivery.driver_id && driverProfile && (
+              {delivery.driver_id && driverProfile && !isDriver && (
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-primary" />
@@ -250,6 +257,14 @@ const OrderTracking = () => {
                     <p className="text-muted-foreground">{delivery.item_description}</p>
                   </div>
                 </div>
+
+                <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Type</p>
+                    <p className="text-muted-foreground">{delivery.vehicle_type}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Status Timeline */}
@@ -283,6 +298,19 @@ const OrderTracking = () => {
                 </div>
               </div>
 
+              <DeliveryMap 
+              booking={{
+                pickupLat:delivery.pickup_lat,
+                pickupLng:delivery.pickup_lng,
+                deliveryLat:delivery.delivery_lat,
+                deliveryLng:delivery.delivery_lng,
+                pickupAddress:delivery.pickup_location,
+                deliveryAddress:delivery.delivery_location
+              }} 
+              mode={userRole ==="driver"?"driver":"user"}
+              driverId={userId}             
+              />
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 {delivery.status === 'accepted' && (
@@ -312,12 +340,38 @@ const OrderTracking = () => {
                     Mark as Delivered
                   </Button>
                 )}
+                
+                {/* DRIVER CONTROLS */}
+                {isDriver && (
+                  <>
+                    {delivery.status === "accepted" && (
+                      <Button className="flex-1" onClick={() => updateStatus("picking_up")}>
+                        Arrived at Pickup
+                      </Button>
+                    )}
+
+                    {delivery.status === "picking_up" && (
+                      <Button className="flex-1" onClick={() => updateStatus("in_transit")}>
+                        Start Delivery
+                      </Button>
+                    )}
+
+                    {delivery.status === "in_transit" && (
+                      <Button className="flex-1" onClick={() => updateStatus("arrived_destination")}>
+                        Arrived at Destination
+                      </Button>
+                    )}
+                  </>
+                )}
+
                 {delivery.status === 'delivered' && (
                   <div className="flex-1 text-center p-4 bg-success/10 rounded-lg">
                     <p className="text-success font-semibold">Delivery Completed!</p>
                   </div>
                 )}
               </div>
+
+              
             </CardContent>
           </Card>
         </div>
