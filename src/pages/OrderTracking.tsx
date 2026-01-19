@@ -64,11 +64,11 @@ const OrderTracking = () => {
         return;
       }
 
-      // Optional: Only allow accepted orders
-      if (data.status !== "accepted") {
-        navigate("/dashboard");
-        return;
-      }
+      // // Optional: Only allow accepted orders
+      // if (data.status !== "accepted") {
+      //   navigate("/dashboard");
+      //   return;
+      // }
 
       setDelivery(data);
       
