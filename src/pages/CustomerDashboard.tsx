@@ -68,7 +68,8 @@ const CustomerDashboard = () => {
       const { data: bookingsData } = await supabase
         .from("deliveries")
         .select(`
-          *
+          *,
+          profiles(first_name, last_name, phone, avatar_url, gender)
         `)
         .eq("customer_id", session.user.id)
         .order("created_at", { ascending: false })
