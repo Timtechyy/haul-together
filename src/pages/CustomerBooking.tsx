@@ -203,7 +203,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate`)
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, profiles(first_name, last_name, phone, avatar_url, gender)`)
         .eq("vehicle_type", vehicleType)
         // .in("user_id", verifiedUserIds)
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
@@ -542,14 +542,13 @@ const CustomerBooking = () => {
                 title="Add Payment Method"
                 clientSecret={clientSecret}
               >
-                  <PaymentForm
-                    onSuccess={handlePaymentSuccess}
-                    onFailure={(failed) => setPaymentFailed(failed)}
-                  />
+                <PaymentForm
+                  onSuccess={handlePaymentSuccess}
+                  onFailure={(failed) => setPaymentFailed(failed)}
+                />
               </ResponsivePaymentModal>
           ) : (
             <>
-
             {paymentFailed && (
               <button
                 onClick={() => setClientSecret(clientSecret)}
@@ -558,6 +557,7 @@ const CustomerBooking = () => {
                 Retry Payment
               </button>
             )}
+
              {drivers.length !==0 &&  <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
