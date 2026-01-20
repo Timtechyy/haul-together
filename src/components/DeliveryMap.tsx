@@ -72,47 +72,47 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
           padding: 50,
         });
 
-        const channel = supabase
-        .channel("driver-location")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "driver_vehicles",
-            filter: `user_id=eq.${driverId}`,
-          },
-          (payload) => {
-            const { current_lat, current_lng } = payload.new as any;
+        // const channel = supabase
+        // .channel("driver-location")
+        // .on(
+        //   "postgres_changes",
+        //   {
+        //     event: "*",
+        //     schema: "public",
+        //     table: "driver_vehicles",
+        //     filter: `user_id=eq.${driverId}`,
+        //   },
+        //   (payload) => {
+        //     const { current_lat, current_lng } = payload.new as any;
             
-            const driverMarker  = new mapboxgl.Marker({
-                color: "#2563eb",
-              })
-              .setLngLat([current_lng, current_lat])
-              .setPopup(new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`))
-              .addTo(map.current!);
+        //     const driverMarker  = new mapboxgl.Marker({
+        //         color: "#2563eb",
+        //       })
+        //       .setLngLat([current_lng, current_lat])
+        //       .setPopup(new mapboxgl.Popup({ offset: 25 })
+        //       .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`))
+        //       .addTo(map.current!);
             
             
-            // Auto-center map slightly toward destination
-            // const target = getTargetPoint();
-            // map.current!.easeTo({
-            //   center: [
-            //     (lng + target[0]) / 2,
-            //     (lat + target[1]) / 2,
-            //   ],
-            //   duration: 800,
-            // });
-          }
-        ).subscribe();
+        //     // Auto-center map slightly toward destination
+        //     // const target = getTargetPoint();
+        //     // map.current!.easeTo({
+        //     //   center: [
+        //     //     (lng + target[0]) / 2,
+        //     //     (lat + target[1]) / 2,
+        //     //   ],
+        //     //   duration: 800,
+        //     // });
+        //   }
+        // ).subscribe();
 
         // Add navigation controls
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
         setLoading(false);
-        return () => {
-          supabase.removeChannel(channel);
-        };
+        // return () => {
+        //   supabase.removeChannel(channel);
+        // };
 
     
       } catch (error) {
@@ -126,7 +126,48 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
     return () => {
       map.current?.remove();
     };
-  }, [booking.pickupLat, booking.pickupLng, booking.deliveryLat, booking.deliveryLng, booking.pickupAddress, booking.deliveryAddress, driverId]);
+  }, [booking.pickupLat, booking.pickupLng, booking.deliveryLat, booking.deliveryLng, booking.pickupAddress, booking.deliveryAddress,]);
+
+  useEffect(()=>{
+   if (!map.current) return;
+    const channel = supabase
+    .channel("driver-location")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "driver_vehicles",
+        filter: `user_id=eq.${driverId}`,
+      },
+      (payload) => {
+        const { current_lat, current_lng } = payload.new as any;
+        
+        const driverMarker  = new mapboxgl.Marker({
+            color: "#2563ec",
+          })
+          .setLngLat([current_lng, current_lat])
+          .setPopup(new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`))
+          .addTo(map.current!);
+        
+        
+        // Auto-center map slightly toward destination
+        // const target = getTargetPoint();
+        // map.current!.easeTo({
+        //   center: [
+        //     (lng + target[0]) / 2,
+        //     (lat + target[1]) / 2,
+        //   ],
+        //   duration: 800,
+        // });
+      }
+    ).subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },[driverId]);
   
   return (
     <div className="relative w-full h-64 rounded-lg overflow-hidden">

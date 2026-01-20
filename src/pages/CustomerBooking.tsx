@@ -194,7 +194,7 @@ const CustomerBooking = () => {
       const { data: busyDeliveries } = await supabase
         .from("deliveries")
         .select("driver_id")
-        .in("status", ["accepted", "in_progress"]);
+        .in("status", ["accepted", "in_progress", "in_transit"]);
 
         console.log("busy drivers",busyDeliveries);
 
@@ -203,7 +203,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, profiles(first_name, last_name, phone, avatar_url, gender)`)
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
         .eq("vehicle_type", vehicleType)
         // .in("user_id", verifiedUserIds)
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
@@ -216,7 +216,7 @@ const CustomerBooking = () => {
 
       const { data: matchingDrivers, error } = await query;
 
-      console.log("matcged drivers",matchingDrivers);
+      console.log("matched drivers",matchingDrivers);
 
 
       // Calculate distance and sort by proximity if pickup location has coordinates

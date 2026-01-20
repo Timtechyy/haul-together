@@ -41,18 +41,23 @@ const CustomerDashboard = () => {
       
       setProfile(profileData);
 
-      // Fetch delivery statistics
-      const { data: allDeliveries } = await supabase
+      // Fetch delivery statistics from recent bookings with driver info
+      const { data: bookingsData } = await supabase
         .from("deliveries")
-        .select("*")
-        .eq("customer_id", session.user.id);
+        .select(`
+          *,
+          driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate)) `)
+        .eq("customer_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-      if (allDeliveries) {
-        const totalBookings = allDeliveries.length;
-        const activeBookings = allDeliveries.filter(
+      if (bookingsData) {
+        
+        const totalBookings = bookingsData.length;
+        const activeBookings = bookingsData.filter(
           (d) => d.status !== "delivered" && d.status !== "cancelled"
         ).length;
-        const totalSpent = allDeliveries.reduce(
+        const totalSpent = bookingsData.reduce(
           (sum, d) => sum + (Number(d.price) || 0),
           0
         );
@@ -62,21 +67,8 @@ const CustomerDashboard = () => {
           activeBookings,
           totalSpent,
         });
-      }
-
-      // Fetch recent bookings with driver info
-      const { data: bookingsData } = await supabase
-        .from("deliveries")
-        .select(`
-          *,
-          profiles(first_name, last_name, phone, avatar_url, gender)
-        `)
-        .eq("customer_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (bookingsData) {
         setRecentBookings(bookingsData);
+
       }
 
       setLoading(false);
@@ -131,7 +123,7 @@ const CustomerDashboard = () => {
           {/* Welcome Section */}
           <Card className="shadow-medium">
             <CardContent className="p-6 ">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"> 
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={profile?.avatar_url} />
@@ -215,28 +207,70 @@ const CustomerDashboard = () => {
                 </div>
               ) : (
                 recentBookings.map((booking) => {
+                  console.log('recipt url ', booking.receipt_url);
                   const isAssignedToDriver = booking.driver_id !== null;
                   const hasFullDetails = isAssignedToDriver;
                     return (
                       <Collapsible key={booking.id}>
                         <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg" onClick={() => { if (booking.status === "accepted"|| booking.status === "in_transit" && booking.driver_id !==null) { navigate(`/order-tracking?id=${booking.id}`); }}}>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">
-                                Driver: {booking.driver ? `${booking.driver.first_name} ${booking.driver.last_name}` : "Not assigned"}
-                              </span>
-                              <Badge variant={booking.status === "delivered" ? "default" : "secondary"}>
-                                {booking.status}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {booking.pickup_location} → {booking.delivery_location}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"> 
+                            <Avatar className="h-20 w-20">
+                              <AvatarImage src={booking.driver.avatar_url} />
+                              <AvatarFallback>
+                                {booking.driver.first_name?.[0]}{booking.driver.last_name?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">
+                                  Driver: {booking.driver ? `${booking.driver.first_name} ${booking.driver.last_name}` : "Not assigned"}
+                                </span>
+                                <Badge variant={booking.status === "delivered" ? "default" : "secondary"}>
+                                  {booking.status}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Clock className="h-3 w-3" />
-                                {new Date(booking.created_at).toLocaleDateString()}
+                              <div className="flex flex-row gap-x-2"> 
+                                <div >
+                                  <span className="font-semibold">
+                                    Phone Number: {booking.driver.phone}
+                                  </span>
+                                </div>
+                                
+                                <div>
+                                  <span className="font-semibold">
+                                    Vehicle: {booking.driver.driver_vehicles.vehicle_type}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-semibold">
+                                    Model: {booking.driver.driver_vehicles.model}
+                                  </span>
+                                </div>
+
+                                 <div>
+                                  <span className="font-semibold">
+                                    Year: {booking.driver.driver_vehicles.year}
+                                  </span>
+                                </div>
+
+                                 <div>
+                                  <span className="font-semibold">
+                                    License Plate: {booking.driver.driver_vehicles.license_plate}
+                                  </span>
+                                </div>
+
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                               
+
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {booking.pickup_location} → {booking.delivery_location}
+                                </div>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(booking.created_at).toLocaleDateString()}
+                                </div>
                               </div>
                             </div>
                           </div>

@@ -109,7 +109,7 @@ const DriverDashboard = () => {
       // Only fetch essential info - no addresses or GPS coordinates
       const { data: unassignedData, error: unassignedError } = await supabase
         .from("deliveries")
-        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, status")
+        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, receipt_url,status")
         .eq("status", "pending")
         .is("driver_id", null);
 
