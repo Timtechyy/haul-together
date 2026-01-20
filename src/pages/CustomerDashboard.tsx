@@ -9,6 +9,7 @@ import { Package, MapPin, Clock, LogOut, User, CheckCircle, ChevronDown } from "
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ReceiptImage } from "@/components/ReceiptImage";
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -313,11 +314,7 @@ const CustomerDashboard = () => {
                                 {hasFullDetails && booking.receipt_url && (
                                   <div className="mt-4">
                                     <div className="font-medium text-sm mb-2">Order Receipt</div>
-                                    <img 
-                                      src={booking.receipt_url} 
-                                      alt="Order receipt" 
-                                      className="w-full max-w-md rounded-lg border shadow-sm"
-                                    />
+                                    <ReceiptImage receiptUrl={booking.receipt_url} />
                                   </div>
                                 )}
                               </div>

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import DeliveryMap from "@/components/DeliveryMap";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
+import { ReceiptImage } from "@/components/ReceiptImage";
 
 // Preview interface for unassigned deliveries (limited data for privacy)
 interface DeliveryPreview {
@@ -622,11 +623,7 @@ const DriverDashboard = () => {
                             {request.receipt_url && (
                               <div className="mt-4">
                                 <div className="font-medium text-sm mb-2">Order Receipt</div>
-                                <img 
-                                  src={request.receipt_url} 
-                                  alt="Order receipt" 
-                                  className="w-full max-w-md rounded-lg border shadow-sm"
-                                />
+                                <ReceiptImage receiptUrl={request.receipt_url} />
                               </div>
                             )}
                             
