@@ -1,0 +1,1 @@
+ALTER TABLE driver_vehicles REPLICA IDENTITY FULL;
