@@ -318,10 +318,8 @@ const CustomerBooking = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL for the receipt
-      const { data: { publicUrl } } = supabase.storage
-        .from('bookingReceipts')
-        .getPublicUrl(fileName);
+      // Store just the file path (signed URLs will be generated when viewing)
+      const receiptPath = fileName;
 
     try {
       // Create delivery with pending status (no driver assigned yet)
@@ -342,7 +340,7 @@ const CustomerBooking = () => {
           vehicle_type: vehicleType,
           price: calculatedPrice,
           estimated_distance: drivers[0]?.distance || 0,
-          receipt_url: publicUrl,
+          receipt_url: receiptPath,
           status: "pending",
         })
         .select()
