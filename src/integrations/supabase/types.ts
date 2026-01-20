@@ -111,6 +111,7 @@ export type Database = {
       }
       driver_vehicles: {
         Row: {
+          color: string | null
           created_at: string
           current_lat: number | null
           current_lng: number | null
@@ -127,6 +128,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          color?: string | null
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
@@ -143,6 +145,7 @@ export type Database = {
           year: number
         }
         Update: {
+          color?: string | null
           created_at?: string
           current_lat?: number | null
           current_lng?: number | null
