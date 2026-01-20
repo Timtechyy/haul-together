@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Package, CheckCircle, Car } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const OrderTracking = () => {
   const navigate = useNavigate();
@@ -23,13 +24,8 @@ const OrderTracking = () => {
   useEffect(() => {
     const fetchDelivery = async () => {
 
-      const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-          navigate("/login");
-          return;
-        } 
+      const { data: { user },} = await supabase.auth.getUser();
+      if (!user) { navigate("/login"); return; } 
       setUserId(user.id);
 
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
@@ -42,7 +38,7 @@ const OrderTracking = () => {
 
       const { data, error } = await supabase
         .from('deliveries')
-        .select('*')
+        .select('*, driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, current_lng, current_lat)) ')
         .eq('id', orderId)
         .single();
 
@@ -72,16 +68,6 @@ const OrderTracking = () => {
 
       setDelivery(data);
       
-      // Fetch driver profile if assigned
-      if (data.driver_id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', data.driver_id)
-          .single();
-        
-        setDriverProfile(profile);
-      }
       
       setLoading(false);
     };
@@ -103,21 +89,21 @@ const OrderTracking = () => {
           const updated = payload.new as any;
           setDelivery(updated);
 
-          // Fetch driver profile when assigned
-          if (updated.driver_id && !driverProfile) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', updated.driver_id)
-              .single();
+          // // Fetch driver profile when assigned
+          // if (updated.driver_id && !driverProfile) {
+          //   const { data: profile } = await supabase
+          //     .from('profiles')
+          //     .select('first_name, last_name')
+          //     .eq('id', updated.driver_id)
+          //     .single();
             
-            setDriverProfile(profile);
+          //   setDriverProfile(profile);
 
-            toast({
-              title: "Driver Assigned!",
-              description: `${profile?.first_name} ${profile?.last_name} accepted your delivery`,
-            });
-          }
+          //   toast({
+          //     title: "Driver Assigned!",
+          //     description: `${profile?.first_name} ${profile?.last_name} accepted your delivery`,
+          //   });
+          // }
         }
       )
       .subscribe();
@@ -218,19 +204,74 @@ const OrderTracking = () => {
               )}
 
               {/* Driver Info */}
-              {delivery.driver_id && driverProfile && !isDriver && (
+              {delivery.driver_id && (
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary" />
+                      <Avatar className="h-20 w-20">
+                        <AvatarImage src={delivery.driver.avatar_url} />
+                        <AvatarFallback>
+                          {delivery.driver.first_name?.[0]}{delivery.driver.last_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
                     <div>
                       <p className="font-semibold">
-                        {driverProfile.first_name} {driverProfile.last_name}
+                        {delivery.driver.first_name} {delivery.driver.last_name}
                       </p>
                       <p className="text-sm text-muted-foreground">Your assigned driver</p>
                     </div>
                   </div>
                 </div>
               )}
+
+              <div className="flex flex-row flex-wrap gap-x-2 gap-y-2">
+
+                 <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Type</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.vehicle_type}</p>
+                  </div>
+                </div>
+
+                   <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Make</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.make}</p>
+                  </div>
+                </div>
+                   <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Model</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.model}</p>
+                  </div>
+                </div>   
+                  <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Color</p>
+                    <p className="text-muted-foreground">Black</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle Year</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.year}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary mt-1" />
+                  <div>
+                    <p className="font-semibold">Vehicle License Plate</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.license_plate}</p>
+                  </div>
+                </div>
+             
+              </div>
+               
 
               {/* Route Information */}
               <div className="space-y-4">
@@ -255,14 +296,6 @@ const OrderTracking = () => {
                   <div>
                     <p className="font-semibold">Item Description</p>
                     <p className="text-muted-foreground">{delivery.item_description}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                  <Car className="h-5 w-5 text-primary mt-1" />
-                  <div>
-                    <p className="font-semibold">Vehicle Type</p>
-                    <p className="text-muted-foreground">{delivery.vehicle_type}</p>
                   </div>
                 </div>
               </div>
@@ -331,7 +364,7 @@ const OrderTracking = () => {
                     Item Picked Up - Start Delivery
                   </Button>
                 )}
-                {delivery.status === 'in_transit' && (
+                {delivery.status === 'in_transit' && delivery.driver_confirmed_at !==null&& (
                   <Button 
                     variant="hero" 
                     className="flex-1"
