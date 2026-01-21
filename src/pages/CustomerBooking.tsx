@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, MapPin, Truck, LogOut, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import { z } from "zod";
 import PaymentForm from "@/components/PaymentElement";
 import logo from "@/assets/logo.png";
 import ResponsivePaymentModal  from "@/components/ui/modal";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { CheckCircle } from "lucide-react";
 
 
 const CustomerBooking = () => {
@@ -25,7 +27,15 @@ const CustomerBooking = () => {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
-  
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
+  const [driverNotFound, setdriverNotFound] = useState(false);
+  const [acceptedDelivery, setAcceptedDelivery] = useState<any>(null);
+  const [acceptedDriver, setAcceptedDriver] = useState<any>(null);
+  const [showAcceptedDialog, setShowAcceptedDialog] = useState(false);
+  const [navigationCountdown, setNavigationCountdown] = useState<number | null>(null);
+
   // Form state
   const [pickupLocation, setPickupLocation] = useState("");
   const [pickupLat, setPickupLat] = useState<number | undefined>();
@@ -38,11 +48,7 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [pendingDeliveryId, setPendingDeliveryId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const[driverNotFound, setdriverNotFound] = useState(false);
+  
   type PaymentModalState = {
     open: boolean;
     clientSecret?: string;
@@ -98,6 +104,86 @@ const CustomerBooking = () => {
 
     return () => clearTimeout(timer);
   }, [countdown]);
+
+  // Listen for driver acceptance in realtime
+  useEffect(() => {
+    if (!pendingDeliveryId || !user) return;
+
+    console.log("Setting up subscription for delivery:", pendingDeliveryId);
+
+    const channel = supabase
+      .channel(`delivery-acceptance-${pendingDeliveryId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "deliveries",
+          filter: `id=eq.${pendingDeliveryId}`,
+        },
+        async (payload) => {
+          console.log("Delivery updated:", payload.new);
+          
+          const updatedDelivery = payload.new as any;
+
+          // Check if a driver has accepted (status changed to 'accepted' and driver_id is set)
+          if (updatedDelivery.status === "accepted" && updatedDelivery.driver_id !== null ) {
+            console.log("Driver accepted delivery!");
+            
+            
+            // Find the driver from the existing drivers list
+            const acceptedDriverData = drivers.find(
+              (driver) => driver.user_id === updatedDelivery.driver_id
+            );
+
+            setAcceptedDelivery(updatedDelivery);
+            setAcceptedDriver(acceptedDriverData);
+            setShowAcceptedDialog(true);
+            setNavigationCountdown(30);
+
+            toast({
+              title: "Driver Accepted!",
+              description: `${acceptedDriverData.profiles.first_name} ${acceptedDriverData.profiles.last_name} has accepted your delivery`,
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to delivery updates');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Channel error - subscription failed');
+          toast({
+            title: "Connection Error",
+            description: "Failed to subscribe to delivery updates",
+            variant: "destructive",
+          });
+        }
+      });
+
+    return () => {
+      console.log("🧹 Cleaning up delivery subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [pendingDeliveryId, user, toast]);
+
+  // Auto-navigate countdown when driver accepts
+  useEffect(() => {
+    if (navigationCountdown === null || navigationCountdown <= 0) return;
+
+    const timer = setTimeout(() => {
+      setNavigationCountdown(navigationCountdown - 1);
+      
+      if (navigationCountdown - 1 === 0 && acceptedDelivery) {
+        // Navigate to tracking page
+        navigate(`/order-tracking?id=${acceptedDelivery.id}`);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [navigationCountdown, acceptedDelivery, navigate]);
 
 
   const handleLogout = async () => {
@@ -184,8 +270,8 @@ const CustomerBooking = () => {
       // Fetch drivers with matching vehicle type and verified status
       const { data: verifiedDrivers } = await supabase
         .from("driver_verifications")
-        .select("user_id");
-        // .eq("verification_status", "verified");
+        .select("user_id")
+        .eq("verification_status", "verified");
         const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
         console.log("verified drivers",verifiedUserIds);
 
@@ -205,8 +291,8 @@ const CustomerBooking = () => {
         .from("driver_vehicles")
         .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
         .eq("vehicle_type", vehicleType)
-        // .in("user_id", verifiedUserIds)
-        // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
+        .in("user_id", verifiedUserIds)
+        .not("user_id", "in", `(${busyDriverIds.join(",")})`)
         .not("current_lat", "is", null)
         .not("current_lng", "is", null);
 
@@ -244,7 +330,7 @@ const CustomerBooking = () => {
       
       if (driversWithDistance.length >= 1) {
         // Start 1-minute countdown
-        setCountdown(60);
+        setCountdown(30);
       }
       
       toast({
@@ -348,6 +434,8 @@ const CustomerBooking = () => {
 
       if (error) throw error;
 
+      setPendingDeliveryId(delivery.id);
+
       setClientSecret(null);
 
       toast({ 
@@ -356,7 +444,6 @@ const CustomerBooking = () => {
       });
 
       // Navigate to tracking page
-      // navigate(`/order-tracking?id=${delivery.id}`);
     } catch (err: any) {
       toast({ 
         title: "Error", 
@@ -549,15 +636,6 @@ const CustomerBooking = () => {
               </ResponsivePaymentModal>
           ) : (
             <>
-            {/* {paymentFailed && (
-              <button
-                onClick={() => setClientSecret(clientSecret)}
-                className="bg-red-500 text-white px-4 py-2 rounded"
-              >
-                Retry Payment
-              </button>
-            )} */}
-
              {drivers.length !==0 &&  <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold mb-2">Available Drivers</h1>
@@ -625,6 +703,7 @@ const CustomerBooking = () => {
                       <CardContent className="p-6">
                         <div className="flex gap-4">
                           <Avatar className="h-16 w-16">
+                             <AvatarImage src={driver.profiles.avatar_url} />
                             <AvatarFallback>
                               {driver.profiles?.first_name?.[0]}{driver.profiles?.last_name?.[0]}
                             </AvatarFallback>
@@ -660,6 +739,101 @@ const CustomerBooking = () => {
                   
                 )}
               </div>
+
+              {/* Driver Accepted Dialog */}
+              <AlertDialog open={showAcceptedDialog} onOpenChange={setShowAcceptedDialog}>
+                <AlertDialogContent className="max-w-md">
+                  <AlertDialogHeader>
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="rounded-full bg-green-100 p-3">
+                        <CheckCircle className="h-12 w-12 text-green-600" />
+                      </div>
+                    </div>
+                    <AlertDialogTitle className="text-center text-2xl">
+                      Driver Accepted!
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-center">
+                      Your delivery has been accepted
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  {acceptedDriver && (
+                    <div className="space-y-4">
+                      {/* Driver Info */}
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-16 w-16">
+                              {acceptedDriver.profiles?.avatar_url ? (
+                                <AvatarImage src={acceptedDriver.profiles.avatar_url} />
+                              ) : (
+                                <AvatarFallback className="text-lg">
+                                  {acceptedDriver.profiles?.first_name?.[0]}
+                                  {acceptedDriver.profiles?.last_name?.[0]}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg">
+                                {acceptedDriver.profiles?.first_name} {acceptedDriver.profiles?.last_name}
+                              </h3>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Truck className="h-4 w-4" />
+                                <span>
+                                  {acceptedDriver.year} {acceptedDriver.make} {acceptedDriver.model}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {acceptedDriver.color} • {acceptedDriver.license_plate}
+                              </p>
+                              {acceptedDriver.profiles?.phone && (
+                                <p className="text-sm text-muted-foreground">
+                                  📞 {acceptedDriver.profiles.phone}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Countdown Timer */}
+                      {navigationCountdown !== null && navigationCountdown > 0 && (
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <div className="text-3xl font-bold text-primary mb-2">
+                            {navigationCountdown}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Redirecting to tracking page...
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowAcceptedDialog(false);
+                        setNavigationCountdown(null);
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      Stay Here
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (acceptedDelivery) {
+                          navigate(`/order-tracking?id=${acceptedDelivery.id}`);
+                        }
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      Go to Tracking Now
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>
