@@ -48,7 +48,7 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
-  
+
   type PaymentModalState = {
     open: boolean;
     clientSecret?: string;
@@ -271,7 +271,7 @@ const CustomerBooking = () => {
       const { data: verifiedDrivers } = await supabase
         .from("driver_verifications")
         .select("user_id")
-        .eq("verification_status", "verified");
+        .eq("verification_status", "approved");
         const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
         console.log("verified drivers",verifiedUserIds);
 
