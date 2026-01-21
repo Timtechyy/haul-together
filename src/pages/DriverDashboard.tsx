@@ -9,7 +9,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import DeliveryMap from "@/components/DeliveryMap";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
 import { ReceiptImage } from "@/components/ReceiptImage";
@@ -157,7 +156,7 @@ useEffect(() => {
         table: "deliveries",
       },
       async (payload) => {
-        console.log("🆕 NEW DELIVERY INSERTED:", payload.new);
+        console.log("NEW DELIVERY INSERTED:", payload.new);
         
         const newDelivery = payload.new as DeliveryPreview;
         
@@ -168,17 +167,17 @@ useEffect(() => {
         console.log("Is pending?", isPending, "Is assigned to me?", isAssignedToMe);
         
         if (!isPending && !isAssignedToMe) {
-          console.log("❌ Delivery not relevant, skipping");
+          console.log("Delivery not relevant, skipping");
           return;
         }
 
         // Add to list if not already present
         setPendingRequests((prev) => {
           if (prev.some((p) => p.id === newDelivery.id)) {
-            console.log("⚠️ Delivery already in list");
+            console.log(" Delivery already in list");
             return prev;
           }
-          console.log("✅ Adding new delivery to list");
+          console.log("Adding new delivery to list");
           return [newDelivery, ...prev];
         });
 
@@ -212,7 +211,7 @@ useEffect(() => {
         table: "deliveries",
       },
       (payload) => {
-        console.log("🔄 DELIVERY UPDATED:", payload.new);
+        console.log("DELIVERY UPDATED:", payload.new);
         
         const updatedDelivery = payload.new as DeliveryPreview;
         const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
@@ -220,7 +219,7 @@ useEffect(() => {
         setPendingRequests((prev) => {
           // Remove if no longer active
           if (!activeStatuses.includes(updatedDelivery.status)) {
-            console.log("🗑️ Removing completed/cancelled delivery");
+            console.log("Removing completed/cancelled delivery");
             return prev.filter((p) => p.id !== updatedDelivery.id);
           }
 
@@ -228,14 +227,14 @@ useEffect(() => {
           if (updatedDelivery.driver_id && 
               updatedDelivery.driver_id !== user.id && 
               updatedDelivery.status !== "pending") {
-            console.log("👤 Removing delivery assigned to another driver");
+            console.log("Removing delivery assigned to another driver");
             return prev.filter((p) => p.id !== updatedDelivery.id);
           }
 
           // Update existing or add new
           const existingIndex = prev.findIndex((p) => p.id === updatedDelivery.id);
           if (existingIndex !== -1) {
-            console.log("📝 Updating existing delivery");
+            console.log("Updating existing delivery");
             const updated = [...prev];
             updated[existingIndex] = updatedDelivery;
             return updated;
@@ -243,7 +242,7 @@ useEffect(() => {
 
           // Add if it's relevant and not already in the list
           if (updatedDelivery.status === "pending" || updatedDelivery.driver_id === user.id) {
-            console.log("➕ Adding updated delivery to list");
+            console.log("Adding updated delivery to list");
             return [updatedDelivery, ...prev];
           }
 
@@ -252,23 +251,23 @@ useEffect(() => {
       }
     )
     .subscribe((status, err) => {
-      console.log("📡 Subscription status:", status);
+      console.log("Subscription status:", status);
       
       if (status === 'SUBSCRIBED') {
-        console.log('✅ Successfully subscribed to delivery updates');
+        console.log('Successfully subscribed to delivery updates');
         toast({
           title: "Connected",
           description: "Real-time updates active",
         });
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('❌ Channel error - subscription failed', err);
+        console.error('Channel error - subscription failed', err);
         toast({
           title: "Connection Error",
           description: "Failed to subscribe to real-time updates",
           variant: "destructive",
         });
       } else if (status === 'TIMED_OUT') {
-        console.error('⏱️ Subscription timed out');
+        console.error('Subscription timed out');
       } else if (status === 'CLOSED') {
         console.log('🔌 Channel closed');
       }
