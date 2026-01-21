@@ -67,6 +67,218 @@ const DriverDashboard = () => {
     completedTrips: 0,
     rating: 0,
   });
+useEffect(() => {
+  if (!user) return;
+
+  const fetchDriverData = async () => {
+    // Fetch unassigned pending deliveries
+    const { data: unassignedData, error: unassignedError } = await supabase
+      .from("deliveries")
+      .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, receipt_url, status")
+      .eq("status", "pending")
+      .is("driver_id", null);
+
+    // Fetch deliveries assigned to this driver
+    const { data: assignedData, error: assignedError } = await supabase
+      .from("deliveries")
+      .select("*")
+      .eq("driver_id", user.id)
+      .in("status", ["assigned", "accepted", "picked_up"]);
+
+    if (unassignedError || assignedError) {
+      console.error("Error fetching deliveries:", unassignedError || assignedError);
+      toast({
+        title: "Error",
+        description: "Failed to load pending requests",
+        variant: "destructive",
+      });
+    } else {
+      const allDeliveries: DeliveryPreview[] = [
+        ...(unassignedData || []),
+        ...(assignedData || []),
+      ];
+      setPendingRequests(allDeliveries);
+      console.log("Initial deliveries loaded:", allDeliveries.length);
+    }
+
+    // Fetch stats (your existing code)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    const { data: todayDeliveries } = await supabase
+      .from("deliveries")
+      .select("price, customer_rating")
+      .eq("driver_id", user.id)
+      .eq("status", "delivered")
+      .gte("delivered_at", todayISO);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayISO = yesterday.toISOString();
+
+    const { data: yesterdayDeliveries } = await supabase
+      .from("deliveries")
+      .select("price")
+      .eq("driver_id", user.id)
+      .eq("status", "delivered")
+      .gte("delivered_at", yesterdayISO)
+      .lt("delivered_at", todayISO);
+
+    const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+    const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+    const completedTrips = todayDeliveries?.length || 0;
+
+    const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
+    const avgRating = ratingsToday.length > 0
+      ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
+      : 0;
+
+    setStats({
+      todayEarnings,
+      yesterdayEarnings,
+      completedTrips,
+      rating: Number(avgRating.toFixed(1)),
+    });
+  };
+
+  fetchDriverData();
+
+  console.log("Setting up realtime subscription for user:", user.id);
+
+  // Set up realtime subscription
+  const channel = supabase
+    .channel(`driver-deliveries-${user.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "deliveries",
+      },
+      async (payload) => {
+        console.log("🆕 NEW DELIVERY INSERTED:", payload.new);
+        
+        const newDelivery = payload.new as DeliveryPreview;
+        
+        // Check if this delivery is relevant to the driver
+        const isPending = newDelivery.status === "pending" && !newDelivery.driver_id;
+        const isAssignedToMe = newDelivery.driver_id === user.id;
+        
+        console.log("Is pending?", isPending, "Is assigned to me?", isAssignedToMe);
+        
+        if (!isPending && !isAssignedToMe) {
+          console.log("❌ Delivery not relevant, skipping");
+          return;
+        }
+
+        // Add to list if not already present
+        setPendingRequests((prev) => {
+          if (prev.some((p) => p.id === newDelivery.id)) {
+            console.log("⚠️ Delivery already in list");
+            return prev;
+          }
+          console.log("✅ Adding new delivery to list");
+          return [newDelivery, ...prev];
+        });
+
+        // Send notification if assigned to this driver
+        if (isAssignedToMe && notificationsEnabled) {
+          const assignedDelivery = newDelivery as AssignedDelivery;
+          const { notificationService } = await import('@/utils/notificationService');
+          await notificationService.showNotification('New Delivery Assigned!', {
+            body: `${assignedDelivery.pickup_location} → ${assignedDelivery.delivery_location}\n$${assignedDelivery.price.toFixed(2)} • ${assignedDelivery.estimated_distance.toFixed(1)} mi`,
+            tag: 'assigned-delivery',
+            requireInteraction: true,
+          });
+          
+          toast({
+            title: "New Delivery Assigned!",
+            description: `$${assignedDelivery.price.toFixed(2)} - ${assignedDelivery.pickup_location}`,
+          });
+        } else if (isPending) {
+          toast({
+            title: "New Delivery Available!",
+            description: `$${newDelivery.price.toFixed(2)} - ${newDelivery.estimated_distance.toFixed(1)} mi`,
+          });
+        }
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "deliveries",
+      },
+      (payload) => {
+        console.log("🔄 DELIVERY UPDATED:", payload.new);
+        
+        const updatedDelivery = payload.new as DeliveryPreview;
+        const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
+
+        setPendingRequests((prev) => {
+          // Remove if no longer active
+          if (!activeStatuses.includes(updatedDelivery.status)) {
+            console.log("🗑️ Removing completed/cancelled delivery");
+            return prev.filter((p) => p.id !== updatedDelivery.id);
+          }
+
+          // Remove if assigned to another driver
+          if (updatedDelivery.driver_id && 
+              updatedDelivery.driver_id !== user.id && 
+              updatedDelivery.status !== "pending") {
+            console.log("👤 Removing delivery assigned to another driver");
+            return prev.filter((p) => p.id !== updatedDelivery.id);
+          }
+
+          // Update existing or add new
+          const existingIndex = prev.findIndex((p) => p.id === updatedDelivery.id);
+          if (existingIndex !== -1) {
+            console.log("📝 Updating existing delivery");
+            const updated = [...prev];
+            updated[existingIndex] = updatedDelivery;
+            return updated;
+          }
+
+          // Add if it's relevant and not already in the list
+          if (updatedDelivery.status === "pending" || updatedDelivery.driver_id === user.id) {
+            console.log("➕ Adding updated delivery to list");
+            return [updatedDelivery, ...prev];
+          }
+
+          return prev;
+        });
+      }
+    )
+    .subscribe((status, err) => {
+      console.log("📡 Subscription status:", status);
+      
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Successfully subscribed to delivery updates');
+        toast({
+          title: "Connected",
+          description: "Real-time updates active",
+        });
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Channel error - subscription failed', err);
+        toast({
+          title: "Connection Error",
+          description: "Failed to subscribe to real-time updates",
+          variant: "destructive",
+        });
+      } else if (status === 'TIMED_OUT') {
+        console.error('⏱️ Subscription timed out');
+      } else if (status === 'CLOSED') {
+        console.log('🔌 Channel closed');
+      }
+    });
+
+  return () => {
+    console.log("🧹 Cleaning up subscription");
+    supabase.removeChannel(channel);
+  };
+}, [user, toast, notificationsEnabled]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -101,228 +313,6 @@ const DriverDashboard = () => {
     initNotifications();
   }, [toast]);
 
-  // Fetch driver stats and pending deliveries
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchDriverData = async () => {
-      // Fetch unassigned pending deliveries with LIMITED fields for privacy
-      // Only fetch essential info - no addresses or GPS coordinates
-      const { data: unassignedData, error: unassignedError } = await supabase
-        .from("deliveries")
-        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, receipt_url,status")
-        .eq("status", "pending")
-        .is("driver_id", null);
-
-      // Fetch deliveries assigned to this driver with FULL details
-      const { data: assignedData, error: assignedError } = await supabase
-        .from("deliveries")
-        .select("*")
-        .eq("driver_id", user.id)
-        .in("status", ["assigned", "accepted", "picked_up"]);
-
-      if (unassignedError || assignedError) {
-        console.error("Error fetching deliveries:", unassignedError || assignedError);
-        toast({
-          title: "Error",
-          description: "Failed to load pending requests",
-          variant: "destructive",
-        });
-      } else {
-        // Combine both lists - unassigned (preview only) and assigned (full details)
-        const allDeliveries: DeliveryPreview[] = [
-          ...(unassignedData || []),
-          ...(assignedData || []),
-        ];
-        setPendingRequests(allDeliveries);
-      }
-
-      // Fetch today's earnings and trips
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayISO = today.toISOString();
-
-      const { data: todayDeliveries } = await supabase
-        .from("deliveries")
-        .select("price, customer_rating")
-        .eq("driver_id", user.id)
-        .eq("status", "delivered")
-        .gte("delivered_at", todayISO);
-
-      // Fetch yesterday's earnings for comparison
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayISO = yesterday.toISOString();
-
-      const { data: yesterdayDeliveries } = await supabase
-        .from("deliveries")
-        .select("price")
-        .eq("driver_id", user.id)
-        .eq("status", "delivered")
-        .gte("delivered_at", yesterdayISO)
-        .lt("delivered_at", todayISO);
-
-      // Calculate stats
-      const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
-      const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
-      const completedTrips = todayDeliveries?.length || 0;
-
-      // Calculate average rating from today's deliveries
-      const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
-      const avgRating = ratingsToday.length > 0
-        ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
-        : 0;
-
-      setStats({
-        todayEarnings,
-        yesterdayEarnings,
-        completedTrips,
-        rating: Number(avgRating.toFixed(1)),
-      });
-    };
-
-    fetchDriverData();
-
-    // Set up realtime subscription
-    const channel = supabase
-      .channel("pending-deliveries")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "deliveries",
-          filter: "status=eq.pending",
-        },
-        async (payload) => {
-          
-          const d = payload.new as DeliveryPreview;
-               // Unassigned pending deliveries (preview only)
-          if (d.status === "pending" && !d.driver_id) {
-            setPendingRequests((prev) => {
-              if (prev.some((p) => p.id === d.id)) return prev;
-              return [...prev, d];
-            });
-          }
-
-          // Assigned to this driver
-          if (d.driver_id === user.id) {
-            setPendingRequests((prev) => {
-              if (prev.some((p) => p.id === d.id)) return prev;
-              return [...prev, d];
-            });
-          }
-
-          // const newDelivery = payload.new as DeliveryPreview;
-          // if (!newDelivery.driver_id) {
-          //   // Only add preview data for new unassigned deliveries (no addresses)
-          //   const previewDelivery: DeliveryPreview = {
-          //     id: newDelivery.id,
-          //     item_description: newDelivery.item_description,
-          //     item_type: newDelivery.item_type,
-          //     quantity: newDelivery.quantity,
-          //     vehicle_type: newDelivery.vehicle_type,
-          //     price: newDelivery.price,
-          //     estimated_distance: newDelivery.estimated_distance,
-          //     created_at: newDelivery.created_at,
-          //     status: newDelivery.status,
-          //   };
-          //   setPendingRequests((prev) => [...prev, previewDelivery]);
-            
-          //   // Send notification for new delivery (without addresses for privacy)
-          //   if (notificationsEnabled) {
-          //     const { notificationService } = await import('@/utils/notificationService');
-          //     await notificationService.notifyNewDelivery({
-          //       pickup: "New pickup available",
-          //       delivery: "Delivery location",
-          //       price: newDelivery.price,
-          //       distance: newDelivery.estimated_distance,
-          //     });
-          //   }
-          // }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "deliveries",
-          filter: `driver_id=eq.${user.id}`,
-        },
-        async (payload) => {
-          const assignedDelivery = payload.new as AssignedDelivery;
-          setPendingRequests((prev) => [...prev, assignedDelivery]);
-          
-          // Send notification for assigned delivery (full details allowed since assigned to this driver)
-          if (notificationsEnabled) {
-            const { notificationService } = await import('@/utils/notificationService');
-            await notificationService.showNotification('New Delivery Assigned!', {
-              body: `${assignedDelivery.pickup_location} → ${assignedDelivery.delivery_location}\n$${assignedDelivery.price.toFixed(2)} • ${assignedDelivery.estimated_distance.toFixed(1)} mi`,
-              tag: 'assigned-delivery',
-              requireInteraction: true,
-            });
-          }
-          
-          toast({
-            title: "New Delivery Assigned!",
-            description: `$${assignedDelivery.price.toFixed(2)} - ${assignedDelivery.pickup_location}`,
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "deliveries",
-        },
-        (payload) => {
-          const d = payload.new as DeliveryPreview;
-
-          const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
-
-          setPendingRequests((prev) => {
-            // Remove if no longer active
-            if (!activeStatuses.includes(d.status)) {
-              return prev.filter((p) => p.id !== d.id);
-            }
-
-            // Remove if assigned to another driver
-            if (d.driver_id && d.driver_id !== user.id && d.status !== "pending") {
-              return prev.filter((p) => p.id !== d.id);
-            }
-
-            // Update or insert
-            const exists = prev.some((p) => p.id === d.id);
-            if (exists) {
-              return prev.map((p) => (p.id === d.id ? d : p));
-            }
-
-            return [...prev, d];
-          });
-
-
-          // const updatedDelivery = payload.new as DeliveryPreview;
-          // // Remove from list if no longer pending/assigned/accepted/picked_up or if assigned to another driver
-          // const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
-          // if (!activeStatuses.includes(updatedDelivery.status)) {
-          //   setPendingRequests((prev) =>
-          //     prev.filter((req) => req.id !== updatedDelivery.id)
-          //   );
-          // } else if (updatedDelivery.driver_id && updatedDelivery.driver_id !== user.id) {
-          //   setPendingRequests((prev) =>
-          //     prev.filter((req) => req.id !== updatedDelivery.id)
-          //   );
-          // }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, toast, notificationsEnabled]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -365,37 +355,6 @@ const DriverDashboard = () => {
       p_delivery_id:requestId,
       p_driver_id:user.id
     });
-
-    // const { data, error } = await supabase
-    //   .from("deliveries")
-    //   .update({ 
-    //     driver_id: user.id,
-    //     status: "accepted",
-    //     accepted_at: new Date().toISOString(),
-    //   })
-    //   .eq("id", requestId)
-    //   .is("driver_id", null)
-    //   .eq("status", "pending")
-    //   .select()
-    //   .single();
-
-    //   if (!data) {
-    //       toast({
-    //       title: "Too late",
-    //       description: "Another driver already accepted this delivery",
-    //       variant: "destructive",
-    //     });
-    //     return;
-    //   }
-    //   if (error) {
-    //     toast({
-    //       title: "Error",
-    //       description: "Failed to accept request",
-    //       variant: "destructive",
-    //     });
-    //     return;
-    //   }
-
     setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
     toast({
       title: "Request Accepted",
@@ -626,25 +585,6 @@ const DriverDashboard = () => {
                                 <ReceiptImage receiptUrl={request.receipt_url} />
                               </div>
                             )}
-                            
-                            {/* Map View - only for assigned deliveries with coordinates */}
-                            {/* {hasFullDetails && request.pickup_lat && request.pickup_lng && request.delivery_lat && request.delivery_lng && (
-                              <div className="mt-4">
-                                <DeliveryMap
-                            
-                                booking={{  
-                                  pickupLat:request.pickup_lat,
-                                  pickupLng:request.pickup_lng,
-                                  deliveryLat:request.delivery_lat,
-                                  deliveryLng:request.delivery_lng,
-                                  pickupAddress:request.pickup_location,
-                                  deliveryAddress:request.delivery_location,
-                                }}
-                                mode="driver"
-                                />
-                              </div>
-                            )}
-                             */}
                             <div className="flex gap-2 justify-end pt-2">
                               {isAssignedToDriver ? (
                                 <Button 

@@ -288,10 +288,10 @@ const CustomerBooking = () => {
      const clientSecret = data.clientSecret;
      setClientSecret(clientSecret);
 
-      toast({
-        title: "Payment Ready",
-        description: "Please complete payment to notify drivers",
-      });
+      // toast({
+      //   title: "Payment Ready",
+      //   description: "Please complete payment to notify drivers",
+      // });
    
     } catch (err: any) {
       toast({ 
@@ -347,6 +347,8 @@ const CustomerBooking = () => {
         .single();
 
       if (error) throw error;
+
+      setClientSecret(null);
 
       toast({ 
         title: "Payment Successful!", 
@@ -547,14 +549,14 @@ const CustomerBooking = () => {
               </ResponsivePaymentModal>
           ) : (
             <>
-            {paymentFailed && (
+            {/* {paymentFailed && (
               <button
                 onClick={() => setClientSecret(clientSecret)}
                 className="bg-red-500 text-white px-4 py-2 rounded"
               >
                 Retry Payment
               </button>
-            )}
+            )} */}
 
              {drivers.length !==0 &&  <div className="flex items-center justify-between">
                 <div>

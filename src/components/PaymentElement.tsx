@@ -35,6 +35,8 @@ export default function PaymentForm({ onSuccess, onFailure }:PaymentFormProps) {
       });
 
       if (error) {
+        onFailure(true);
+        setRetry(true);
         throw error;
         // alert(error.message);
         // setLoading(false);
@@ -47,10 +49,10 @@ export default function PaymentForm({ onSuccess, onFailure }:PaymentFormProps) {
           description: "Drivers would be Notified ",
         });
         onSuccess();
-      }else{ 
-        setRetry(true);
       }
     } catch(error){
+      onFailure(true);
+      setRetry(true);
       toast({ 
         title: "Opps Payment Unsuccessful", 
         description: "Sorry Payment Wasn't successful please retry", 
@@ -71,7 +73,7 @@ export default function PaymentForm({ onSuccess, onFailure }:PaymentFormProps) {
         disabled={!stripe || loading}
         className="bg-black text-white px-4 py-2 rounded-md w-full"
       >
-        Pay Now
+        {retry?"Retry payment":"Pay Now"} 
       </button>
     </div>
   );
