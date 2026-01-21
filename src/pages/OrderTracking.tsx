@@ -38,7 +38,7 @@ const OrderTracking = () => {
 
       const { data, error } = await supabase
         .from('deliveries')
-        .select('*, driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, current_lng, current_lat)) ')
+        .select('*, driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, current_lng, current_lat, color)) ')
         .eq('id', orderId)
         .single();
 
@@ -251,7 +251,7 @@ const OrderTracking = () => {
                   <Car className="h-5 w-5 text-primary mt-1" />
                   <div>
                     <p className="font-semibold">Vehicle Color</p>
-                    <p className="text-muted-foreground">Black</p>
+                    <p className="text-muted-foreground">{delivery.driver.driver_vehicles.color}</p>
                   </div>
                 </div>
 
@@ -341,7 +341,7 @@ const OrderTracking = () => {
                 deliveryAddress:delivery.delivery_location
               }} 
               mode={userRole ==="driver"?"driver":"user"}
-              driverId={userId}             
+              driverId={delivery.driver_id}             
               />
 
               {/* Action Buttons */}
