@@ -203,7 +203,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
         .eq("vehicle_type", vehicleType)
         // .in("user_id", verifiedUserIds)
         // .not("user_id", "in", `(${busyDriverIds.join(",")})`)
@@ -634,7 +634,7 @@ const CustomerBooking = () => {
                               </h3>
                               <div className="flex flex-row items-center gap-4 text-sm text-muted-foreground">
                                 <Truck className="h-4 w-4" />
-                                {driver.year} {driver.make} {driver.model} {driver.type}
+                                {driver.year} {driver.make} {driver.model} {driver.color} {driver.type}
                               </div>
                               <div className="text-sm"> {driver.license_plate}</div>
                             </div>

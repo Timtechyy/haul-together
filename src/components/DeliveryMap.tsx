@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
+import mapboxgl, { LngLat } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
+import '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css';
+import distance from '@turf/distance';
+import { point } from '@turf/helpers';
 import { supabase } from '@/integrations/supabase/client';
 
 interface BookingProps {
@@ -22,155 +26,199 @@ interface DeliveryMapProps {
 const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-
+  const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const lastDriverPosition = useRef<[number, number] | null>(null);
+  const [followDriver, setFollowDriver] = useState(true);
   const [loading, setLoading] = useState(true);
+  const directionsRef = useRef<any>(null);
 
+  /* ---------------- MAP INIT ---------------- */
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || mapRef.current) return;
 
-    const initializeMap = async () => {
-      try {
-        // Get Mapbox token from edge function
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        
-        if (error) throw error;
+    const initMap = async () => {
+      // const { data } = await supabase.functions.invoke("get-mapbox-token");
+      const { data: driverLocation } = await supabase.from("driver_vehicles").select("current_lng, current_lat").eq("user_id", driverId).single();
+      mapboxgl.accessToken = "pk.eyJ1Ijoid2VoYXVsZXIiLCJhIjoiY21pbHZyMXlmMDl4MzNkcHVyb21nMHV4eCJ9.V5eUmLUwnEdScdxfALmSqQ";
 
-        mapboxgl.accessToken = data.token;
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainer.current!,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [
+          (booking.pickupLng + booking.deliveryLng) / 2,
+          (booking.pickupLat + booking.deliveryLat) / 2,
+        ],
+        zoom: 12,
+      });
+      // 2. Initialize Directions
+       directionsRef.current = new MapboxDirections({
+        accessToken: mapboxgl.accessToken,
+        unit: 'metric',
+        profile: 'mapbox/driving',
+        interactive: false,
+        controls: {
+          inputs: false,      // Hides the search boxes
+          instructions: false // Hides the turn-by-turn text
+        }
 
-        // Initialize map
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          center: [(booking.pickupLng + booking.deliveryLng) / 2, (booking.pickupLat + booking.deliveryLat) / 2],
-          zoom: 11,
-        });
-
-        // Add pickup marker
-        const pickupMarker = new mapboxgl.Marker({ color: '#22c55e' })
-          .setLngLat([booking.pickupLng, booking.pickupLat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`<div class="p-2"><strong>Pickup</strong><br/>${booking.pickupAddress}</div>`)
-          )
-          .addTo(map.current);
-
-        // Add delivery marker
-        const deliveryMarker = new mapboxgl.Marker({ color: '#ef4444' })
-          .setLngLat([booking.deliveryLng, booking.deliveryLat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 })
-              .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`)
-          )
-          .addTo(map.current);
-
-        // Fit map to show both markers
-        const bounds = new mapboxgl.LngLatBounds();
-        bounds.extend([booking.pickupLng, booking.pickupLat]);
-        bounds.extend([booking.deliveryLng, booking.deliveryLat]);
-        
-        map.current.fitBounds(bounds, {
-          padding: 50,
-        });
-
-        // const channel = supabase
-        // .channel("driver-location")
-        // .on(
-        //   "postgres_changes",
-        //   {
-        //     event: "*",
-        //     schema: "public",
-        //     table: "driver_vehicles",
-        //     filter: `user_id=eq.${driverId}`,
-        //   },
-        //   (payload) => {
-        //     const { current_lat, current_lng } = payload.new as any;
-            
-        //     const driverMarker  = new mapboxgl.Marker({
-        //         color: "#2563eb",
-        //       })
-        //       .setLngLat([current_lng, current_lat])
-        //       .setPopup(new mapboxgl.Popup({ offset: 25 })
-        //       .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`))
-        //       .addTo(map.current!);
-            
-            
-        //     // Auto-center map slightly toward destination
-        //     // const target = getTargetPoint();
-        //     // map.current!.easeTo({
-        //     //   center: [
-        //     //     (lng + target[0]) / 2,
-        //     //     (lat + target[1]) / 2,
-        //     //   ],
-        //     //   duration: 800,
-        //     // });
-        //   }
-        // ).subscribe();
-
-        // Add navigation controls
-        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-        setLoading(false);
-        // return () => {
-        //   supabase.removeChannel(channel);
-        // };
-
-    
-      } catch (error) {
-        console.error('Error initializing map:', error);
-        setLoading(false);
-      }
+      });
+      mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      
+      
+      mapRef.current.on("load", () => {
+       // const newPos: [number, number] = [driverLocation.current_lng, driverLocation.current_lat];
+       
+        addPickupAndDropoff(); 
+        if (driverLocation?.current_lng && driverLocation?.current_lat) {
+          driverMarkerRef.current = createDriverMarker([
+            driverLocation.current_lng,
+            driverLocation.current_lat
+          ]);
+        }
+        mapRef.current!.addControl(directionsRef.current, "top-left");
+        directionsRef.current.setOrigin([booking.pickupLng, booking.pickupLat]);
+        directionsRef.current.setDestination([booking.deliveryLng, booking.deliveryLat]);
+      });
     };
 
-    initializeMap();
+    initMap();
 
     return () => {
-      map.current?.remove();
+      mapRef.current?.remove();
     };
-  }, [booking.pickupLat, booking.pickupLng, booking.deliveryLat, booking.deliveryLng, booking.pickupAddress, booking.deliveryAddress,]);
+     
+        
+  }, [driverId]);
 
-  useEffect(()=>{
-   if (!map.current) return;
+  /* ---------------- MARKERS ---------------- */
+  const addPickupAndDropoff = () => {
+    if (!mapRef.current) return;
+
+    new mapboxgl.Marker({ color: "#22c55e" })
+      .setLngLat([booking.pickupLng, booking.pickupLat])
+      // .setPopup(new mapboxgl.Popup().setText("Pickup"))
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 })
+        .setHTML(`<div class="p-2 text-sm, text-black"><strong>Pickup</strong><br/>${booking.pickupAddress}</div>`)
+      )
+      .addTo(mapRef.current);
+
+    new mapboxgl.Marker({ color: "#ef4444" })
+      .setLngLat([booking.deliveryLng, booking.deliveryLat])
+      // .setPopup(new mapboxgl.Popup().setText("Delivery"))
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`<div class="p-2 text-sm, text-black"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`)
+      )
+      .addTo(mapRef.current);
+  };
+
+  /* ---------------- DRIVER REALTIME ---------------- */
+  useEffect(() => {
+    if (!driverId || !directionsRef.current) return;
+
     const channel = supabase
-    .channel("driver-location")
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "driver_vehicles",
-        filter: `user_id=eq.${driverId}`,
-      },
+      .channel("driver-location")
+      .on("postgres_changes", { 
+        event: "*", 
+        schema: "public", 
+        table: "driver_vehicles", 
+        filter: `user_id=eq.${driverId}` 
+      }, 
       (payload) => {
         const { current_lat, current_lng } = payload.new as any;
-        
-        const driverMarker  = new mapboxgl.Marker({
-            color: "#2563ec",
-          })
-          .setLngLat([current_lng, current_lat])
-          .setPopup(new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`<div class="p-2"><strong>Delivery</strong><br/>${booking.deliveryAddress}</div>`))
-          .addTo(map.current!);
-        
-        
-        // Auto-center map slightly toward destination
-        // const target = getTargetPoint();
-        // map.current!.easeTo({
-        //   center: [
-        //     (lng + target[0]) / 2,
-        //     (lat + target[1]) / 2,
-        //   ],
-        //   duration: 800,
-        // });
-      }
-    ).subscribe();
+        if (!current_lat || !current_lng) return;
+        const newPos: [number, number] = [current_lng, current_lat];
 
-    return () => {
-      supabase.removeChannel(channel);
+        // 1. Update Marker & Camera
+        if (driverMarkerRef.current) animateMarker(driverMarkerRef.current, newPos);
+        if (followDriver) mapRef.current?.easeTo({ center: newPos, duration: 1000 });
+
+        // 2. Precise Distance Check using Turf
+        const from = point([newPos[0], newPos[1]]);
+        const to = point([booking.pickupLng, booking.pickupLat]);
+        const options = { units: 'meters' as const };
+        
+        const distanceInMeters = distance(from, to, options);
+
+        // 3. Threshold Logic (e.g., 100 meters)
+        const hasReachedPickup = distanceInMeters < 100;
+
+        // 4. Update the Polyline via the Directions Plugin
+        directionsRef.current.setOrigin(newPos);
+        
+        if (hasReachedPickup) {
+          // Change destination to final delivery once at pickup
+          directionsRef.current.setDestination([booking.deliveryLng, booking.deliveryLat]);
+        } else {
+          // Still heading to pickup
+          directionsRef.current.setDestination([booking.pickupLng, booking.pickupLat]);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [driverId, booking]);
+
+
+  /* ---------------- DRIVER ICON ---------------- */
+  const createDriverMarker = (lngLat: [number, number]) => {
+    const el = document.createElement("div");
+    el.className = "driver-marker";
+
+    el.innerHTML = `
+      <div style="
+        width: 36px;
+        height: 36px;
+        background: #2563eb;
+        border-radius: 50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-size:18px;
+      ">
+        🚗
+      </div>
+    `;
+
+    return new mapboxgl.Marker(el)
+      .setLngLat(lngLat)
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 })
+        .setHTML(`<div class="p-2 text-sm, text-black"><strong>Driver Location</strong><br/></div>`)
+      )
+    
+      .addTo(mapRef.current!);
+  };
+
+  /* ---------------- SMOOTH ANIMATION ---------------- */
+  const animateMarker = (
+    marker: mapboxgl.Marker,
+    to: [number, number]
+  ) => {
+    const from = marker.getLngLat();
+    const frames = 30;
+    let step = 0;
+
+    const animate = () => {
+      step++;
+      const lng =
+        from.lng + (to[0] - from.lng) * (step / frames);
+      const lat =
+        from.lat + (to[1] - from.lat) * (step / frames);
+
+      marker.setLngLat([lng, lat]);
+
+      if (step < frames) requestAnimationFrame(animate);
     };
-  },[driverId]);
-  
+
+    animate();
+  };
+
   return (
-    <div className="relative w-full h-64 rounded-lg overflow-hidden">
+    <div className="relative w-full h-96 rounded-lg overflow-hidden">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
           <div className="text-sm text-muted-foreground">Loading map...</div>
