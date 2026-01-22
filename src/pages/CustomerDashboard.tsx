@@ -349,12 +349,11 @@ const CustomerDashboard = () => {
                                 </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xl font-bold">
-                              ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
+                            <div className="text-right">
+                              <div className="text-xl font-bold">
+                                ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}
+                              </div>
                             </div>
-
                             <CollapsibleTrigger asChild>  
                               <Button 
                                 variant="outline" 
@@ -368,33 +367,33 @@ const CustomerDashboard = () => {
                                 <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                               </Button>
                             </CollapsibleTrigger>
-
-                            <CollapsibleContent>
-                              <div className="space-y-3 border-t pt-3">
-                                <div className="text-sm">
-                                  <div className="font-medium mb-1">
-                                    {hasFullDetails ? "Full Details" : "Delivery Preview"}
-                                  </div>
-                                  <div className="space-y-1 text-muted-foreground">
-                                  
-                                    {booking.item_type && <div><span className="font-medium">Type:</span> {booking.item_type}</div>}
-                                    {booking.quantity && <div><span className="font-medium">Quantity:</span> {booking.quantity}</div>}
-                                    {booking.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {booking.vehicle_type}</div>}
-                                    <div><span className="font-medium">Distance:</span> {booking.estimated_distance.toFixed(1)} mi</div>
-                                    <div><span className="font-medium">Estimated Payment:</span> ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}</div>
-                                  </div>
-                                </div>
-    
-                                {/* Order Receipt - only for assigned deliveries */}
-                                {hasFullDetails && booking.receipt_url && (
-                                  <div className="mt-4">
-                                    <div className="font-medium text-sm mb-2">Order Receipt</div>
-                                    <ReceiptImage receiptUrl={booking.receipt_url} />
-                                  </div>
-                                )}
-                              </div>
-                            </CollapsibleContent>
                           </div>
+                          
+                          <CollapsibleContent>
+                            <div className="space-y-3 border-t pt-3">
+                              <div className="text-sm">
+                                <div className="font-medium mb-1">
+                                  {hasFullDetails ? "Full Details" : "Delivery Preview"}
+                                </div>
+                                <div className="space-y-1 text-muted-foreground">
+                                
+                                  {booking.item_type && <div><span className="font-medium">Type:</span> {booking.item_type}</div>}
+                                  {booking.quantity && <div><span className="font-medium">Quantity:</span> {booking.quantity}</div>}
+                                  {booking.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {booking.vehicle_type}</div>}
+                                  <div><span className="font-medium">Distance:</span> {booking.estimated_distance.toFixed(1)} mi</div>
+                                  <div><span className="font-medium">Estimated Payment:</span> ${booking.price ? Number(booking.price).toFixed(2) : "0.00"}</div>
+                                </div>
+                              </div>
+  
+                              {/* Order Receipt - only for assigned deliveries */}
+                              {hasFullDetails && booking.receipt_url && (
+                                <div className="mt-4">
+                                  <div className="font-medium w-full text-sm mb-2">Order Receipt</div>
+                                  <ReceiptImage receiptUrl={booking.receipt_url} />
+                                </div>
+                              )}
+                            </div>
+                          </CollapsibleContent>
                         </div>
                       </Collapsible>
                     );
