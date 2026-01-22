@@ -580,7 +580,7 @@ useEffect(() => {
                             {/* Order Receipt - only for assigned deliveries */}
                             {request.receipt_url && (
                               <div className="mt-4">
-                                <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                <div className="font-medium w-full text-sm mb-2">Order Receipt</div>
                                 <ReceiptImage receiptUrl={request.receipt_url} />
                               </div>
                             )}
