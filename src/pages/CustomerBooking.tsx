@@ -135,7 +135,6 @@ const CustomerBooking = () => {
             const acceptedDriverData = drivers.find(
               (driver) => driver.user_id === updatedDelivery.driver_id
             );
-
             setAcceptedDelivery(updatedDelivery);
             setAcceptedDriver(acceptedDriverData);
             setShowAcceptedDialog(true);
@@ -164,7 +163,7 @@ const CustomerBooking = () => {
       });
 
     return () => {
-      console.log("🧹 Cleaning up delivery subscription");
+      console.log("Cleaning up delivery subscription");
       supabase.removeChannel(channel);
     };
   }, [pendingDeliveryId, user, toast]);
@@ -271,7 +270,7 @@ const CustomerBooking = () => {
       const { data: verifiedDrivers } = await supabase
         .from("driver_verifications")
         .select("user_id")
-        .eq("verification_status", "approved");
+        .eq("verification_status", 'approved');
         const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
         console.log("verified drivers",verifiedUserIds);
 
