@@ -77,6 +77,81 @@ const CustomerDashboard = () => {
     checkUser();
   }, [navigate]);
 
+  useEffect(() => {
+    const channel = supabase
+    .channel(`current-user-bookings`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "deliveries",
+        filter: `customer_id=eq.${user?.id}`,
+      },
+      async (payload) => {
+        const updatedBooking = payload.new as any;
+        setRecentBookings((prev) => {
+          // DELETE
+          if (payload.eventType === "DELETE") {
+            return prev.filter((b) => b.id !== payload.old.id);
+          }
+
+          // UPDATE
+          if (payload.eventType === "UPDATE") {
+            return prev.map((b) =>
+              b.id === updatedBooking.id ? { ...b, ...updatedBooking } : b
+            );
+          }
+
+          // INSERT
+          if (payload.eventType === "INSERT") {
+            return [updatedBooking, ...prev].slice(0, 10);
+          }
+
+          return prev;
+        });
+        /* ---- Driver assigned → refetch this booking ---- */
+          if (
+            payload.eventType === "UPDATE" &&
+            payload.old?.driver_id !== payload.new?.driver_id
+          ) {
+            const { data } = await supabase
+              .from("deliveries")
+              .select(`
+                *,
+                driver:driver_id(
+                  first_name,
+                  last_name,
+                  phone,
+                  avatar_url,
+                  gender,
+                  driver_vehicles(
+                    vehicle_type,
+                    make,
+                    model,
+                    year,
+                    license_plate
+                  )
+                )
+              `)
+              .eq("id", payload.new.id)
+              .single();
+
+            if (data) {
+              setRecentBookings((prev) =>
+                prev.map((b) => (b.id === data.id ? data : b))
+              );
+            }
+          }
+      }
+    )
+    .subscribe();
+    return () => {
+      console.log("Cleaning up delivery subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
