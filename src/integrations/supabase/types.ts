@@ -323,42 +323,8 @@ export type Database = {
         Returns: Json
       }
       customer_confirm_delivery: {
-        Args: { delivery_id: string }
-        Returns: {
-          accepted_at: string | null
-          completed_at: string | null
-          created_at: string
-          customer_confirmed_at: string | null
-          customer_id: string
-          customer_rating: number | null
-          declined_driver_ids: string[] | null
-          delivered_at: string | null
-          delivery_lat: number | null
-          delivery_lng: number | null
-          delivery_location: string
-          driver_confirmed_at: string | null
-          driver_id: string | null
-          estimated_distance: number | null
-          id: string
-          item_description: string
-          item_type: string | null
-          picked_up_at: string | null
-          pickup_lat: number | null
-          pickup_lng: number | null
-          pickup_location: string
-          price: number | null
-          quantity: number | null
-          receipt_url: string | null
-          status: string
-          updated_at: string
-          vehicle_type: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "deliveries"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Args: { p_delivery_id: string }
+        Returns: undefined
       }
       distance_calculator: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
