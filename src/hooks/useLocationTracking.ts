@@ -29,6 +29,28 @@ const getDistanceMeters = (
 
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
+const markOnline = async (userId: string) => {
+  await supabase
+    .from("driver_vehicles")
+    .update({
+      is_online: true,
+      last_seen: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
+};
+
+const goOffline = async (userId?: string) => {
+  if (!userId) return;
+
+  await supabase
+    .from("driver_vehicles")
+    .update({
+      is_online: false,
+      current_lat: null,
+      current_lng: null,
+    })
+    .eq("user_id", userId);
+};
 
 /**
  * Hook
@@ -53,6 +75,7 @@ export const useLocationTracking = (
 
   useEffect(() => {
     if (!userId || !isOnline) {
+      goOffline(userId);
       stopTracking();
       return;
     }
@@ -65,14 +88,30 @@ export const useLocationTracking = (
       });
       return;
     }
+    markOnline(userId);
 
     startTracking();
+
+    // 👇 Detect tab close / refresh
+    window.addEventListener("beforeunload", handleUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      goOffline(userId);
+      stopTracking();
+    };
+
+  
 
     return () => {
       stopTracking();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isOnline]);
+
+  const handleUnload = () => {
+    if (userId) goOffline(userId);
+  };
 
   /**
    * Start GPS tracking
@@ -90,7 +129,7 @@ export const useLocationTracking = (
 
         if (!lastSentRef.current) {
           lastSentRef.current = { lat, lng, time: now };
-          await sendLocation(userId!, lat, lng);
+          await updateLocation(userId!, lat, lng);
           return;
         }
 
@@ -108,7 +147,7 @@ export const useLocationTracking = (
           timePassed >= MIN_TIME_MS
         ) {
           lastSentRef.current = { lat, lng, time: now };
-          await sendLocation(userId!, lat, lng);
+          await updateLocation(userId!, lat, lng);
         }
       },
       (error) => {
@@ -161,7 +200,7 @@ export const useLocationTracking = (
 /**
  * DB update (only for online drivers)
  */
-const sendLocation = async (
+const updateLocation = async (
   userId: string,
   lat: number,
   lng: number
