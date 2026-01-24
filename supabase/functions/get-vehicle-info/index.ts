@@ -104,55 +104,37 @@ serve(async (req) => {
     }),
   });
 
-  // if (!response.ok) {
-  //   const errorText = await response.json();
-  //   console.error("Error from Plates to VIN service:", errorText);
-  //   return new Response(
-  //     JSON.stringify({
-  //       success: false,
-  //       error: "Vehicle lookup failed",
-  //       details: errorText.message,
-  //     }),
-  //     {
-  //       status: 200,
-  //       headers: {
-  //         ...corsHeaders,
-  //         "Content-Type": "application/json",
-  //       },
-  //     }
-  //   );
-  // }
+  if (!response.ok) {
+    const errorText = await response.json();
+    console.error("Error from Plates to VIN service:", errorText);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Vehicle lookup failed",
+        details: errorText.message,
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
 
   const data = await response.json();
-      if (!data.success) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: data.message,
-          }),
-          {
-            status: 200,
-            
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      } else {
-        return new Response(
-          JSON.stringify({ vin: data.vin }),
-          {
-            status: 200,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+    return new Response(
+      JSON.stringify({ vin: data.vin }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       }
+    );
 
- 
   } catch (e: any) {
     console.error(e);
     return new Response(JSON.stringify({ error: e.message }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } } );
