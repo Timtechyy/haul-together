@@ -106,7 +106,7 @@ export  default function LicensePlate({userId, onComplete}:Details){
             }
         );
 
-        if (error) throw error;
+        if (error) throw new Error(error.message);
 
         setVehicleResult(data);
         } catch (err) {
