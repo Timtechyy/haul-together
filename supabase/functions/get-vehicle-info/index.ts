@@ -124,44 +124,33 @@ serve(async (req) => {
   // }
 
   const data = await response.json();
-    
-    return new Response(
-      JSON.stringify({ vin: data.vin }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-      // if (!data.success) {
-      //   return new Response(
-      //     JSON.stringify({
-      //       success: false,
-      //       error: data.message,
-      //     }),
-      //     {
-      //       status: 200,
+      if (!data.success) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: data.message,
+          }),
+          {
+            status: 200,
             
-      //       headers: {
-      //         ...corsHeaders,
-      //         "Content-Type": "application/json",
-      //       },
-      //     }
-      //   );
-      // } else {
-      //   return new Response(
-      //     JSON.stringify({ vin: data.vin }),
-      //     {
-      //       status: 200,
-      //       headers: {
-      //         ...corsHeaders,
-      //         "Content-Type": "application/json",
-      //       },
-      //     }
-      //   );
-      // }
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({ vin: data.vin }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
 
  
   } catch (e: any) {
