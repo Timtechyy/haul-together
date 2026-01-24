@@ -96,10 +96,10 @@ export default function LicensePlate({ userId, onComplete }: Details) {
       });
 
       if (error) throw error;
-    //   if (!data?.success) {
-    //     setError(data.details);
-    //     return;
-    //   }
+      if (!data?.success) {
+        setError(data.details);
+        return;
+      }
 
       setVehicleResult(data);
     } catch (err) {
