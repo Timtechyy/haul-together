@@ -113,7 +113,7 @@ serve(async (req) => {
         details: errorText,
       }),
       {
-        status: 400,
+        status: 404,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
