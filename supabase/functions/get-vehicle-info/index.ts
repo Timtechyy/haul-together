@@ -59,7 +59,7 @@ serve(async (req) => {
             console.error("Missing authorization header");
             return new Response(JSON.stringify({ error: "Missing authorization header" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 401,
+                status: 200,
             });
         }
         const token = authHeader.replace('Bearer ', '');
@@ -71,7 +71,7 @@ serve(async (req) => {
             console.error("Auth error:", userError);
             return new Response(JSON.stringify({ error: "Authentication failed: " + userError.message }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 401,
+                status: 200,
             });
         }
         
@@ -79,7 +79,7 @@ serve(async (req) => {
             console.error("No user found");
             return new Response(JSON.stringify({ error: "User not authenticated" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 401,
+                status: 200,
             });
         }
          const { plate } = await req.json();
@@ -113,7 +113,7 @@ serve(async (req) => {
         details: errorText,
       }),
       {
-        status: 404,
+        status: 200,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
@@ -131,7 +131,7 @@ serve(async (req) => {
             error: data.message || "Vehicle not found",
           }),
           {
-            status: 404,
+            status: 200,
             headers: {
               ...corsHeaders,
               "Content-Type": "application/json",
