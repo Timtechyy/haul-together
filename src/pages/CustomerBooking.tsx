@@ -290,6 +290,7 @@ const CustomerBooking = () => {
         .from("driver_vehicles")
         .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
         .eq("vehicle_type", vehicleType)
+        .eq("is_online", true)
         .in("user_id", verifiedUserIds)
         .not("user_id", "in", `(${busyDriverIds.join(",")})`)
         .not("current_lat", "is", null)
@@ -349,10 +350,6 @@ const CustomerBooking = () => {
       setLoading(false);
     }
   };
-
-
-  
-
 
   const handleAutoPayment = async () => {
     if (!user || !calculatedPrice) return;
