@@ -103,7 +103,7 @@ export default function LicensePlate({ userId, onComplete }: Details) {
 
       setVehicleResult(data);
     } catch (err) {
-      setError(err.details || "Failed to fetch vehicle information");
+      setError(err || "Failed to fetch vehicle information");
     } finally {
       setLoading(false);
     }
