@@ -314,6 +314,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_delivery: {
+        Args: { p_delivery_id: string; p_driver_id: string }
+        Returns: Json
+      }
       customer_confirm_delivery: {
         Args: { delivery_id: string }
         Returns: {
