@@ -154,6 +154,6 @@ serve(async (req) => {
  
   } catch (e: any) {
     console.error(e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } } );
+    return new Response(JSON.stringify({ error: e.message }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } } );
   }
 });
