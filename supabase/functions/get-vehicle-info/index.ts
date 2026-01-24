@@ -106,20 +106,51 @@ serve(async (req) => {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Vehicle details error: ${errorText}`);
-  }
 
-  const data = await response.json();
     return new Response(
-      JSON.stringify({ vin: data.vin }),
+      JSON.stringify({
+        error: "Vehicle lookup failed",
+        details: errorText,
+      }),
       {
-        status: 200,
+        status: 400,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
       }
     );
+  }
+
+  const data = await response.json();
+    
+
+      if (!data.success) {
+        return new Response(
+          JSON.stringify({
+            error: data.message || "Vehicle not found",
+          }),
+          {
+            status: 404,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({ vin: data.vin }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
  
   } catch (e: any) {
     console.error(e);

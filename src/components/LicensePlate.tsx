@@ -243,7 +243,7 @@ export  default function LicensePlate({userId, onComplete}:Details){
             </div>
             
           <div className="justify-center mt-4 flex">
-            <Button disabled={loading} className="justify-center place-items-center">
+            <Button disabled={loading} className="flex justify-center place-items-center">
                 {loading ? "Looking up..." : "Lookup Vehicle"}
             </Button>
           </div>
