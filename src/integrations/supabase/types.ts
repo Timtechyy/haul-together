@@ -360,6 +360,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      distance_calculator: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
       driver_confirm_delivery: {
         Args: { delivery_id: string }
         Returns: {
