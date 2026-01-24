@@ -95,16 +95,15 @@ export default function LicensePlate({ userId, onComplete }: Details) {
         },
       });
 
-      if (error) throw new Error(error.message);
-      if (!data?.success) {
-        setError(error.details.message || "Vehicle not found");
-        return;
-      }
+      if (error) throw error;
+    //   if (!data?.success) {
+    //     setError(data.details);
+    //     return;
+    //   }
 
       setVehicleResult(data);
     } catch (err) {
-        console.error("Error fetching vehicle info:", err.message);
-      setError(err || "Failed to fetch vehicle information");
+      setError(err.message || "Failed to fetch vehicle information");
     } finally {
       setLoading(false);
     }
