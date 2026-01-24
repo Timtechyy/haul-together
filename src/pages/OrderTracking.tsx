@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Package, CheckCircle, Car } from "lucide-react";
+import { ArrowLeft, MapPin, Package, CheckCircle, Car, Star } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -16,10 +16,11 @@ const OrderTracking = () => {
   const orderId = searchParams.get('id');
   const [delivery, setDelivery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [driverProfile, setDriverProfile] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const isDriver = userRole === "driver"
+  const [rating, setRating] = useState(0);
+  const isDriver = userRole === "driver";
+  const isCustomer = userRole === "user";
 
   useEffect(() => {
     const fetchDelivery = async () => {
@@ -29,7 +30,7 @@ const OrderTracking = () => {
       setUserId(user.id);
 
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
-      setUserRole(roleData.role);
+      setUserRole(roleData?.role);
 
       if (!orderId) {
         navigate("/");
@@ -41,7 +42,7 @@ const OrderTracking = () => {
         .select('*, driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, current_lng, current_lat, color)) ')
         .eq('id', orderId)
         .single();
-
+        setRating(data.customer_rating);
       if (error) {
         toast({
           title: "Error",
@@ -51,7 +52,6 @@ const OrderTracking = () => {
         navigate("/");
         return;
       }  
-      
       const isCustomer = data.customer_id === user.id;
       const isDriver = data.driver_id === user.id;
 
@@ -68,11 +68,11 @@ const OrderTracking = () => {
 
       setDelivery(data);
       
-      
       setLoading(false);
     };
 
-    fetchDelivery();
+   fetchDelivery();
+
   
     // Set up realtime subscription for delivery updates
     const channel = supabase
@@ -87,40 +87,51 @@ const OrderTracking = () => {
         },
         async (payload) => {
           const updated = payload.new as any;
-          setDelivery(updated);
+          setDelivery((prev)=>({...prev, ...updated}));
+          if (
+          payload.old?.driver_id !== payload.new?.driver_id &&
+          payload.new?.driver_id
+          ) {
+            await fetchDelivery();
 
-          // // Fetch driver profile when assigned
-          // if (updated.driver_id && !driverProfile) {
-          //   const { data: profile } = await supabase
-          //     .from('profiles')
-          //     .select('first_name, last_name')
-          //     .eq('id', updated.driver_id)
-          //     .single();
-            
-          //   setDriverProfile(profile);
-
-          //   toast({
-          //     title: "Driver Assigned!",
-          //     description: `${profile?.first_name} ${profile?.last_name} accepted your delivery`,
-          //   });
-          // }
+            toast({
+              title: "Driver Assigned!",
+              description: "A driver has accepted your delivery",
+            });
+          }
         }
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
+
+
+   
   }, [orderId, navigate, toast]);
 
+   
+
+
   const updateStatus = async (newStatus: string) => {
+    const updateData: any = {
+      status: newStatus,
+    };
+
+    // Add picked_up_at timestamp if status is picking_up
+    if (newStatus === 'picking_up') {
+      updateData.picked_up_at = new Date().toISOString();
+    }
+
+    // Add delivered_at and confirmation timestamps if status is delivered
+    if (newStatus === 'delivered') {
+      updateData.delivered_at = new Date().toISOString();
+      updateData.driver_confirmed_at = new Date().toISOString();
+    }
+
     const { error } = await supabase
       .from('deliveries')
-      .update({ 
-        status: newStatus,
-        ...(newStatus === 'picking_up' && { picked_up_at: new Date().toISOString() }),
-        ...(newStatus === 'delivered' && { delivered_at: new Date().toISOString() }),
-      })
+      .update(updateData)
       .eq('id', orderId);
 
     if (error) {
@@ -131,13 +142,41 @@ const OrderTracking = () => {
       });
       return;
     }
-
     setDelivery({ ...delivery, status: newStatus });
     toast({
       title: "Status Updated",
       description: `Delivery status updated to ${newStatus.replace('_', ' ')}`,
     });
   };
+
+  const confirmDelivery = async (newStatus: string,iscustomer: boolean)=>{
+    newStatus === 'confirm_delivery';
+    const { error } = await supabase
+      .from('deliveries')
+      .update({customer_confirmed_at:new Date().toISOString() })
+      .eq('id', orderId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Status Updated",
+      description: `Delivery status updated to ${newStatus.replace('_', ' ')}`,
+    });
+  };
+
+  const addRating = async(rating:number) =>{
+    setRating(rating);
+    const{error } = await supabase
+    .from('deliveries')
+    .update({customer_rating:rating})
+    .eq('id', orderId)
+  }
 
   if (loading) {
     return (
@@ -157,6 +196,10 @@ const OrderTracking = () => {
     };
     return <Badge variant={variants[status] || "secondary"}>{status.replace('_', ' ').toUpperCase()}</Badge>;
   };
+
+  const displayRating = delivery.customer_rating !== null
+    ? delivery.customer_rating
+    : rating;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
@@ -204,7 +247,7 @@ const OrderTracking = () => {
               )}
 
               {/* Driver Info */}
-              {delivery.driver_id && (
+              {!isDriver && delivery.driver_id && (
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <div className="flex items-center gap-3">
                       <Avatar className="h-20 w-20">
@@ -305,8 +348,8 @@ const OrderTracking = () => {
                 <h3 className="font-semibold">Delivery Progress</h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className={`h-5 w-5 ${delivery.status !== 'accepted' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className={delivery.status !== 'accepted' ? 'text-foreground' : 'text-muted-foreground'}>
+                    <CheckCircle className={`h-5 w-5 ${delivery.status === 'accepted' ||delivery.status === 'picking_up' || delivery.status === 'in_transit' || delivery.status === 'delivered' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={delivery.status === 'accepted' || delivery.status === 'picking_up' || delivery.status === 'in_transit' || delivery.status === 'delivered'  ? 'text-foreground' : 'text-muted-foreground'}>
                       Accepted
                     </span>
                   </div>
@@ -345,35 +388,7 @@ const OrderTracking = () => {
               />
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
-                {delivery.status === 'accepted' && (
-                  <Button 
-                    variant="hero" 
-                    className="flex-1"
-                    onClick={() => updateStatus('picking_up')}
-                  >
-                    Start Pickup
-                  </Button>
-                )}
-                {delivery.status === 'picking_up' && (
-                  <Button 
-                    variant="hero" 
-                    className="flex-1"
-                    onClick={() => updateStatus('in_transit')}
-                  >
-                    Item Picked Up - Start Delivery
-                  </Button>
-                )}
-                {delivery.status === 'in_transit' && delivery.driver_confirmed_at !==null&& (
-                  <Button 
-                    variant="hero" 
-                    className="flex-1"
-                    onClick={() => updateStatus('delivered')}
-                  >
-                    Mark as Delivered
-                  </Button>
-                )}
-                
+              <div className="flex gap-3 gap-y-2">
                 {/* DRIVER CONTROLS */}
                 {isDriver && (
                   <>
@@ -390,21 +405,111 @@ const OrderTracking = () => {
                     )}
 
                     {delivery.status === "in_transit" && (
-                      <Button className="flex-1" onClick={() => updateStatus("arrived_destination")}>
-                        Arrived at Destination
+                      <Button className="flex-1" onClick={() => updateStatus("delivered")}>
+                       Complete Delivery
                       </Button>
+                    )}
+
+                    {
+                    delivery.status === "delivered" &&
+                    delivery.customer_confirmed_at &&
+                    delivery.driver_confirmed_at && (
+
+                      <div className="mt-4 text-center rounded-lg">
+                        <h4 className="text-white font-semibold mb-2">
+                          Your Rating
+                        </h4>
+
+                        <div className="flex justify-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => {
+                            const isFilled = star <= displayRating;
+                            const isLocked = delivery.customer_rating !== null;
+
+                            return (
+                              <Star
+                                className={`h-6 w-6 transition ${
+                                  isFilled
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-muted-foreground"
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        {delivery.customer_rating !== null && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Rating submitted — thank you!
+                          </p>
+                        )}
+                      </div>
                     )}
                   </>
                 )}
 
-                {delivery.status === 'delivered' && (
+              </div>
+        
+              <div className="flex flex-col gap-3 gap-y-2">
+                {isCustomer && delivery.status === 'delivered' && delivery.driver_confirmed_at !==null && delivery.customer_confirmed_at === null && (
+                  <Button 
+                    variant="hero" 
+                    className="flex-1"
+                    onClick={() => confirmDelivery('confirm_delivery', isCustomer)}
+                  >
+                    Confirm Delivery
+                  </Button>
+                )}
+
+                {isCustomer && delivery.status === 'delivered' && delivery.customer_confirmed_at !== null && (
                   <div className="flex-1 text-center p-4 bg-success/10 rounded-lg">
                     <p className="text-success font-semibold">Delivery Completed!</p>
                   </div>
                 )}
-              </div>
+            
+                {isCustomer &&
+                delivery.status === "delivered" &&
+                delivery.customer_confirmed_at &&
+                delivery.driver_confirmed_at && (
 
-              
+                  <div className="mt-4 text-center rounded-lg">
+                    <h4 className="text-white font-semibold mb-2">
+                      {delivery.customer_rating !== null ? "Your Rating" : "Rate Driver"}
+                    </h4>
+
+                    <div className="flex justify-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const isFilled = star <= displayRating;
+                        const isLocked = delivery.customer_rating !== null;
+
+                        return (
+                          <button
+                            key={star}
+                            disabled={isLocked}
+                            onClick={() => !isLocked && addRating(star)}
+                            className={`focus:outline-none ${
+                              isLocked ? "cursor-default" : "cursor-pointer"
+                            }`}
+                          >
+                            <Star
+                              className={`h-6 w-6 transition ${
+                                isFilled
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {delivery.customer_rating !== null && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Rating submitted — thank you!
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

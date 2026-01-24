@@ -82,7 +82,7 @@ useEffect(() => {
       .from("deliveries")
       .select("*")
       .eq("driver_id", user.id)
-      .in("status", ["assigned", "accepted", "picked_up"]);
+      .in("status", ["assigned", "accepted","picked_up", "in_transit"]);
 
     if (unassignedError || assignedError) {
       console.error("Error fetching deliveries:", unassignedError || assignedError);
@@ -513,7 +513,7 @@ useEffect(() => {
                   
                   return (
                     <Collapsible key={request.id}>
-                      <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
+                      <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" || request.status === "in_transit" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
@@ -552,7 +552,7 @@ useEffect(() => {
                         </div>
                         
                         <CollapsibleContent className="pt-4">
-                          <div className="space-y-3 border-t pt-3 ">
+                          <div className="space-y-4 pt-3 ">
                             <div className="text-sm">
                               <div className="font-medium mb-1">
                                 {hasFullDetails ? "Full Details" : "Delivery Preview"}
@@ -565,22 +565,25 @@ useEffect(() => {
                                 <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
                                 
                                 {/* Only show addresses for assigned deliveries */}
-                                
-                                    <div><span className="font-medium">Pickup:</span> {request.pickup_location}</div>
-                                    <div><span className="font-medium">Dropoff:</span> {request.delivery_location}</div>
-                                  <div className="mt-2 p-3 bg-muted rounded-lg text-center">
-                                    <span className="text-muted-foreground">
-                                      📍 Accept this delivery to view pickup and dropoff locations
-                                    </span>
-                                  </div>
-                                
+                              
+                                <div>
+                                  <span className="font-medium">Pickup:</span> {request.pickup_location}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Dropoff:</span> {request.delivery_location}
+                                </div>
+                                <div className="mt-2 p-3 bg-muted rounded-lg text-center">
+                                  <span className="text-muted-foreground">
+                                    📍 Accept this delivery to view pickup and dropoff locations
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
                             {/* Order Receipt - only for assigned deliveries */}
                             {request.receipt_url && (
                               <div className="mt-4">
-                                <div className="font-medium w-full text-sm mb-2">Order Receipt</div>
+                                <div className="font-medium text-sm mb-2">Order Receipt</div>
                                 <ReceiptImage receiptUrl={request.receipt_url} />
                               </div>
                             )}

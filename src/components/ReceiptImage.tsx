@@ -6,7 +6,7 @@ interface ReceiptImageProps {
   className?: string;
 }
 
-export const ReceiptImage = ({ receiptUrl, className = "w-full max-w-md rounded-lg border shadow-sm" }: ReceiptImageProps) => {
+export const ReceiptImage = ({ receiptUrl, className = "w-full max-w-full rounded-lg border shadow-sm" }: ReceiptImageProps) => {
   const filePath = extractFilePath(receiptUrl);
   const { signedUrl, loading } = useSignedUrl('bookingReceipts', filePath);
 
