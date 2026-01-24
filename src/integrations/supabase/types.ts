@@ -22,6 +22,7 @@ export type Database = {
           customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
+          declined_driver_ids: string[] | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
@@ -50,6 +51,7 @@ export type Database = {
           customer_confirmed_at?: string | null
           customer_id: string
           customer_rating?: number | null
+          declined_driver_ids?: string[] | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
@@ -78,6 +80,7 @@ export type Database = {
           customer_confirmed_at?: string | null
           customer_id?: string
           customer_rating?: number | null
+          declined_driver_ids?: string[] | null
           delivered_at?: string | null
           delivery_lat?: number | null
           delivery_lng?: number | null
@@ -286,6 +289,7 @@ export type Database = {
           customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
+          declined_driver_ids: string[] | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
@@ -327,6 +331,7 @@ export type Database = {
           customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
+          declined_driver_ids: string[] | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
@@ -364,6 +369,7 @@ export type Database = {
           customer_confirmed_at: string | null
           customer_id: string
           customer_rating: number | null
+          declined_driver_ids: string[] | null
           delivered_at: string | null
           delivery_lat: number | null
           delivery_lng: number | null
