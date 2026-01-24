@@ -97,13 +97,13 @@ export default function LicensePlate({ userId, onComplete }: Details) {
 
       if (error) throw new Error(error.message);
       if (!data?.success) {
-        setError(error.details);
+        setError(error.details.message || "Vehicle not found");
         return;
       }
 
       setVehicleResult(data);
     } catch (err) {
-      setError(err.message || "Failed to fetch vehicle information");
+      setError(err.details || "Failed to fetch vehicle information");
     } finally {
       setLoading(false);
     }
