@@ -47,7 +47,7 @@ const CustomerDashboard = () => {
         .from("deliveries")
         .select(`
           *,
-          driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate)) `)
+          driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, color)) `)
         .eq("customer_id", session.user.id)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -130,7 +130,8 @@ const CustomerDashboard = () => {
                     make,
                     model,
                     year,
-                    license_plate
+                    license_plate,
+                    color
                   )
                 )
               `)
@@ -288,8 +289,8 @@ const CustomerDashboard = () => {
                   const hasFullDetails = isAssignedToDriver;
                     return (
                       <Collapsible key={booking.id}>
-                        <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg" onClick={() => { if (booking.status === "accepted"|| booking.status === "in_transit" && booking.driver_id !==null) { navigate(`/order-tracking?id=${booking.id}`); }}}>
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"> 
+                        <div key={booking.id} className="items-center p-4 border rounded-lg" onClick={() => { if (booking.driver_id !==null) { navigate(`/order-tracking?id=${booking.id}`); }}}>
+                          <div className="flex flex-col justify-between sm:flex-row items-start sm:items-center gap-4"> 
                             <Avatar className="h-20 w-20">
                               <AvatarImage src={booking.driver.avatar_url} />
                               <AvatarFallback>
@@ -305,46 +306,52 @@ const CustomerDashboard = () => {
                                   {booking.status}
                                 </Badge>
                               </div>
-                              <div className="flex flex-row gap-x-2"> 
-                                <div >
-                                  <span className="font-semibold">
-                                    Phone Number: {booking.driver.phone}
-                                  </span>
-                                </div>
-                                
+                              <div className="flex flex-row gap-x-2">  
                                 <div>
                                   <span className="font-semibold">
                                     Vehicle: {booking.driver.driver_vehicles.vehicle_type}
                                   </span>
                                 </div>
+
                                 <div>
                                   <span className="font-semibold">
                                     Model: {booking.driver.driver_vehicles.model}
                                   </span>
                                 </div>
 
-                                 <div>
+                                <div>
                                   <span className="font-semibold">
                                     Year: {booking.driver.driver_vehicles.year}
                                   </span>
                                 </div>
 
-                                 <div>
+                                <div>
                                   <span className="font-semibold">
                                     License Plate: {booking.driver.driver_vehicles.license_plate}
                                   </span>
                                 </div>
 
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                               
+                                <div>
+                                  <span className="font-semibold">
+                                    Color: {booking.driver.driver_vehicles.color}
+                                  </span>
+                                </div>
 
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
+
+                                {/* <div >
+                                  <span className="font-semibold">
+                                    Phone Number: {booking.driver.phone}
+                                  </span>
+                                </div> */}
+
+                              </div>
+                              <div className="text-sm justify-start text-muted-foreground">
+                                <div className="flex flex-row items-start justify-center gap-1">
+                                  <MapPin className="h-6 w-5" />
                                   {booking.pickup_location} → {booking.delivery_location}
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
-                                  <Clock className="h-3 w-3" />
+                                  <Clock className="h-6 w-5" />
                                   {new Date(booking.created_at).toLocaleDateString()}
                                 </div>
                               </div>
@@ -368,15 +375,13 @@ const CustomerDashboard = () => {
                               </Button>
                             </CollapsibleTrigger>
                           </div>
-                          
                           <CollapsibleContent>
-                            <div className="space-y-3 border-t pt-3">
+                            <div className="space-y-4 pt-3">
                               <div className="text-sm">
                                 <div className="font-medium mb-1">
                                   {hasFullDetails ? "Full Details" : "Delivery Preview"}
                                 </div>
                                 <div className="space-y-1 text-muted-foreground">
-                                
                                   {booking.item_type && <div><span className="font-medium">Type:</span> {booking.item_type}</div>}
                                   {booking.quantity && <div><span className="font-medium">Quantity:</span> {booking.quantity}</div>}
                                   {booking.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {booking.vehicle_type}</div>}
@@ -388,7 +393,7 @@ const CustomerDashboard = () => {
                               {/* Order Receipt - only for assigned deliveries */}
                               {hasFullDetails && booking.receipt_url && (
                                 <div className="mt-4">
-                                  <div className="font-medium w-full text-sm mb-2">Order Receipt</div>
+                                  <div className="font-medium text-sm mb-2">Order Receipt</div>
                                   <ReceiptImage receiptUrl={booking.receipt_url} />
                                 </div>
                               )}

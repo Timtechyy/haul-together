@@ -18,33 +18,33 @@ interface Details{
 export  default function LicensePlate({userId, onComplete}:Details){
 
     const [vehicleResult, setVehicleResult] = useState(null);
-      const [vehicleTracking, setVehicleTracking] = useState(false);
+    const [vehicleTracking, setVehicleTracking] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
 
-     const saveVehicle = async () => {
-    await supabase.from("driver_vehicles").upsert(
-        {
-            user_id: userId,
-            vehicle_type: vehicleResult.style,
-            make: vehicleResult.make,
-            model: vehicleResult.model,
-            year: parseInt(vehicleResult.year),
-            color:vehicleResult.color.name,
-            trim:vehicleResult.trim,
-            license_plate: keyword.plateNumber,
-            tracking_consent:vehicleTracking,
+    const saveVehicle = async () => {
+        await supabase.from("driver_vehicles").upsert(
+            {
+                user_id: userId,
+                vehicle_type: vehicleResult.style,
+                make: vehicleResult.make,
+                model: vehicleResult.model,
+                year: parseInt(vehicleResult.year),
+                color:vehicleResult.color.name,
+                trim:vehicleResult.trim,
+                license_plate: keyword.plateNumber,
+                tracking_consent:vehicleTracking,
 
-        },
-        {
-            onConflict: "user_id",
-        },
+            },
+            {
+                onConflict: "user_id",
+            },
 
-    );
+        );
 
-    onComplete();
-  };
+        onComplete();
+    };
 
     const [keyword, setKeyword] = useState({
         plateNumber:"",
@@ -110,7 +110,7 @@ export  default function LicensePlate({userId, onComplete}:Details){
 
         setVehicleResult(data);
         } catch (err) {
-        setError("Failed to fetch vehicle information");
+            setError(err.message || "Failed to fetch vehicle information");
         } finally {
         setLoading(false);
         }
@@ -201,7 +201,9 @@ export  default function LicensePlate({userId, onComplete}:Details){
                 </Button>
 
             </div>
-            ) : (<form onSubmit={handleSubmit} className="gap-1 justify-center">
+            ) : (
+            
+            <form onSubmit={handleSubmit} className="gap-1 justify-between gap-y-2">
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -239,16 +241,19 @@ export  default function LicensePlate({userId, onComplete}:Details){
                     </select>
                 </div>
             </div>
-
-            <Button disabled={loading}>
+            
+          <div className="justify-center mt-4 flex">
+            <Button disabled={loading} className="justify-center place-items-center">
                 {loading ? "Looking up..." : "Lookup Vehicle"}
             </Button>
-
-        
-
-           
-
+          </div>
         </form> )}
+
+        {error && (
+            <div className="mt-2 rounded-md border border-red-500 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+            </div>
+        )}
         </>
         
     )

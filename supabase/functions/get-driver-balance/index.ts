@@ -34,13 +34,19 @@ serve(async (req: Request) => {
         const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
         apiVersion: "2025-08-27.basil",
         });
-    return new Response(JSON.stringify({ balance: null }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch(error:any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
+
+           const { id } = await req.json();
+
+        const balance = await stripe.balance.retrieve({
+            stripeAccount:id,
+        });
+
+        return new Response(JSON.stringify({ balance }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+
+    } catch(e:any) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    }
 });

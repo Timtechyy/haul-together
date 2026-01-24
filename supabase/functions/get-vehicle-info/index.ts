@@ -109,9 +109,10 @@ serve(async (req) => {
     throw new Error(`Veriff API error: ${errorText}`);
   }
 
-    const data = await response.json();
+  const data = await response.json();
   return data.vin;
-  } catch (error) {
-      console.error(error);
+  } catch (e: any) {
+    console.error(e);
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 });
