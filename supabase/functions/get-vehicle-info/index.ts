@@ -109,6 +109,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        success: false,
         error: "Vehicle lookup failed",
         details: errorText,
       }),
@@ -128,10 +129,12 @@ serve(async (req) => {
       if (!data.success) {
         return new Response(
           JSON.stringify({
+            success: false,
             error: data.message || "Vehicle not found",
           }),
           {
             status: 200,
+            
             headers: {
               ...corsHeaders,
               "Content-Type": "application/json",
