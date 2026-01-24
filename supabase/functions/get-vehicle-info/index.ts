@@ -106,7 +106,7 @@ serve(async (req) => {
 
   if (!response.ok) {
     const errorText = await response.text();
-
+    console.error("Error from Plates to VIN service:", errorText);
     return new Response(
       JSON.stringify({
         success: false,
