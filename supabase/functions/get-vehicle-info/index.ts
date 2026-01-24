@@ -104,10 +104,10 @@ serve(async (req) => {
     }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Veriff API error: ${errorText}`);
-  }
+  // if (!response.ok) {
+  //   const errorText = await response.text();
+  //   throw new Error(`Veriff API error: ${errorText}`);
+  // }
 
   const data = await response.json();
   return data.vin;
