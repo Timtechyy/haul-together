@@ -63,10 +63,7 @@ serve(async (req: Request) => {
     const paymentMethods =
       role?.role === "driver"
         ? await stripe.accounts.listExternalAccounts(connect_id)
-        : await stripe.paymentMethods.list({
-            customer: stripeId,
-            // type: types,
-          });
+        : await stripe.customers.listPaymentMethods(stripeId);
 
     return new Response(
       JSON.stringify({

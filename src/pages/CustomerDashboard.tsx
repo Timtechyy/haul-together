@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ReceiptImage } from "@/components/ReceiptImage";
+import { format } from "path";
+import { formatTime } from "@/components/time";
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -352,7 +354,7 @@ const CustomerDashboard = () => {
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
                                   <Clock className="h-6 w-5" />
-                                  {new Date(booking.created_at).toLocaleDateString()}
+                                  {formatTime(booking.scheduled_time)}
                                 </div>
                               </div>
                             </div>

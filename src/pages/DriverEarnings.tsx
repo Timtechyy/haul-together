@@ -144,7 +144,7 @@ const DriverEarnings = () => {
       .eq("user_id", user.id)
       .single();
 
-      setVerification(verificationData);
+      setVerification(verificationData.verification_status);
 
       // Get user role
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
@@ -174,14 +174,23 @@ const DriverEarnings = () => {
   }, [user, toast]);
    const isVerified = verification === "approved";
    function withdraw() {
-    // if (!isVerified) {
-    //   navigate("/driver/verification");  
-  
-
-    setShowWithdrawal(true);
-  
-
-    
+    if (!isVerified) {
+      toast({
+        title: "You need to complete verification",
+        description: "Please complete your driver verification to enable withdrawals.",
+        variant: "destructive",
+      });
+      navigate("/driver/verification");  
+    }
+    if (balance?.available?.[0]?.amount?.toFixed(2)!== "0.00" &&balance?.available?.[0]?.amount?.toFixed(2)!== null) {
+      setShowWithdrawal(true);
+    }else{
+      toast({
+        title: "Insufficient Balance",
+        description: "You do not have sufficient balance to withdraw.",
+        variant: "destructive",
+      });
+    }
    }
 
   return (
@@ -369,8 +378,8 @@ const DriverEarnings = () => {
         title="Withdraw Funds"
       >
         <Withdrawal
-          role="driver"
-          balance="250.00"
+          role={userRole || "driver"}
+          balance={balance?.available?.[0]?.amount?.toFixed(2)??"0.00"}
         />
       </ResponsivePaymentModal>
   

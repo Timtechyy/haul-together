@@ -54,12 +54,12 @@ const DriverDashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<DeliveryPreview[]>([]);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(true);
-  const { isTracking, location } = useLocationTracking(user?.id, locationTrackingEnabled);
+  const { isTracking } = useLocationTracking(user?.id);
   const [stats, setStats] = useState({
     todayEarnings: 0,
     yesterdayEarnings: 0,
@@ -323,7 +323,7 @@ useEffect(() => {
   };
 
   const handleDecline = async () => {
-    if (!selectedRequestId) return;
+    if (!user && !selectedRequestId) return;
 
     const { error } = await supabase
       .from("deliveries")
@@ -348,17 +348,34 @@ useEffect(() => {
     setSelectedRequestId(null);
   };
 
-  const handleAccept = async (requestId: string) => {
-    if (!user) return;
+  const handleAccept = async () => {
+    if (!user && !selectedRequestId) return;
     const { data, error } = await supabase.rpc("accept_delivery", {
-      p_delivery_id:requestId,
+      p_delivery_id:selectedRequestId,
       p_driver_id:user.id
     });
-    setPendingRequests((prev) => prev.filter((req) => req.id !== requestId));
+    setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
     toast({
       title: "Request Accepted",
       description: "You've accepted the delivery request",
     });
+    setSelectedRequestId(null);
+  };
+
+  const handleCancel = async () => {
+      if (!user && !selectedRequestId) return;
+
+    const { data, error } = await supabase.rpc("cancel_delivery", {
+      p_delivery_id:selectedRequestId,
+      p_driver_id:user.id
+    });
+    setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
+    toast({
+      title: "Request Cancelled",
+      description: "You've cancelled the delivery request",
+    });
+    setCancelDialogOpen(false);
+    setSelectedRequestId(null);
   };
 
   // Filter and sort logic
@@ -461,7 +478,7 @@ useEffect(() => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.rating || 'N/A'}</div>
+                <div className="text-2xl font-bold">{stats.rating || '0'}</div>
                 <p className="text-xs text-muted-foreground">Average rating today</p>
               </CardContent>
             </Card>
@@ -574,7 +591,7 @@ useEffect(() => {
                                 </div>
                                 <div className="mt-2 p-3 bg-muted rounded-lg text-center">
                                   <span className="text-muted-foreground">
-                                    📍 Accept this delivery to view pickup and dropoff locations
+                                    Accept this delivery to view pickup and dropoff locations
                                   </span>
                                 </div>
                               </div>
@@ -589,12 +606,13 @@ useEffect(() => {
                             )}
                             <div className="flex gap-2 justify-end pt-2">
                               {isAssignedToDriver ? (
-                                <Button 
+                                <Button
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setSelectedRequestId(request.id);
-                                    setDeclineDialogOpen(true);
+                                    setCancelDialogOpen(true);
                                   }}
                                 >
                                   Cancel Assignment
@@ -614,7 +632,10 @@ useEffect(() => {
                                   <Button 
                                     variant="hero" 
                                     size="sm"
-                                    onClick={() => handleAccept(request.id)}
+                                    onClick={() => {
+                                      setSelectedRequestId(request.id);
+                                      handleAccept();
+                                    }}
                                   >
                                     Accept
                                   </Button>
@@ -648,6 +669,25 @@ useEffect(() => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDecline}>
               Decline Request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+            {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Delivery Assignment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this delivery assignment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedRequestId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancel}>
+              Cancel Delivery
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
