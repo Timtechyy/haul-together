@@ -133,6 +133,7 @@ export type Database = {
           make: string
           model: string
           tracking_consent: boolean
+          trim: string | null
           updated_at: string
           user_id: string
           vehicle_type: string
@@ -152,6 +153,7 @@ export type Database = {
           make: string
           model: string
           tracking_consent?: boolean
+          trim?: string | null
           updated_at?: string
           user_id: string
           vehicle_type: string
@@ -171,6 +173,7 @@ export type Database = {
           make?: string
           model?: string
           tracking_consent?: boolean
+          trim?: string | null
           updated_at?: string
           user_id?: string
           vehicle_type?: string
