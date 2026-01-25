@@ -60,6 +60,8 @@ const DriverDashboard = () => {
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { isTracking } = useLocationTracking(user?.id);
+  console.log("Location tracking status:", isTracking);
+  console.log("Current user ID:", user?.id);
   const [stats, setStats] = useState({
     todayEarnings: 0,
     yesterdayEarnings: 0,
