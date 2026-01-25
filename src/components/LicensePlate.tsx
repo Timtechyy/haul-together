@@ -41,7 +41,7 @@ export default function LicensePlate({ userId, onComplete }: Details) {
       year: parseInt(vehicleResult.year),
       color: vehicleResult.color.name,
       trim: vehicleResult.trim,
-      license_plate: vehicleResult.license_plate,
+      license_plate: keyword.plateNumber,
       vin: vehicleResult.vin,
       tracking_consent: vehicleTracking, 
     })
