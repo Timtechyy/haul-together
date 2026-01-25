@@ -59,7 +59,7 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const { isTracking } = useLocationTracking(user?.id);
+  const [isTracking, setIsTracking] = useState(false);
   console.log("Location tracking status:", isTracking);
   console.log("Current user ID:", user?.id);
   const [stats, setStats] = useState({
@@ -68,7 +68,23 @@ const DriverDashboard = () => {
     completedTrips: 0,
     rating: 0,
   });
+
+  useEffect(() => {
+    const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+      setUser(session.user);
+      const { isTracking } = useLocationTracking(session.user.id);
+      setIsTracking(isTracking);
+    };
+    checkUser();
+  }, [navigate]);
+
 useEffect(() => {
+  
   if (!user) return;
 
   const fetchDriverData = async () => {
@@ -281,17 +297,6 @@ useEffect(() => {
   };
 }, [user, toast, notificationsEnabled]);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
-    };
-    checkUser();
-  }, [navigate]);
 
   // Request notification permission on mount
   useEffect(() => {
