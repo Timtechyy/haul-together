@@ -127,7 +127,7 @@ serve(async (req) => {
     console.log("Plates to VIN response data:", data.vin);
    
     return new Response(
-      JSON.stringify({ vin: data.vin }),
+      JSON.stringify({success: true, vin: data.vin }),
       {
         status: 200,
         headers: {
