@@ -54,7 +54,7 @@ serve(async (req: Request) => {
       customer_confirmed_at,
       delivered_at,
       price,
-      paymentIntentId,
+      payment_intent_id
     `)
     .eq("id", delivery_id)
     .single();
@@ -68,14 +68,14 @@ serve(async (req: Request) => {
       !delivery.driver_confirmed_at ||
       !delivery.customer_confirmed_at ||
       !delivery.delivered_at ||
-      delivery.driver_paid || !delivery.paymentIntentId
+      delivery.driver_paid || !delivery.payment_intent_id
     ) {
       return new Response(
         JSON.stringify({ message: "Delivery not eligible for payout" }),
         { status: 200 }
       );
     }
-    const chargeId = await getChargeId(delivery.paymentIntentId, stripe);
+    const chargeId = await getChargeId(delivery.payment_intent_id, stripe);
 
     const transfer = await stripe.transfers.create({
       amount: delivery.price * 100,
