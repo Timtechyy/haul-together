@@ -137,6 +137,7 @@ export type Database = {
           updated_at: string
           user_id: string
           vehicle_type: string
+          vin: string | null
           year: number
         }
         Insert: {
@@ -157,6 +158,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           vehicle_type: string
+          vin?: string | null
           year: number
         }
         Update: {
@@ -177,6 +179,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vehicle_type?: string
+          vin?: string | null
           year?: number
         }
         Relationships: [
