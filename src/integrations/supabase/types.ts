@@ -17,7 +17,6 @@ export type Database = {
       deliveries: {
         Row: {
           accepted_at: string | null
-          completed_at: string | null
           created_at: string
           customer_confirmed_at: string | null
           customer_id: string
@@ -29,6 +28,7 @@ export type Database = {
           delivery_location: string
           driver_confirmed_at: string | null
           driver_id: string | null
+          driver_paid: string | null
           estimated_distance: number | null
           id: string
           item_description: string
@@ -46,7 +46,6 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
-          completed_at?: string | null
           created_at?: string
           customer_confirmed_at?: string | null
           customer_id: string
@@ -58,6 +57,7 @@ export type Database = {
           delivery_location: string
           driver_confirmed_at?: string | null
           driver_id?: string | null
+          driver_paid?: string | null
           estimated_distance?: number | null
           id?: string
           item_description: string
@@ -75,7 +75,6 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
-          completed_at?: string | null
           created_at?: string
           customer_confirmed_at?: string | null
           customer_id?: string
@@ -87,6 +86,7 @@ export type Database = {
           delivery_location?: string
           driver_confirmed_at?: string | null
           driver_id?: string | null
+          driver_paid?: string | null
           estimated_distance?: number | null
           id?: string
           item_description?: string
@@ -284,7 +284,6 @@ export type Database = {
         Args: { p_delivery_id: string; p_driver_id: string }
         Returns: {
           accepted_at: string | null
-          completed_at: string | null
           created_at: string
           customer_confirmed_at: string | null
           customer_id: string
@@ -296,6 +295,7 @@ export type Database = {
           delivery_location: string
           driver_confirmed_at: string | null
           driver_id: string | null
+          driver_paid: string | null
           estimated_distance: number | null
           id: string
           item_description: string
