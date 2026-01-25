@@ -133,9 +133,11 @@ export type Database = {
           make: string
           model: string
           tracking_consent: boolean
+          trim: string | null
           updated_at: string
           user_id: string
           vehicle_type: string
+          vin: string | null
           year: number
         }
         Insert: {
@@ -152,9 +154,11 @@ export type Database = {
           make: string
           model: string
           tracking_consent?: boolean
+          trim?: string | null
           updated_at?: string
           user_id: string
           vehicle_type: string
+          vin?: string | null
           year: number
         }
         Update: {
@@ -171,9 +175,11 @@ export type Database = {
           make?: string
           model?: string
           tracking_consent?: boolean
+          trim?: string | null
           updated_at?: string
           user_id?: string
           vehicle_type?: string
+          vin?: string | null
           year?: number
         }
         Relationships: [
