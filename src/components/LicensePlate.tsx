@@ -44,7 +44,9 @@ export default function LicensePlate({ userId, onComplete }: Details) {
       license_plate: vehicleResult.license_plate,
       vin: vehicleResult.vin,
       tracking_consent: vehicleTracking, 
-    });
+    })
+    .select()
+    .single();
 
     onComplete();
   };
