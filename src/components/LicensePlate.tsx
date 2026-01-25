@@ -5,11 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/enhanced-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { US_STATES } from "@/contants/states";
-
-interface PlateData {
-  Id: string;
-  state: string;
-}
 interface Details {
   userId: string;
   onComplete: () => void;
@@ -84,12 +79,12 @@ export default function LicensePlate({ userId, onComplete }: Details) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+    console.log("looking up", keyword.plateNumber.split('-').join(''), keyword.plateState); 
     try {
       const { data, error } = await supabase.functions.invoke("get-vehicle-info", {
         body: {
           plate: {
-            id: keyword.plateNumber,
+            id: keyword.plateNumber.split('-').join(''),
             state: keyword.plateState,
           },
         },
@@ -100,8 +95,8 @@ export default function LicensePlate({ userId, onComplete }: Details) {
         setError(data.details);
         return;
       }
-
-      setVehicleResult(data);
+      console.log("vehicle data:", data.vin);
+      setVehicleResult(data.vin);
     } catch (err) {
       setError(err.message || "Failed to fetch vehicle information");
     } finally {
