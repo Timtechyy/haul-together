@@ -41,6 +41,7 @@ export type Database = {
           quantity: number | null
           receipt_url: string | null
           status: string
+          transfer_id: string | null
           updated_at: string
           vehicle_type: string | null
         }
@@ -70,6 +71,7 @@ export type Database = {
           quantity?: number | null
           receipt_url?: string | null
           status?: string
+          transfer_id?: string | null
           updated_at?: string
           vehicle_type?: string | null
         }
@@ -99,6 +101,7 @@ export type Database = {
           quantity?: number | null
           receipt_url?: string | null
           status?: string
+          transfer_id?: string | null
           updated_at?: string
           vehicle_type?: string | null
         }
@@ -308,6 +311,7 @@ export type Database = {
           quantity: number | null
           receipt_url: string | null
           status: string
+          transfer_id: string | null
           updated_at: string
           vehicle_type: string | null
         }
