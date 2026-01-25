@@ -33,6 +33,7 @@ export type Database = {
           id: string
           item_description: string
           item_type: string | null
+          payment_intent_id: string | null
           picked_up_at: string | null
           pickup_lat: number | null
           pickup_lng: number | null
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           item_description: string
           item_type?: string | null
+          payment_intent_id?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           item_description?: string
           item_type?: string | null
+          payment_intent_id?: string | null
           picked_up_at?: string | null
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -303,6 +306,7 @@ export type Database = {
           id: string
           item_description: string
           item_type: string | null
+          payment_intent_id: string | null
           picked_up_at: string | null
           pickup_lat: number | null
           pickup_lng: number | null
