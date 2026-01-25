@@ -288,7 +288,7 @@ const CustomerBooking = () => {
       // Fetch drivers with location data
       let query = supabase
         .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender)`)
+        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender`)
         .eq("vehicle_type", vehicleType)
         .eq("is_online", true)
         .in("user_id", verifiedUserIds)

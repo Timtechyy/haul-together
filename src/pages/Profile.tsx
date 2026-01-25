@@ -33,6 +33,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import PaymentMethods from "@/components/ui/addpaymentmethod";
 import PhoneInput, { formatPhoneNumber, formatPhoneNumberIntl, isPossiblePhoneNumber } from "react-phone-number-input";
 import PhoneInputField from "@/components/ui/phoneinput";
+import { create } from "domain";
+import { formatTime } from "@/components/time";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -42,7 +44,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-
   const [userRole, setUserRole] = useState<string | null>(null);
   const [verification, setVerification] = useState<any>(null);
   const [driverStats, setDriverStats] = useState({
@@ -59,6 +60,7 @@ const Profile = () => {
     insuranceNumber: "",
     trackingConsent: false,
   });
+
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
@@ -66,11 +68,21 @@ const Profile = () => {
     phone: "",
     avatarUrl: "",
     gender: "",
+    created_at: "",
   });
+
+  const isDriver = userRole === "driver"
+  const isVerified = verification?.verification_status === "approved";
+
+  console.log("isDriver:", isDriver, "isVerified:", isVerified);
 
   useEffect(() => {
     loadProfile();
+   
+
   }, []);
+
+
 
   const loadProfile = async () => {
     try {
@@ -87,7 +99,7 @@ const Profile = () => {
       // Get user role
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
 
-      setUserRole(roleData?.role || null);
+      setUserRole(roleData?.role);
      
 
       // Get profile data
@@ -102,10 +114,15 @@ const Profile = () => {
         phone: profileData.phone || "",
         avatarUrl: profileData.avatar_url || "",
         gender: profileData.gender || "",
+        created_at: profileData.created_at || "",
       });
 
       // Fetch vehicle info if driver
-      if (isDriver) {
+      if (roleData?.role === "driver") {
+        
+         driverVerification(user.id);
+         driverStat(user.id, profileData.created_at);
+
         const { data: vehicleData } = await supabase
           .from("driver_vehicles")
           .select("vehicle_type, make, model, year, license_plate, insurance_number, tracking_consent")
@@ -123,40 +140,28 @@ const Profile = () => {
             trackingConsent: vehicleData.tracking_consent || false,
           });
         }
+      
 
-        // Fetch verification status
-        const { data: verificationData } = await supabase
-          .from("driver_verifications")
-          .select("verification_status")
-          .eq("user_id", user.id)
-          .single();
+        const channel = supabase
+        .channel("driver-verification-status")
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "driver_verifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log("Verification updated:", payload.new);
+            setVerification(payload.new.verification_status);
+          }
+        )
+        .subscribe();
 
-        setVerification(verificationData);
-
-        // Fetch driver stats
-        const { data: allDeliveries } = await supabase
-          .from("deliveries")
-          .select("customer_rating")
-          .eq("driver_id", user.id)
-          .eq("status", "delivered");
-
-        const totalDeliveries = allDeliveries?.length || 0;
-
-        // Calculate average rating from all completed deliveries
-        const ratingsData = allDeliveries?.filter((d) => d.customer_rating) || [];
-        const avgRating =
-          ratingsData.length > 0
-            ? ratingsData.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsData.length
-            : 0;
-
-        setDriverStats({
-          totalDeliveries,
-          rating: Number(avgRating.toFixed(1)),
-          memberSince: new Date(profileData.created_at).toLocaleDateString("en-US", {
-            month: "short",
-            year: "numeric",
-          }),
-        });
+        return () => {
+          supabase.removeChannel(channel);
+        };
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -169,6 +174,43 @@ const Profile = () => {
       setLoading(false);
     }
   };
+
+  const driverVerification = async(userId:string) => {    
+    const { data: verificationData } = await supabase
+      .from("driver_verifications")
+      .select("verification_status")
+      .eq("user_id", userId)
+      .single();
+
+      console.log("Verification Data:", verificationData);
+
+    setVerification(verificationData);
+  }
+  // Fetch driver stats
+  const driverStat = async (userId:string, created_at:string) => { 
+    const { data: allDeliveries } = await supabase
+      .from("deliveries")
+      .select("customer_rating")
+      .eq("driver_id", userId)
+      .eq("status", "delivered");
+
+      
+    console.log("All Deliveries:", allDeliveries.length);
+    const totalDeliveries = allDeliveries?.length;
+
+    // Calculate average rating from all completed deliveries
+    const ratingsData = allDeliveries?.filter((d) => d.customer_rating) || [];
+    const avgRating =
+      ratingsData.length > 0
+        ? ratingsData.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsData.length
+        : 0;
+
+    setDriverStats({
+      totalDeliveries: totalDeliveries,
+      rating: Number(avgRating.toFixed(1)),
+      memberSince: formatTime(created_at),
+    });
+  }
 
   const handleSave = async () => {
     if (!userId) return;
@@ -286,8 +328,7 @@ const Profile = () => {
     });
     navigate("/login");
   };
-  const isDriver = userRole === "driver"
-  const isVerified = verification === "approved";
+  
   
   const handleBackNavigation = () => {
     if (isDriver) {
@@ -367,7 +408,7 @@ const Profile = () => {
                       {profile.firstName} {profile.lastName}
                     </h1>
                     <div className="flex items-center gap-2 mt-2">
-                      {isVerified && (
+                      {isDriver &&isVerified && (
                         <Badge variant="default" className="flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Verified {isDriver ? "Driver" : "Customer"}

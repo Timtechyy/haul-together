@@ -43,8 +43,9 @@ export default function WithdrawWidget({role, balance }: Props) {
   };
 
   const handleWithdrawal= async()=>{
-       const { data, error } = await supabase.functions.invoke("create-payout", {
-        body:{amount:amount , destination:payoutMethod.id ,}});
+    const { data, error } = await supabase.functions.invoke("create-payout", {
+      body:{amount:amount , destination:payoutMethod.id ,}
+    });
 
     if (error) {
       alert(error.message);
@@ -173,7 +174,8 @@ export default function WithdrawWidget({role, balance }: Props) {
         </Button>
       </div>
 
-     {modalSecret && (
+     {  
+        modalSecret && (
          <ResponsivePaymentModal
           isOpen={!!modalSecret}
           onClose={() => setModalSecret(null)}

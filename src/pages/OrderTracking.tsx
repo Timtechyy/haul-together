@@ -114,26 +114,11 @@ const OrderTracking = () => {
 
 
   const updateStatus = async (newStatus: string) => {
-    const updateData: any = {
-      status: newStatus,
-    };
-
-    // Add picked_up_at timestamp if status is picking_up
-    if (newStatus === 'picking_up') {
-      updateData.picked_up_at = new Date().toISOString();
-    }
-
-    // Add delivered_at and confirmation timestamps if status is delivered
-    if (newStatus === 'delivered') {
-      updateData.delivered_at = new Date().toISOString();
-      updateData.driver_confirmed_at = new Date().toISOString();
-    }
-
-    const { error } = await supabase
-      .from('deliveries')
-      .update(updateData)
-      .eq('id', orderId);
-
+    const { error } = await supabase.rpc("driver_confirm_delivery", {
+      p_delivery_id: orderId,
+      p_new_status: newStatus
+    });
+    
     if (error) {
       toast({
         title: "Error",
@@ -150,11 +135,10 @@ const OrderTracking = () => {
   };
 
   const confirmDelivery = async (newStatus: string,iscustomer: boolean)=>{
-    newStatus === 'confirm_delivery';
-    const { error } = await supabase
-      .from('deliveries')
-      .update({customer_confirmed_at:new Date().toISOString() })
-      .eq('id', orderId);
+    const { error } = await supabase.rpc("customer_confirm_delivery", {
+      p_delivery_id: orderId,
+      p_is_customer: iscustomer
+    });
 
     if (error) {
       toast({

@@ -90,8 +90,7 @@ const Login = () => {
           vehicle.make &&
           vehicle.model &&
           vehicle.year &&
-          vehicle.license_plate &&
-          vehicle.tracking_consent === true;
+          vehicle.license_plate
           if (!isVehicleComplete) {
             const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", data.user.id).single();
             setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});

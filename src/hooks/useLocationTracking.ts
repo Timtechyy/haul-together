@@ -56,8 +56,8 @@ const goOffline = async (userId?: string) => {
  * Hook
  */
 export const useLocationTracking = (
-  userId: string | undefined,
-  isOnline: boolean
+  userId: string | null,
+
 ) => {
   const [isTracking, setIsTracking] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
@@ -74,12 +74,13 @@ export const useLocationTracking = (
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userId || !isOnline) {
+    if (!userId) {
       goOffline(userId);
       stopTracking();
       return;
     }
-
+    markOnline(userId)
+    
     if (!navigator.geolocation) {
       toast({
         title: "Location not supported",
@@ -88,7 +89,7 @@ export const useLocationTracking = (
       });
       return;
     }
-    markOnline(userId);
+    
 
     startTracking();
 
@@ -100,14 +101,8 @@ export const useLocationTracking = (
       goOffline(userId);
       stopTracking();
     };
-
-  
-
-    return () => {
-      stopTracking();
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, isOnline]);
+  }, [userId, toast]);
 
   const handleUnload = () => {
     if (userId) goOffline(userId);
