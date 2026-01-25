@@ -128,6 +128,7 @@ export type Database = {
           insurance_number: string | null
           is_online: boolean | null
           last_location_update: string | null
+          last_seen: string | null
           license_plate: string
           make: string
           model: string
@@ -146,6 +147,7 @@ export type Database = {
           insurance_number?: string | null
           is_online?: boolean | null
           last_location_update?: string | null
+          last_seen?: string | null
           license_plate: string
           make: string
           model: string
@@ -164,6 +166,7 @@ export type Database = {
           insurance_number?: string | null
           is_online?: boolean | null
           last_location_update?: string | null
+          last_seen?: string | null
           license_plate?: string
           make?: string
           model?: string
