@@ -91,18 +91,18 @@ serve(async (req) => {
         const PLATES_TO_VIN_API_KEY = Deno.env.get("PLATES_TO_VIN_API_KEY");
         if (!PLATES_TO_VIN_API_KEY ) throw new Error("PLATES TO VIN API KEY not configured");
         const response = await fetch( PLATES_TO_VIN_BASE_URL + "/convert", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": PLATES_TO_VIN_API_KEY,
-       "Accept": "application/json"
-    
-    },
-    body: JSON.stringify({
-        state: plate.state,
-        plate: plate.id
-    }),
-  });
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": PLATES_TO_VIN_API_KEY,
+          "Accept": "application/json"
+        
+        },
+        body: JSON.stringify({
+            state: plate.state,
+            plate: plate.id
+        }),
+      });
 
   if (!response.ok) {
     const errorText = await response.json();
@@ -121,9 +121,11 @@ serve(async (req) => {
         },
       }
     );
-  }
+  } else {
+    const data = await response.json();
 
-  const data = await response.json();
+    console.log("Plates to VIN response data:", data.vin);
+   
     return new Response(
       JSON.stringify({ vin: data.vin }),
       {
@@ -134,6 +136,9 @@ serve(async (req) => {
         },
       }
     );
+  }
+
+  
 
   } catch (e: any) {
     console.error(e);

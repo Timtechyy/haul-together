@@ -39,9 +39,14 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
 
     const initMap = async () => {
       // const { data } = await supabase.functions.invoke("get-mapbox-token");
-      const { data: driverLocation } = await supabase.from("driver_vehicles").select("current_lng, current_lat").eq("user_id", driverId).single();
+     
       mapboxgl.accessToken = "pk.eyJ1Ijoid2VoYXVsZXIiLCJhIjoiY21pbHZyMXlmMDl4MzNkcHVyb21nMHV4eCJ9.V5eUmLUwnEdScdxfALmSqQ";
-
+      const { data: driverLocation } = await supabase
+      .from("driver_vehicles")
+      .select("*")
+      .eq("user_id", driverId)
+      .single();
+      console.log("driver current location", driverLocation.current_lat, driverLocation.current_lng);
       mapRef.current = new mapboxgl.Map({
         container: mapContainer.current!,
         style: "mapbox://styles/mapbox/streets-v12",
@@ -156,7 +161,25 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
           directionsRef.current.setDestination([booking.pickupLng, booking.pickupLat]);
         }
       })
-      .subscribe();
+      .subscribe(
+        
+        (status, err) => {
+          console.log("Subscribed to driver location updates");
+            console.log("Subscription status:", status);
+      
+      if (status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to delivery updates');
+      
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('Channel error - subscription failed', err);
+     
+      } else if (status === 'TIMED_OUT') {
+        console.error('Subscription timed out');
+      } else if (status === 'CLOSED') {
+        console.log('🔌 Channel closed');
+      }
+        }
+      );
 
     return () => { supabase.removeChannel(channel); };
   }, [driverId, booking]);
@@ -166,7 +189,6 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
   const createDriverMarker = (lngLat: [number, number]) => {
     const el = document.createElement("div");
     el.className = "driver-marker";
-
     el.innerHTML = `
       <div style="
         width: 36px;
