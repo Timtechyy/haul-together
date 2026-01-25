@@ -33,7 +33,7 @@ export default function LicensePlate({ userId, onComplete }: Details) {
     //   },
     // );
 
-    await supabase.from("driver_vehicles").insert({
+   const { data, error } = await supabase.from("driver_vehicles").insert({
       user_id: userId,
       vehicle_type: vehicleResult.style,
       make: vehicleResult.make,
@@ -47,6 +47,8 @@ export default function LicensePlate({ userId, onComplete }: Details) {
     })
     .select()
     .single();
+
+    if (error) throw error;
 
     onComplete();
   };
