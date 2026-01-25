@@ -79,7 +79,6 @@ export const useLocationTracking = (
       stopTracking();
       return;
     }
-    markOnline(userId)
     
     if (!navigator.geolocation) {
       toast({
@@ -111,9 +110,9 @@ export const useLocationTracking = (
   /**
    * Start GPS tracking
    */
-  const startTracking = () => {
+  const startTracking = async() => {
     setIsTracking(true);
-
+    await markOnline(userId);
     watchIdRef.current = navigator.geolocation.watchPosition(
       async (pos) => {
         const lat = pos.coords.latitude;

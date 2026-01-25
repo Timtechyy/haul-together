@@ -59,7 +59,7 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [isTracking, setIsTracking] = useState(false);
+  const { isTracking } = useLocationTracking(user?.id);
   console.log("Location tracking status:", isTracking);
   console.log("Current user ID:", user?.id);
   const [stats, setStats] = useState({
@@ -69,22 +69,20 @@ const DriverDashboard = () => {
     rating: 0,
   });
 
+
   useEffect(() => {
     const checkUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/login");
         return;
       }
       setUser(session.user);
-      const { isTracking } = useLocationTracking(session.user.id);
-      setIsTracking(isTracking);
     };
     checkUser();
   }, [navigate]);
-
-useEffect(() => {
   
+  useEffect(() => {
   if (!user) return;
 
   const fetchDriverData = async () => {
@@ -296,6 +294,7 @@ useEffect(() => {
     supabase.removeChannel(channel);
   };
 }, [user, toast, notificationsEnabled]);
+
 
 
   // Request notification permission on mount
