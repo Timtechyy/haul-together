@@ -341,10 +341,10 @@ export type Database = {
       }
       check_driver_availability: {
         Args: {
-          p_pickup_lat: number
-          p_pickup_lng: number
-          p_radius_km?: number
-          p_vehicle_type: string
+          pickup_lat: number
+          pickup_lng: number
+          radius_km?: number
+          vehicle_type: string
         }
         Returns: {
           distance_km: number
