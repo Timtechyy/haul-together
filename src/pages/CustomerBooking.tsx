@@ -428,6 +428,7 @@ const CustomerBooking = () => {
           delivery_lat: deliveryLat,
           delivery_lng: deliveryLng,
           item_type: itemType,
+          item_description:itemType,
           quantity: parseInt(quantity),
           vehicle_type: vehicleType,
           price: calculatedPrice,
@@ -706,15 +707,15 @@ const CustomerBooking = () => {
                       <CardContent className="p-6">
                         <div className="flex gap-4">
                           <Avatar className="h-16 w-16">
-                             <AvatarImage src={driver.profiles.avatar_url} />
+                             <AvatarImage src={driver.avatar_url} />
                             <AvatarFallback>
-                              {driver.profiles?.first_name?.[0]}{driver.profiles?.last_name?.[0]}
+                              {driver.first_name?.[0]}{driver.last_name?.[0]}
                             </AvatarFallback>
                           </Avatar>
                           <div className="space-y-2">
                             <div>
                               <h3 className="text-xl font-semibold">
-                                {driver.profiles?.first_name} {driver.profiles?.last_name}
+                                {driver.first_name} {driver.last_name}
                               </h3>
                               <div className="flex flex-row items-center gap-4 text-sm text-muted-foreground">
                                 <Truck className="h-4 w-4" />
