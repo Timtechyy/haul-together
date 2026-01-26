@@ -296,7 +296,7 @@ export type Database = {
     }
     Functions: {
       accept_delivery: {
-        Args: { p_delivery_id: string; p_driver_id: string }
+        Args: { p_delivery_id: string }
         Returns: {
           accepted_at: string | null
           created_at: string
