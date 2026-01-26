@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3, MapPin } from "lucide-react";
+import { DollarSign, Package, TrendingUp, LogOut, User, ChevronDown, Filter, BarChart3, MapPin, Truck } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
 import { ReceiptImage } from "@/components/ReceiptImage";
 import { useLocationTrackingContext } from "@/components/locationtracking";
+import { formatTime } from "@/components/time";
 
 // Preview interface for unassigned deliveries (limited data for privacy)
 interface DeliveryPreview {
@@ -54,13 +56,15 @@ const DriverDashboard = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<DeliveryPreview[]>([]);
+  const [completedDeliveries, setCompletedDeliveries] = useState<DeliveryPreview[]>([]);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-    const { isTracking } = useLocationTrackingContext();
+    const [tabType, setTabType] = useState<"pending" | "completed">("pending");
+  const { isTracking } = useLocationTrackingContext();
   console.log("Location tracking status:", isTracking);
   console.log("Current user ID:", user?.id);
   const [stats, setStats] = useState({
@@ -100,6 +104,14 @@ const DriverDashboard = () => {
       .select("*")
       .eq("driver_id", user.id)
       .in("status", ["assigned", "accepted","picked_up", "in_transit"]);
+
+      const{ data: completedDeliveries, error: completedError } = await supabase
+      .from("deliveries")
+      .select("*")
+      .eq("driver_id", user.id)
+      .eq("status", "delivered");
+      setCompletedDeliveries(completedDeliveries);
+      if(completedError){ console.error("Error fetching completed deliveries:", completedError); }
 
     if (unassignedError || assignedError) {
       console.error("Error fetching deliveries:", unassignedError || assignedError);
@@ -294,9 +306,44 @@ const DriverDashboard = () => {
     console.log("🧹 Cleaning up subscription");
     supabase.removeChannel(channel);
   };
+
+  
+
+
+
 }, [user, toast, notificationsEnabled]);
 
 
+  // completed deliveries
+  useEffect(() => {
+
+    const channel = supabase
+      .channel(`driver-completed-deliveries-${user?.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "deliveries",
+        },
+        (payload) => {
+          const updatedDelivery = payload.new as DeliveryPreview;
+          if (updatedDelivery.status === "delivered" && updatedDelivery.driver_id === user?.id) {
+            setCompletedDeliveries((prev) => {
+              if (prev.some((d) => d.id === updatedDelivery.id)) {
+                return prev;
+              }
+              return [updatedDelivery, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -332,20 +379,16 @@ const DriverDashboard = () => {
   const handleDecline = async () => {
     if (!user && !selectedRequestId) return;
 
-    const { error } = await supabase
-      .from("deliveries")
-      .update({ status: "declined" })
-      .eq("id", selectedRequestId);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to decline request",
-        variant: "destructive",
+    const { data, error } = await supabase.rpc("cancel_delivery", {
+      p_delivery_id:selectedRequestId,
+      p_driver_id:user.id
+    });
+    if(error) { 
+      return toast({
+        title: "Request Cancellation Failed",
+        description: error.message,
       });
-      return;
-    }
-
+    };
     setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
     toast({
       title: "Request Declined",
@@ -376,7 +419,12 @@ const DriverDashboard = () => {
       p_delivery_id:selectedRequestId,
       p_driver_id:user.id
     });
-    if(error) throw error;
+    if(error) { 
+      return toast({
+        title: "Request Cancellation Failed",
+        description: error.message,
+      });
+    };
     setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
     toast({
       title: "Request Cancelled",
@@ -492,173 +540,262 @@ const DriverDashboard = () => {
             </Card>
           </div>
 
-          {/* Pending Requests */}
-          <Card className="shadow-medium">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Pending Delivery Requests</CardTitle>
-                  <CardDescription>Accept requests to start earning</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={filterDistance} onValueChange={(value: any) => setFilterDistance(value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Distance</SelectItem>
-                      <SelectItem value="near">Near (&lt;5mi)</SelectItem>
-                      <SelectItem value="far">Far (&gt;5mi)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="time">Newest</SelectItem>
-                      <SelectItem value="distance">Distance</SelectItem>
-                      <SelectItem value="price">Price</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {filteredAndSortedRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No pending requests available
-                </div>
-              ) : (
-                filteredAndSortedRequests.map((request) => {
-                  // Check if this is an assigned delivery (has full details) or just a preview
-                  const isAssignedToDriver = request.driver_id === user?.id;
-                  const hasFullDetails = isAssignedToDriver && request.pickup_location;
-                  
-                  return (
-                    <Collapsible key={request.id}>
-                      <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" || request.status === "in_transit" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{request.item_description}</span>
-                              <Badge variant="secondary">{request.estimated_distance.toFixed(1)} mi</Badge>
-                              {isAssignedToDriver && (
-                                <Badge variant="default" className="bg-green-500">Assigned to you</Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {hasFullDetails 
-                                ? `Pickup: ${request.pickup_location}`
-                                : "Accept to view full pickup details"
-                              }
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="text-xl font-bold">${request.price.toFixed(2)}</div>
-                              <div className="text-xs text-muted-foreground">Estimated</div>
-                            </div>
-                            <CollapsibleTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="gap-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                }}
-                                >
-                                View More
-                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                              </Button>
-                            </CollapsibleTrigger>
-                          </div>
-                        </div>
-                        
-                        <CollapsibleContent className="pt-4">
-                          <div className="space-y-4 pt-3 ">
-                            <div className="text-sm">
-                              <div className="font-medium mb-1">
-                                {hasFullDetails ? "Full Details" : "Delivery Preview"}
-                              </div>
-                              <div className="space-y-1 text-muted-foreground">
-                                {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
-                                {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
-                                {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
-                                <div><span className="font-medium">Distance:</span> {request.estimated_distance.toFixed(1)} mi</div>
-                                <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
-                                
-                                {/* Only show addresses for assigned deliveries */}
-                              
-                                <div>
-                                  <span className="font-medium">Pickup:</span> {request.pickup_location}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Dropoff:</span> {request.delivery_location}
-                                </div>
-                                <div className="mt-2 p-3 bg-muted rounded-lg text-center">
-                                  <span className="text-muted-foreground">
-                                    Accept this delivery to view pickup and dropoff locations
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
 
-                            {/* Order Receipt - only for assigned deliveries */}
-                            {request.receipt_url && (
-                              <div className="mt-4">
-                                <div className="font-medium text-sm mb-2">Order Receipt</div>
-                                <ReceiptImage receiptUrl={request.receipt_url} />
+          <Tabs value={tabType} onValueChange={(value) => setTabType(value as "pending" | "completed")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="pending" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Pending
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                Completed
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="pending" className="mt-4">
+              {/* Pending Requests */}
+              <Card className="shadow-medium">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Pending Delivery Requests</CardTitle>
+                      <CardDescription>Accept requests to start earning</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <Select value={filterDistance} onValueChange={(value: any) => setFilterDistance(value)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Distance</SelectItem>
+                          <SelectItem value="near">Near (&lt;5mi)</SelectItem>
+                          <SelectItem value="far">Far (&gt;5mi)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="time">Newest</SelectItem>
+                          <SelectItem value="distance">Distance</SelectItem>
+                          <SelectItem value="price">Price</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {filteredAndSortedRequests.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No pending requests available
+                    </div>
+                  ) : (
+                    filteredAndSortedRequests.map((request) => {
+                      // Check if this is an assigned delivery (has full details) or just a preview
+                      const isAssignedToDriver = request.driver_id === user?.id;
+                      const hasFullDetails = isAssignedToDriver && request.pickup_location;
+                      
+                      return (
+                        <Collapsible key={request.id}>
+                          <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" || request.status === "in_transit" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold">{request.item_description}</span>
+                                  <Badge variant="secondary">{request.estimated_distance.toFixed(1)} mi</Badge>
+                                  {isAssignedToDriver && (
+                                    <Badge variant="default" className="bg-green-500">Assigned to you</Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {hasFullDetails 
+                                    ? `Pickup: ${request.pickup_location}`
+                                    : "Accept to view full pickup details"
+                                  }
+                                </div>
                               </div>
-                            )}
-                            <div className="flex gap-2 justify-end pt-2">
-                              {isAssignedToDriver ? (
-                                <Button
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedRequestId(request.id);
-                                    setCancelDialogOpen(true);
-                                  }}
-                                >
-                                  Cancel Assignment
-                                </Button>
-                              ) : (
-                                <>
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="text-xl font-bold">${request.price.toFixed(2)}</div>
+                                  <div className="text-xs text-muted-foreground">Estimated</div>
+                                </div>
+                                <CollapsibleTrigger asChild>
                                   <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedRequestId(request.id);
-                                      setDeclineDialogOpen(true);
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                     }}
-                                  >
-                                    Decline
+                                    >
+                                    View More
+                                    <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                                   </Button>
-                                  <Button 
-                                    variant="hero" 
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedRequestId(request.id);
-                                      handleAccept();
-                                    }}
-                                  >
-                                    Accept
-                                  </Button>
-                                </>
-                              )}
+                                </CollapsibleTrigger>
+                              </div>
+                            </div>
+                            
+                            <CollapsibleContent className="pt-4">
+                              <div className="space-y-4 pt-3 ">
+                                <div className="text-sm">
+                                  <div className="font-medium mb-1">
+                                    {hasFullDetails ? "Full Details" : "Delivery Preview"}
+                                  </div>
+                                  <div className="space-y-1 text-muted-foreground">
+                                    {request.item_type && <div><span className="font-medium">Type:</span> {request.item_type}</div>}
+                                    {request.quantity && <div><span className="font-medium">Quantity:</span> {request.quantity}</div>}
+                                    {request.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {request.vehicle_type}</div>}
+                                    <div><span className="font-medium">Distance:</span> {request.estimated_distance.toFixed(1)} mi</div>
+                                    <div><span className="font-medium">Estimated Payment:</span> ${request.price.toFixed(2)}</div>
+                                    
+                                    {/* Only show addresses for assigned deliveries */}
+                                  
+                                    <div>
+                                      <span className="font-medium">Pickup:</span> {request.pickup_location}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Dropoff:</span> {request.delivery_location}
+                                    </div>
+                                    <div className="mt-2 p-3 bg-muted rounded-lg text-center">
+                                      <span className="text-muted-foreground">
+                                        Accept this delivery to view pickup and dropoff locations
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Order Receipt - only for assigned deliveries */}
+                                {request.receipt_url && (
+                                  <div className="mt-4">
+                                    <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                    <ReceiptImage receiptUrl={request.receipt_url} />
+                                  </div>
+                                )}
+                                <div className="flex gap-2 justify-end pt-2">
+                                  {isAssignedToDriver ? (
+                                    <Button
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedRequestId(request.id);
+                                        setCancelDialogOpen(true);
+                                      }}
+                                    >
+                                      Cancel Assignment
+                                    </Button>
+                                  ) : (
+                                    <>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedRequestId(request.id);
+                                          setDeclineDialogOpen(true);
+                                        }}
+                                      >
+                                        Decline
+                                      </Button>
+                                      <Button 
+                                        variant="hero" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedRequestId(request.id);
+                                          handleAccept();
+                                        }}
+                                      >
+                                        Accept
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </CollapsibleContent>
+                          </div>
+                        </Collapsible>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="completed" className="mt-4">
+              <Card className="shadow-medium">
+                <CardHeader>
+                  <CardTitle>Completed Deliveries</CardTitle>
+                  <CardDescription>Recently completed deliveries</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {completedDeliveries.map((delivery) => (
+                    <Collapsible key={delivery.id}>
+                      <CollapsibleTrigger asChild>
+                        <div key={delivery.id} className="p-4 border rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="font-semibold">{delivery.item_description}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Delivered to: {delivery.delivery_location}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {formatTime(delivery.created_at)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold">${delivery.price.toFixed(2)}</div>
+                              <div className="text-xs text-muted-foreground">Completed</div>
                             </div>
                           </div>
-                        </CollapsibleContent>
-                      </div>
+                          <CollapsibleContent className="pt-4">
+                            <div className="space-y-4 pt-3 ">
+                              <div className="text-sm">
+                                <div className="font-medium mb-1">
+                                  Full Details
+                                </div>
+                                <div className="space-y-1 text-muted-foreground">
+                                  {delivery.item_type && <div>
+                                    <span className="font-medium">Type:</span> {delivery.item_type}
+                                  </div>}
+                                  {delivery.quantity && <div><span className="font-medium">Quantity:</span> {delivery.quantity}</div>}
+                                  {delivery.vehicle_type && <div><span className="font-medium">Vehicle Required:</span> {delivery.vehicle_type}</div>}
+                                  <div><span className="font-medium">Distance:</span> {delivery.estimated_distance.toFixed(1)} mi</div>
+                                  <div><span className="font-medium">Estimated Payment:</span> ${delivery.price.toFixed(2)}</div>
+                                  
+                                  {/* Only show addresses for assigned deliveries */}
+                                
+                                  <div>
+                                    <span className="font-medium">Pickup:</span> {delivery.pickup_location}
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Dropoff:</span> {delivery.delivery_location}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Order Receipt - only for assigned deliveries */}
+                              {delivery.receipt_url && (
+                                <div className="mt-4">
+                                  <div className="font-medium text-sm mb-2">Order Receipt</div>
+                                  <ReceiptImage receiptUrl={delivery.receipt_url} />
+                                </div>
+                              )}
+                            </div>
+                          </CollapsibleContent>
+                        </div>
+                      </CollapsibleTrigger>
                     </Collapsible>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
+                  ))}
+                  {completedDeliveries.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No completed deliveries yet.
+                    </div>
+                  )}
+                </CardContent>                    
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 

@@ -693,8 +693,6 @@ const Profile = () => {
           </Card>
 
           {/* </div>  */}
-          {/* Payment Methods */}
-          <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
           {/* Verification Card - Only for Drivers */}
           {isDriver && !isVerified && (
             <Card className="h-46">
@@ -712,6 +710,9 @@ const Profile = () => {
               </CardContent>
             </Card>
           )}
+          {/* Payment Methods */}
+          <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
+          
         </div>
 
         {/* Account Actions */}

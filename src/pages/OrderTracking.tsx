@@ -134,13 +134,13 @@ const OrderTracking = () => {
     });
   };
 
-  const confirmDelivery = async (newStatus: string,iscustomer: boolean)=>{
+  const confirmDelivery = async (newStatus: string)=>{
     const { error } = await supabase.rpc("customer_confirm_delivery", {
       p_delivery_id: orderId,
-      p_is_customer: iscustomer
     });
 
     if (error) {
+      console.log(error);
       toast({
         title: "Error",
         description: "Failed to update status",
@@ -438,7 +438,7 @@ const OrderTracking = () => {
                   <Button 
                     variant="hero" 
                     className="flex-1"
-                    onClick={() => confirmDelivery('confirm_delivery', isCustomer)}
+                    onClick={() => confirmDelivery('confirm_delivery')}
                   >
                     Confirm Delivery
                   </Button>

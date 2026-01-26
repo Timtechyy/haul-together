@@ -216,7 +216,6 @@ const CustomerBooking = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
       // Verify MIME type is an image
       if (!file.type.startsWith('image/')) {
         toast({
@@ -386,7 +385,7 @@ const CustomerBooking = () => {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     if (!user || !calculatedPrice) return;
 
     setLoading(true);
@@ -423,6 +422,7 @@ const CustomerBooking = () => {
           price: calculatedPrice,
           estimated_distance: drivers[0]?.distance || 0,
           receipt_url: receiptPath,
+          payment_intent_id: paymentIntentId,
           status: "pending",
         })
         .select()

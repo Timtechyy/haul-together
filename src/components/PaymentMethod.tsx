@@ -96,7 +96,7 @@ export default function SetupIntentForm({role, clientSecret }: Props) {
         disabled={!stripe || loading}
         className="bg-black text-white px-4 py-2 rounded-md w-full"
       >
-        Add Card
+       {role === "driver" ? "Add Payout Method" : "Add Card"}
       </button>
     </div>
   );
