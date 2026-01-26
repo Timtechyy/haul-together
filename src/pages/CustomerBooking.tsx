@@ -266,12 +266,14 @@ const CustomerBooking = () => {
 
     try {
       // Fetch drivers with matching vehicle type and verified status
-      const { data: availableDriver, error } = await supabase.rpc("check_driver_availability",{
-        p_vehicle_type: vehicleType,
-        p_pickup_lat: pickupLat,
-        p_pickup_lng: pickupLng,
-        p_km_radius: 5,
-      });
+      const { data: availableDriver, error } = await supabase.rpc("check_driver_availability",
+        {
+          vehicle_type: vehicleType,
+          pickup_lat: pickupLat,
+          pickup_lng: pickupLng,
+          radius_km: 5,
+        }
+      );
 
       if (error) {
         console.log("Error fetching drivers:", error.message);
@@ -331,18 +333,14 @@ const CustomerBooking = () => {
 
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
-      setdriverNotFound(!availableDriver);
+      setdriverNotFound(availableDriver.length === 0);
       setDrivers(availableDriver);
       
       // setDrivers(driversWithReceipt);
       setShowForm(false);
-      const drivers = Array.isArray(availableDriver)
-        ? availableDriver
-        : [];
-
-      if (drivers.length === 0) {
-        // no drivers
-      }else{
+      
+      if (availableDriver.length >= 1) {
+        // Start 1-minute countdown
         setCountdown(30);
       }
       
