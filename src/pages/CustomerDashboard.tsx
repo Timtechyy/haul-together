@@ -354,7 +354,7 @@ const CustomerDashboard = () => {
                                 </div>
                                 <div className="flex items-center gap-1 mt-1">
                                   <Clock className="h-6 w-5" />
-                                  {formatTime(booking.scheduled_time)}
+                                  {formatTime(booking.created_at)}
                                 </div>
                               </div>
                             </div>
