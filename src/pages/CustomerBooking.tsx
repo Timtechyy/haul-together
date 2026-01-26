@@ -266,11 +266,11 @@ const CustomerBooking = () => {
 
     try {
       // Fetch drivers with matching vehicle type and verified status
-      const { data: availableDriver, error } = await supabase.rpc("check_driver_availability",{
-        p_vehicle_type: vehicleType,
-        p_pickup_lat: pickupLat,
-        p_pickup_lng: pickupLng,
-        p_km_radius: 5,
+      const { data: availableDriver, error } = await supabase.rpc("check_driver_availability", {
+        vehicle_type: vehicleType,
+        pickup_lat: pickupLat,
+        pickup_lng: pickupLng,
+        radius_km: 5,
       });
 
       if (error) {
