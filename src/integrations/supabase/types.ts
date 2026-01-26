@@ -351,6 +351,23 @@ export type Database = {
           driver_id: string
         }[]
       }
+      create_delivery: {
+        Args: {
+          delivery_lat: number
+          delivery_lng: number
+          delivery_location: string
+          item_type: string
+          payment_intent_id: string
+          pickup_lat: number
+          pickup_lng: number
+          pickup_location: string
+          price: number
+          quantity: number
+          receipt_url: string
+          vehicle_type: string
+        }
+        Returns: string
+      }
       customer_confirm_delivery: {
         Args: { p_delivery_id: string }
         Returns: undefined
