@@ -18,15 +18,17 @@ export default function LicensePlate({ userId, onComplete }: Details) {
   const saveVehicle = async () => {
     // await supabase.from("driver_vehicles").upsert(
     //   {
-    //     user_id: userId,
-    //     vehicle_type: vehicleResult.style,
-    //     make: vehicleResult.make,
-    //     model: vehicleResult.model,
-    //     year: parseInt(vehicleResult.year),
-    //     color: vehicleResult.color.name,
-    //     trim: vehicleResult.trim,
-    //     license_plate: keyword.plateNumber,
-    //     tracking_consent: vehicleTracking,
+    //   user_id: userId,
+    //   vehicle_type: vehicleResult.style,
+    //   make: vehicleResult.make,
+    //   model: vehicleResult.model,
+    //   year: parseInt(vehicleResult.year),
+    //   color: vehicleResult.color.name,
+    //   trim: vehicleResult.trim,
+    //   license_plate: keyword.plateNumber,
+    //   vin: vehicleResult.vin,
+    //   tracking_consent: vehicleTracking,
+    //   insurance_number: keyword.insurance
     //   },
     //   {
     //     onConflict: "user_id",
@@ -56,6 +58,7 @@ export default function LicensePlate({ userId, onComplete }: Details) {
   const [keyword, setKeyword] = useState({
     plateNumber: "",
     plateState: "",
+    insurance: "",
   });
 
   const formatInput = (e) => {
@@ -124,82 +127,90 @@ export default function LicensePlate({ userId, onComplete }: Details) {
   return (
     <>
       {vehicleResult ? (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={vehicleResult.name || ""} readOnly />
-          </div>
+          <form onSubmit={saveVehicle}>
+          <div className="justify-center space-y-4">
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={vehicleResult.name || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="make">Make</Label>
-            <Input id="make" value={vehicleResult.make || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="make">Make</Label>
+                <Input id="make" value={vehicleResult.make || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
-            <Input id="model" value={vehicleResult.model || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="model">Model</Label>
+                <Input id="model" value={vehicleResult.model || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="trim">Trim</Label>
-            <Input id="trim" value={vehicleResult.trim || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="trim">Trim</Label>
+                <Input id="trim" value={vehicleResult.trim || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="year">Year</Label>
-            <Input id="year" value={vehicleResult.year || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="year">Year</Label>
+                <Input id="year" value={vehicleResult.year || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="color">Color</Label>
-            <Input id="color" value={vehicleResult.color.name || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <Input id="color" value={vehicleResult.color.name || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Input id="type" value={vehicleResult.style || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <Input id="type" value={vehicleResult.style || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="driveType">Drive Type</Label>
-            <Input id="driveType" value={vehicleResult.driveType || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="driveType">Drive Type</Label>
+                <Input id="driveType" value={vehicleResult.driveType || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="transmission">Transmission</Label>
-            <Input id="transmission" value={vehicleResult.transmission || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="transmission">Transmission</Label>
+                <Input id="transmission" value={vehicleResult.transmission || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="engine">Engine</Label>
-            <Input id="engine" value={vehicleResult.engine || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="engine">Engine</Label>
+                <Input id="engine" value={vehicleResult.engine || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fuel">Fuel</Label>
-            <Input id="fuel" value={vehicleResult.fuel || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="fuel">Fuel</Label>
+                <Input id="fuel" value={vehicleResult.fuel || ""} readOnly />
+              </div>
 
-          <div className="space-y-2">
-            <Label>VIN</Label>
-            <Input value={vehicleResult.vin || ""} readOnly />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="vin">VIN</Label>
+                <Input id="vin" value={vehicleResult.vin || ""} readOnly />
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="trackingConsent"
-              checked={vehicleTracking}
-              onCheckedChange={(checked) => setVehicleTracking(checked as boolean)}
-            />
-            <Label htmlFor="trackingConsent" className="text-sm">
-              I agree to location tracking during active deliveries
-            </Label>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="insurance">INSURANCE</Label>
+                <Input id="insurance" value={keyword.insurance || ""} placeholder="123456777" onChange={(e) => setKeyword({...keyword, insurance: e.target.value})} required />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="trackingConsent"
+                checked={vehicleTracking}
+                onCheckedChange={(checked) => setVehicleTracking(checked as boolean)}
+              />
+              <Label htmlFor="trackingConsent" className="text-sm">
+                I agree to location tracking during active deliveries
+              </Label>
+            </div>
 
-          <Button variant="hero" onClick={saveVehicle} disabled={!vehicleTracking}>
-            Finish Setup
-          </Button>
-        </div>
+            <Button className="flex-1" variant="hero" disabled={!vehicleTracking}>
+              Finish Setup
+            </Button>
+          </div>
+        </form>
       ) : (
         <form onSubmit={handleSubmit} className="gap-1 justify-between gap-y-2">
           <div className="grid grid-cols-2 gap-3">

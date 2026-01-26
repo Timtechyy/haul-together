@@ -19,36 +19,40 @@ import DriverEarnings from "./pages/DriverEarnings";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import DriverVerification from "./pages/DriverVerification";
 import OrderTracking from "./pages/OrderTracking";
+import DriverTracker from "./components/DriverTracker";
 
 const queryClient = new QueryClient();
 
 const App = () => (
+  
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Onboarding />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/customer/booking" element={<CustomerBooking />} />
-          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/driver/dashboard" element={<DriverDashboard />} />
-          <Route path="/driver/earnings" element={<DriverEarnings />} />
-          <Route path="/driver/verification" element={<DriverVerification />} />
-          <Route path="/driver/tracking" element={<OrderTracking />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/order-tracking" element={<OrderTracking />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <DriverTracker>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Onboarding />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/customer/booking" element={<CustomerBooking />} />
+            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+            <Route path="/driver/dashboard" element={<DriverDashboard />} />
+            <Route path="/driver/earnings" element={<DriverEarnings />} />
+            <Route path="/driver/verification" element={<DriverVerification />} />
+            <Route path="/driver/tracking" element={<OrderTracking />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/order-tracking" element={<OrderTracking />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </DriverTracker>
     </TooltipProvider>
   </QueryClientProvider>
 );
