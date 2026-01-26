@@ -48,6 +48,7 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
 
   type PaymentModalState = {
     open: boolean;
@@ -84,6 +85,7 @@ const CustomerBooking = () => {
   useEffect(() => {
     if (pickupLat && pickupLng && deliveryLat && deliveryLng) {
       const distance = calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
+      setDistance(distance);
       const price = calculatePrice(distance);
       setCalculatedPrice(price);
     } else {
@@ -276,58 +278,6 @@ const CustomerBooking = () => {
       if (error) {
         console.log("Error fetching drivers:", error.message);
       };
-      // const { data: verifiedDrivers } = await supabase
-      //   .from("driver_verifications")
-      //   .select("user_id")
-      //   .eq("verification_status", 'approved');
-      //   const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
-      //   console.log("verified drivers",verifiedUserIds);
-
-      // // Fetch drivers who are currently busy
-      
-      // const { data: busyDeliveries } = await supabase
-      //   .from("deliveries")
-      //   .select("driver_id")
-      //   .in("status", ["accepted", "in_progress", "in_transit"]);
-
-      //   console.log("busy drivers",busyDeliveries);
-
-      // const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
-
-      // // Fetch drivers with location data
-      // let query = supabase
-      //   .from("driver_vehicles")
-      //   .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender`)
-      //   .eq("vehicle_type", vehicleType)
-      //   .eq("is_online", true)
-      //   .in("user_id", verifiedUserIds)
-      //   .not("user_id", "in", `(${busyDriverIds.join(",")})`)
-      //   .not("current_lat", "is", null)
-      //   .not("current_lng", "is", null);
-
-      // if (busyDriverIds.length > 0) {
-      //   query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
-      // }
-
-      // const { data: matchingDrivers, error } = await query;
-
-      // console.log("matched drivers",matchingDrivers);
-  
-
-      // // Calculate distance and sort by proximity if pickup location has coordinates
-      // let driversWithDistance = matchingDrivers;
-
-      // if (pickupLat && pickupLng && matchingDrivers) {
-      //   driversWithDistance = matchingDrivers.map((driver: any) => {
-      //     const distance = calculateDistance(
-      //       pickupLat,
-      //       pickupLng,
-      //       driver.current_lat,
-      //       driver.current_lng
-      //     );
-      //     return { ...driver, distance };
-      //   }).sort((a, b) => a.distance - b.distance);
-      // }
 
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
@@ -341,11 +291,6 @@ const CustomerBooking = () => {
         // Start 1-minute countdown
         setCountdown(30);
       }
-      
-      // if (availableDriver.length >= 1) {
-      //   // Start 1-minute countdown
-        
-      // }
       
       toast({
         title: driverNotFound ? "No Drivers Available" : "Drivers Matched!",
@@ -430,13 +375,16 @@ const CustomerBooking = () => {
           item_type: itemType,
           item_description:itemType,
           quantity: parseInt(quantity),
+          estimated_distance: distance,
           vehicle_type: vehicleType,
           price: calculatedPrice,
           receipt_url: receiptPath,
           payment_intent_id: paymentIntentId,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.log("Error creating delivery:", error.message);
+      };
 
       setPendingDeliveryId(delivery);
 

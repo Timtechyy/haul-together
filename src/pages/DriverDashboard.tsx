@@ -384,6 +384,7 @@ const DriverDashboard = () => {
       p_driver_id:user.id
     });
     if(error) { 
+      console.log("Decline error:", error.message);
       return toast({
         title: "Request Cancellation Failed",
         description: error.message,
