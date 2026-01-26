@@ -339,6 +339,18 @@ export type Database = {
         Args: { p_delivery_id: string; p_driver_id: string }
         Returns: Json
       }
+      check_driver_availability: {
+        Args: {
+          p_pickup_lat: number
+          p_pickup_lng: number
+          p_radius_km?: number
+          p_vehicle_type: string
+        }
+        Returns: {
+          distance_km: number
+          driver_id: string
+        }[]
+      }
       customer_confirm_delivery: {
         Args: { p_delivery_id: string }
         Returns: undefined
