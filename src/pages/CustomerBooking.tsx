@@ -48,11 +48,6 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
-<<<<<<< HEAD
-  const [distance, setDistance] = useState<number | null>(null);
-=======
-  const [estimatedDistance, setEstimatedDistance] = useState<number | null>(null);
->>>>>>> a170a815e121f339456ca7edd4f90f3a53f8405e
 
   type PaymentModalState = {
     open: boolean;
@@ -89,13 +84,10 @@ const CustomerBooking = () => {
   useEffect(() => {
     if (pickupLat && pickupLng && deliveryLat && deliveryLng) {
       const distance = calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
-      setDistance(distance);
       const price = calculatePrice(distance);
       setCalculatedPrice(price);
-      setEstimatedDistance(distance);
     } else {
       setCalculatedPrice(null);
-      setEstimatedDistance(null);
     }
   }, [pickupLat, pickupLng, deliveryLat, deliveryLng]);
 
@@ -380,9 +372,7 @@ const CustomerBooking = () => {
           delivery_lng: deliveryLng,
           item_type: itemType,
           item_description: itemType,
-          estimated_distance: estimatedDistance,
           quantity: parseInt(quantity),
-          estimated_distance: distance,
           vehicle_type: vehicleType,
           price: calculatedPrice,
           receipt_url: receiptPath,
