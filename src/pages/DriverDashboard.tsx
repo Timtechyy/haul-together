@@ -380,8 +380,8 @@ const DriverDashboard = () => {
     if (!user && !selectedRequestId) return;
 
     const { data, error } = await supabase.rpc("cancel_delivery", {
-      p_delivery_id:selectedRequestId,
-      p_driver_id:user.id
+      delivery_id:selectedRequestId,
+      driver_id:user.id
     });
     if(error) { 
       console.log("Decline error:", error.message);
@@ -417,8 +417,8 @@ const DriverDashboard = () => {
       if (!user && !selectedRequestId) return;
 
     const { data, error } = await supabase.rpc("cancel_delivery", {
-      p_delivery_id:selectedRequestId,
-      p_driver_id:user.id
+      delivery_id:selectedRequestId,
+      driver_id:user.id
     });
     if(error) { 
       return toast({

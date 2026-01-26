@@ -336,7 +336,7 @@ export type Database = {
         }
       }
       cancel_delivery: {
-        Args: { p_delivery_id: string; p_driver_id: string }
+        Args: { delivery_id: string; driver_id: string }
         Returns: Json
       }
       check_driver_availability: {
@@ -368,6 +368,7 @@ export type Database = {
           delivery_lat: number
           delivery_lng: number
           delivery_location: string
+          estimated_distance: number
           item_description: string
           item_type: string
           payment_intent_id: string
