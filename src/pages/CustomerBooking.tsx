@@ -48,6 +48,7 @@ const CustomerBooking = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
+  const [estimatedDistance, setEstimatedDistance] = useState<number | null>(null);
 
   type PaymentModalState = {
     open: boolean;
@@ -86,8 +87,10 @@ const CustomerBooking = () => {
       const distance = calculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng);
       const price = calculatePrice(distance);
       setCalculatedPrice(price);
+      setEstimatedDistance(distance);
     } else {
       setCalculatedPrice(null);
+      setEstimatedDistance(null);
     }
   }, [pickupLat, pickupLng, deliveryLat, deliveryLng]);
 
@@ -428,7 +431,8 @@ const CustomerBooking = () => {
           delivery_lat: deliveryLat,
           delivery_lng: deliveryLng,
           item_type: itemType,
-          item_description:itemType,
+          item_description: itemType,
+          estimated_distance: estimatedDistance,
           quantity: parseInt(quantity),
           vehicle_type: vehicleType,
           price: calculatedPrice,
