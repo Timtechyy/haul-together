@@ -266,77 +266,96 @@ const CustomerBooking = () => {
 
     try {
       // Fetch drivers with matching vehicle type and verified status
-      const { data: verifiedDrivers } = await supabase
-        .from("driver_verifications")
-        .select("user_id")
-        .eq("verification_status", 'approved');
-        const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
-        console.log("verified drivers",verifiedUserIds);
+      const { data: availableDriver, error } = await supabase.rpc("check_driver_availability",{
+        p_vehicle_type: vehicleType,
+        p_pickup_lat: pickupLat,
+        p_pickup_lng: pickupLng,
+        p_km_radius: 5,
+      });
 
-      // Fetch drivers who are currently busy
+      if (error) {
+        console.log("Error fetching drivers:", error.message);
+      };
+      // const { data: verifiedDrivers } = await supabase
+      //   .from("driver_verifications")
+      //   .select("user_id")
+      //   .eq("verification_status", 'approved');
+      //   const verifiedUserIds = verifiedDrivers?.map(d => d.user_id);
+      //   console.log("verified drivers",verifiedUserIds);
+
+      // // Fetch drivers who are currently busy
       
-      const { data: busyDeliveries } = await supabase
-        .from("deliveries")
-        .select("driver_id")
-        .in("status", ["accepted", "in_progress", "in_transit"]);
+      // const { data: busyDeliveries } = await supabase
+      //   .from("deliveries")
+      //   .select("driver_id")
+      //   .in("status", ["accepted", "in_progress", "in_transit"]);
 
-        console.log("busy drivers",busyDeliveries);
+      //   console.log("busy drivers",busyDeliveries);
 
-      const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
+      // const busyDriverIds = busyDeliveries?.map(d => d.driver_id) ?? [];
 
-      // Fetch drivers with location data
-      let query = supabase
-        .from("driver_vehicles")
-        .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender`)
-        .eq("vehicle_type", vehicleType)
-        .eq("is_online", true)
-        .in("user_id", verifiedUserIds)
-        .not("user_id", "in", `(${busyDriverIds.join(",")})`)
-        .not("current_lat", "is", null)
-        .not("current_lng", "is", null);
+      // // Fetch drivers with location data
+      // let query = supabase
+      //   .from("driver_vehicles")
+      //   .select(`user_id, vehicle_type, make, model, year, current_lat, current_lng, license_plate, color, profiles:user_id(first_name, last_name, phone, avatar_url, gender`)
+      //   .eq("vehicle_type", vehicleType)
+      //   .eq("is_online", true)
+      //   .in("user_id", verifiedUserIds)
+      //   .not("user_id", "in", `(${busyDriverIds.join(",")})`)
+      //   .not("current_lat", "is", null)
+      //   .not("current_lng", "is", null);
 
-      if (busyDriverIds.length > 0) {
-        query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
-      }
+      // if (busyDriverIds.length > 0) {
+      //   query = query.not("user_id", "in", `(${busyDriverIds.join(",")})`);
+      // }
 
-      const { data: matchingDrivers, error } = await query;
+      // const { data: matchingDrivers, error } = await query;
 
-      console.log("matched drivers",matchingDrivers);
+      // console.log("matched drivers",matchingDrivers);
   
 
-      // Calculate distance and sort by proximity if pickup location has coordinates
-      let driversWithDistance = matchingDrivers;
+      // // Calculate distance and sort by proximity if pickup location has coordinates
+      // let driversWithDistance = matchingDrivers;
 
-      if (pickupLat && pickupLng && matchingDrivers) {
-        driversWithDistance = matchingDrivers.map((driver: any) => {
-          const distance = calculateDistance(
-            pickupLat,
-            pickupLng,
-            driver.current_lat,
-            driver.current_lng
-          );
-          return { ...driver, distance };
-        }).sort((a, b) => a.distance - b.distance);
-      }
+      // if (pickupLat && pickupLng && matchingDrivers) {
+      //   driversWithDistance = matchingDrivers.map((driver: any) => {
+      //     const distance = calculateDistance(
+      //       pickupLat,
+      //       pickupLng,
+      //       driver.current_lat,
+      //       driver.current_lng
+      //     );
+      //     return { ...driver, distance };
+      //   }).sort((a, b) => a.distance - b.distance);
+      // }
 
       // // Store drivers with the receipt URL for later booking
       // const driversWithReceipt = driversWithDistance.map(d => ({ ...d, receiptUrl: publicUrl }));
-      setdriverNotFound(driversWithDistance.length === 0);
-      setDrivers(driversWithDistance);
+      setdriverNotFound(!availableDriver);
+      setDrivers(availableDriver);
       
       // setDrivers(driversWithReceipt);
       setShowForm(false);
-      
-      if (driversWithDistance.length >= 1) {
-        // Start 1-minute countdown
+      const drivers = Array.isArray(availableDriver)
+        ? availableDriver
+        : [];
+
+      if (drivers.length === 0) {
+        // no drivers
+      }else{
         setCountdown(30);
       }
+      
+      // if (availableDriver.length >= 1) {
+      //   // Start 1-minute countdown
+        
+      // }
       
       toast({
         title: driverNotFound ? "No Drivers Available" : "Drivers Matched!",
         description: driverNotFound
           ? "No nearby drivers are currently available. Please try again shortly."
-          : `Found ${driversWithDistance.length} available drivers. Payment will show in 1 minute.`,
+          : `Found ${availableDriver.length} available drivers. Payment will show in 1 minute.`,
       });
     } catch (error: any) {
       console.log(error.message)
@@ -405,32 +424,24 @@ const CustomerBooking = () => {
     try {
       // Create delivery with pending status (no driver assigned yet)
       const { data: delivery, error } = await supabase
-        .from("deliveries")
-        .insert({
-          customer_id: user.id,
-          driver_id: null,
+        .rpc("create_delivery",{
           pickup_location: pickupLocation,
           delivery_location: deliveryLocation,
           pickup_lat: pickupLat,
           pickup_lng: pickupLng,
           delivery_lat: deliveryLat,
           delivery_lng: deliveryLng,
-          item_description: itemType,
           item_type: itemType,
           quantity: parseInt(quantity),
           vehicle_type: vehicleType,
           price: calculatedPrice,
-          estimated_distance: drivers[0]?.distance || 0,
           receipt_url: receiptPath,
           payment_intent_id: paymentIntentId,
-          status: "pending",
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
-      setPendingDeliveryId(delivery.id);
+      setPendingDeliveryId(delivery);
 
       setClientSecret(null);
 
