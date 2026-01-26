@@ -288,17 +288,20 @@ const CustomerDashboard = () => {
                 recentBookings.map((booking) => {
                   console.log('recipt url ', booking.receipt_url);
                   const isAssignedToDriver = booking.driver_id !== null;
-                  const hasFullDetails = isAssignedToDriver;
+                  // const hasFullDetails = isAssignedToDriver;
                     return (
                       <Collapsible key={booking.id}>
                         <div key={booking.id} className="items-center p-4 border rounded-lg" onClick={() => { if (booking.driver_id !==null) { navigate(`/order-tracking?id=${booking.id}`); }}}>
                           <div className="flex flex-col justify-between sm:flex-row items-start sm:items-center gap-4"> 
-                            <Avatar className="h-20 w-20">
-                              <AvatarImage src={booking.driver.avatar_url} />
-                              <AvatarFallback>
-                                {booking.driver.first_name?.[0]}{booking.driver.last_name?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
+                            {booking.driver && (
+                                <Avatar className="h-20 w-20">
+                                  <AvatarImage src={booking.driver.avatar_url??''} />
+                                  <AvatarFallback>
+                                    {booking.driver.first_name?.[0]??''}{booking.driver.last_name?.[0]??''}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )
+                            }
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold">
@@ -308,7 +311,8 @@ const CustomerDashboard = () => {
                                   {booking.status}
                                 </Badge>
                               </div>
-                              <div className="flex flex-row gap-x-2">  
+                              {booking.driver_vehicles && booking.driver_vehicles.length > 0 && (
+                                <div className="flex flex-row gap-x-2">  
                                 <div>
                                   <span className="font-semibold">
                                     Vehicle: {booking.driver.driver_vehicles.vehicle_type}
@@ -347,6 +351,7 @@ const CustomerDashboard = () => {
                                 </div> */}
 
                               </div>
+                              )}
                               <div className="text-sm justify-start text-muted-foreground">
                                 <div className="flex flex-row items-start justify-center gap-1">
                                   <MapPin className="h-6 w-5" />
@@ -381,7 +386,7 @@ const CustomerDashboard = () => {
                             <div className="space-y-4 pt-3">
                               <div className="text-sm">
                                 <div className="font-medium mb-1">
-                                  {hasFullDetails ? "Full Details" : "Delivery Preview"}
+                                  Delivery Preview
                                 </div>
                                 <div className="space-y-1 text-muted-foreground">
                                   {booking.item_type && <div><span className="font-medium">Type:</span> {booking.item_type}</div>}
@@ -393,7 +398,7 @@ const CustomerDashboard = () => {
                               </div>
   
                               {/* Order Receipt - only for assigned deliveries */}
-                              {hasFullDetails && booking.receipt_url && (
+                              { booking.receipt_url && (
                                 <div className="mt-4">
                                   <div className="font-medium text-sm mb-2">Order Receipt</div>
                                   <ReceiptImage receiptUrl={booking.receipt_url} />
