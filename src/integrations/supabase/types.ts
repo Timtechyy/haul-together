@@ -347,8 +347,20 @@ export type Database = {
           vehicle_type: string
         }
         Returns: {
+          avatar_url: string
+          color: string
+          current_lat: number
+          current_lng: number
           distance_km: number
           driver_id: string
+          first_name: string
+          last_name: string
+          license_plate: string
+          make: string
+          model: string
+          phone: string
+          vehicle_type: string
+          year: number
         }[]
       }
       create_delivery: {
