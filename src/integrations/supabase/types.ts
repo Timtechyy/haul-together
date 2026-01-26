@@ -368,6 +368,7 @@ export type Database = {
           delivery_lat: number
           delivery_lng: number
           delivery_location: string
+          estimated_distance: number
           item_description: string
           item_type: string
           payment_intent_id: string
