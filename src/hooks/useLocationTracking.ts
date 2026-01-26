@@ -2,26 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-
 /**
  * CONFIG
  */
-const MIN_DISTANCE_METERS = 15; // update only if moved 15m+
-const MIN_TIME_MS = 5000; 
+const MIN_DISTANCE_METERS = 15;
+const MIN_TIME_MS = 5000;
 
-const isDriver = async (userId: string) => {
-  const { data } = await supabase
+/**
+ * Check if user is a driver
+ */
+const isDriver = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .single();
 
+  if (error) return false;
   return data?.role === "driver";
 };
-// or every 5 seconds
 
 /**
- * Distance calculator (Haversine)
+ * Haversine distance
  */
 const getDistanceMeters = (
   lat1: number,
@@ -41,149 +43,105 @@ const getDistanceMeters = (
 
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
-const markOnline = async (userId: string) => {
-  await supabase
-    .from("driver_vehicles")
-    .update({
-      is_online: true,
-      last_seen: new Date().toISOString(),
-    })
-    .eq("user_id", userId);
-};
-
-const goOffline = async (userId?: string) => {
-  if (!userId) return;
-
-  await supabase
-    .from("driver_vehicles")
-    .update({
-      is_online: false,
-      current_lat: null,
-      current_lng: null,
-    })
-    .eq("user_id", userId);
-};
 
 /**
  * Hook
  */
-export const useLocationTracking = (
-  userId: string | null,
-
-) => {
+export const useLocationTracking = (userId: string | null) => {
   const [isTracking, setIsTracking] = useState(false);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
 
+  const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef<{
     lat: number;
     lng: number;
     time: number;
   } | null>(null);
 
-  const watchIdRef = useRef<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userId) {
-      goOffline(userId);
-      stopTracking();
-      return;
-    }
-    
-    
+    if (!userId || watchIdRef.current) return;
 
-    if (!navigator.geolocation) {
-      toast({
-        title: "Location not supported",
-        description: "Your browser does not support location tracking",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    let cancelled = false;
 
     (async () => {
       const driver = await isDriver(userId);
-      if (!driver) return;
+      if (!driver || cancelled) return;
 
-      startTracking();
-    })();
-
-    // 👇 Detect tab close / refresh
-    window.addEventListener("beforeunload", handleUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-      goOffline(userId);
-      stopTracking();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, toast]);
-
-  const handleUnload = () => {
-    if (userId) goOffline(userId);
-  };
-
-  /**
-   * Start GPS tracking
-   */
-  const startTracking = async() => {
-    setIsTracking(true);
-    await markOnline(userId);
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const now = Date.now();
-
-        setLocation({ lat, lng });
-
-        if (!lastSentRef.current) {
-          lastSentRef.current = { lat, lng, time: now };
-          await updateLocation(userId!, lat, lng);
-          return;
-        }
-
-        const distance = getDistanceMeters(
-          lastSentRef.current.lat,
-          lastSentRef.current.lng,
-          lat,
-          lng
-        );
-
-        const timePassed = now - lastSentRef.current.time;
-
-        if (
-          distance >= MIN_DISTANCE_METERS ||
-          timePassed >= MIN_TIME_MS
-        ) {
-          lastSentRef.current = { lat, lng, time: now };
-          await updateLocation(userId!, lat, lng);
-        }
-      },
-      (error) => {
-        console.error("Location tracking error:", error);
+      if (!navigator.geolocation) {
         toast({
-          title: "Location Error",
-          description: "Unable to track your location",
+          title: "Location not supported",
+          description: "Your browser does not support GPS",
           variant: "destructive",
         });
-        stopTracking();
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 10000,
-        timeout: 20000,
+        return;
       }
-    );
-  };
+
+      setIsTracking(true);
+
+      // Mark online immediately
+      await supabase
+        .from("driver_vehicles")
+        .update({
+          is_online: true,
+          last_seen: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const now = Date.now();
+
+          if (!lastSentRef.current) {
+            lastSentRef.current = { lat, lng, time: now };
+            await updateLocation(userId, lat, lng);
+            return;
+          }
+
+          const distance = getDistanceMeters(
+            lastSentRef.current.lat,
+            lastSentRef.current.lng,
+            lat,
+            lng
+          );
+
+          if (
+            distance >= MIN_DISTANCE_METERS ||
+            now - lastSentRef.current.time >= MIN_TIME_MS
+          ) {
+            lastSentRef.current = { lat, lng, time: now };
+            await updateLocation(userId, lat, lng);
+          }
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          toast({
+            title: "Location Error",
+            description: "Unable to track location",
+            variant: "destructive",
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 10000,
+          timeout: 20000,
+        }
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, toast]);
 
   /**
-   * Stop tracking + cleanup
+   * Stop tracking ONLY when user logs out
    */
-  const stopTracking = async () => {
+  useEffect(() => {
+    if (userId) return;
+
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
@@ -191,45 +149,27 @@ export const useLocationTracking = (
 
     lastSentRef.current = null;
     setIsTracking(false);
+  }, [userId]);
 
-    if (userId) {
-      await supabase
-        .from("driver_vehicles")
-        .update({
-          is_online: false,
-          current_lat: null,
-          current_lng: null,
-        })
-        .eq("user_id", userId);
-    }
-  };
-
-  return {
-    isTracking,
-    location,
-  };
+  return { isTracking };
 };
 
 /**
- * DB update (only for online drivers)
+ * Update DB
  */
 const updateLocation = async (
   userId: string,
   lat: number,
   lng: number
 ) => {
-  const { error } = await supabase
+  await supabase
     .from("driver_vehicles")
     .update({
       current_lat: lat,
       current_lng: lng,
-      last_location_update: new Date().toISOString(),
       last_seen: new Date().toISOString(),
+      last_location_update: new Date().toISOString(),
       is_online: true,
     })
     .eq("user_id", userId);
-
-  if (error) {
-    console.error("Failed to update driver location:", error);
-  }
 };

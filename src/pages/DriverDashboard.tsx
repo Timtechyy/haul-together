@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocationTracking } from "@/hooks/useLocationTracking";
 import logo from "@/assets/logo.png";
 import { ReceiptImage } from "@/components/ReceiptImage";
+import { useLocationTrackingContext } from "@/components/locationtracking";
 
 // Preview interface for unassigned deliveries (limited data for privacy)
 interface DeliveryPreview {
@@ -59,7 +60,7 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const { isTracking } = useLocationTracking(user?.id);
+    const { isTracking } = useLocationTrackingContext();
   console.log("Location tracking status:", isTracking);
   console.log("Current user ID:", user?.id);
   const [stats, setStats] = useState({
@@ -375,6 +376,7 @@ const DriverDashboard = () => {
       p_delivery_id:selectedRequestId,
       p_driver_id:user.id
     });
+    if(error) throw error;
     setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
     toast({
       title: "Request Cancelled",

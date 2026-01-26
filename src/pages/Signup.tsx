@@ -13,19 +13,38 @@ import { z } from "zod";
 import logo from "@/assets/logo.png";
 import PhoneInputField from "@/components/ui/phoneinput"
 import LicensePlate from "@/components/LicensePlate";
+const signupSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "First name is required").max(50),
+    lastName: z.string().trim().min(1, "Last name is required").max(50),
+    email: z.string().trim().email("Invalid email address"),
+    phone: z.string().trim().min(10, "Phone number must be at least 10 digits"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
 
-const signupSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required").max(50),
-  lastName: z.string().trim().min(1, "Last name is required").max(50),
-  email: z.string().trim().email("Invalid email address"),
-  phone: z.string().trim().min(10, "Phone number must be at least 10 digits"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-  gender: z.enum(["male", "female"]).optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+    userType: z.enum(["customer", "driver"]),
+    gender: z
+    .enum(["", "male", "female"])
+    .optional()
+    .transform((v) => (v ==='' ? undefined : v)),
+  })
+  .superRefine((data, ctx) => {
+    if (data.userType === "driver" && !data.gender) {
+      ctx.addIssue({
+        path: ["gender"],
+        message: "Gender is required for drivers",
+        code: z.ZodIssueCode.custom,
+      });
+    }
+
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        path: ["confirmPassword"],
+        message: "Passwords don't match",
+        code: z.ZodIssueCode.custom,
+      });
+    }
+  });
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -55,7 +74,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const validation = signupSchema.safeParse(formData);
+      const validation = signupSchema.safeParse({...formData, userType, gender: formData.gender || undefined,});
       if (!validation.success) {
         toast({
           title: "Validation Error",
@@ -121,7 +140,7 @@ const Signup = () => {
           setDriverUserId(data.user.id);
           setShowPlateWidget(true);
         } else {
-          navigate("/customer/booking");
+          navigate("/customer/dashboard");
         }
       }
     } catch (error: any) {
