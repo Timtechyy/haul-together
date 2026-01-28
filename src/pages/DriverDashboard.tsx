@@ -103,9 +103,9 @@ const DriverDashboard = () => {
       .from("deliveries")
       .select("*")
       .eq("driver_id", user.id)
-      .in("status", ["assigned", "accepted","picked_up", "in_transit"]);
+      .in("status", ["accepted","picking_up", "in_transit"]);
 
-      const{ data: completedDeliveries, error: completedError } = await supabase
+    const{ data: completedDeliveries, error: completedError } = await supabase
       .from("deliveries")
       .select("*")
       .eq("driver_id", user.id)
@@ -380,8 +380,8 @@ const DriverDashboard = () => {
     if (!user && !selectedRequestId) return;
 
     const { data, error } = await supabase.rpc("cancel_delivery", {
-      delivery_id:selectedRequestId,
-      driver_id:user.id
+      p_delivery_id:selectedRequestId,
+      p_driver_id:user.id
     });
     if(error) { 
       console.log("Decline error:", error.message);
@@ -403,8 +403,13 @@ const DriverDashboard = () => {
     if (!user && !selectedRequestId) return;
     const { data, error } = await supabase.rpc("accept_delivery", {
       p_delivery_id:selectedRequestId,
-      p_driver_id:user.id
     });
+
+    if(error) {
+      console.log("Accept error:", error.message);
+      return toast({ title: "Error", description: error.message, variant: "destructive"});
+    
+    }
     setPendingRequests((prev) => prev.filter((req) => req.id !== selectedRequestId));
     toast({
       title: "Request Accepted",
@@ -417,8 +422,8 @@ const DriverDashboard = () => {
       if (!user && !selectedRequestId) return;
 
     const { data, error } = await supabase.rpc("cancel_delivery", {
-      delivery_id:selectedRequestId,
-      driver_id:user.id
+      p_delivery_id:selectedRequestId,
+      p_driver_id:user.id
     });
     if(error) { 
       return toast({
@@ -540,8 +545,6 @@ const DriverDashboard = () => {
               </CardContent>
             </Card>
           </div>
-
-
           <Tabs value={tabType} onValueChange={(value) => setTabType(value as "pending" | "completed")} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="pending" className="flex items-center gap-2">
@@ -601,7 +604,7 @@ const DriverDashboard = () => {
                       
                       return (
                         <Collapsible key={request.id}>
-                          <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" || request.status === "in_transit" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
+                          <div className="p-4 border rounded-lg" onClick={() => { if (request.status === "accepted" || request.status === "picking_up" || request.status === "in_transit" && isAssignedToDriver) { navigate(`/order-tracking?id=${request.id}`); }}}>
                             <div className="flex items-center justify-between">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
@@ -799,7 +802,6 @@ const DriverDashboard = () => {
           </Tabs>
         </div>
       </main>
-
       {/* Decline Confirmation Dialog */}
       <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
         <AlertDialogContent>
@@ -819,7 +821,7 @@ const DriverDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-            {/* Cancel Confirmation Dialog */}
+      {/* Cancel Confirmation Dialog */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

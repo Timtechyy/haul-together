@@ -49,7 +49,7 @@ const getDistanceMeters = (
  */
 export const useLocationTracking = (userId: string | null) => {
   const [isTracking, setIsTracking] = useState(false);
-
+  const locationRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef<{
     lat: number;
@@ -64,9 +64,11 @@ export const useLocationTracking = (userId: string | null) => {
 
     let cancelled = false;
 
-    (async () => {
+     const startTracking = async () => {
       const driver = await isDriver(userId);
       if (!driver || cancelled) return;
+
+
 
       if (!navigator.geolocation) {
         toast({
@@ -77,7 +79,13 @@ export const useLocationTracking = (userId: string | null) => {
         return;
       }
 
-      setIsTracking(true);
+      await supabase.realtime.setAuth()
+
+      locationRef.current = supabase.channel(`driver:${userId}`, );
+      await locationRef.current.subscribe((status, err)=>{if (status==='SUBSCRIBED'){
+        console.log('Successfully subscribed to location updates');
+      }});
+     
 
       // Mark online immediately
       await supabase
@@ -92,31 +100,47 @@ export const useLocationTracking = (userId: string | null) => {
         async (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
+          const heading = pos.coords.heading; 
+          const speed = pos.coords.speed;
           const now = Date.now();
 
-          if (!lastSentRef.current) {
-            lastSentRef.current = { lat, lng, time: now };
-            await updateLocation(userId, lat, lng);
-            return;
+          console.log("Geolocation update:", { lat, lng, heading, speed});
+
+          locationRef.current.send({
+            type: "broadcast",
+            event: `${userId}-location-update`,
+            payload: { 
+              longitude:lng,
+              latitude:lat,
+              heading: pos.coords.heading,
+              speed: pos.coords.speed,
+              ts: now,
+            },
+            is_private:true,
+          }); 
+
+          if (lastSentRef.current) {    
+            const distance = getDistanceMeters(
+              lastSentRef.current.lat,
+              lastSentRef.current.lng,
+              lat,
+              lng
+            );
+
+            const timeDiff = now - lastSentRef.current.time;
+
+            if (distance < MIN_DISTANCE_METERS && timeDiff < MIN_TIME_MS) {
+              return;
+            }
           }
 
-          const distance = getDistanceMeters(
-            lastSentRef.current.lat,
-            lastSentRef.current.lng,
-            lat,
-            lng
-          );
-
-          if (
-            distance >= MIN_DISTANCE_METERS ||
-            now - lastSentRef.current.time >= MIN_TIME_MS
-          ) {
-            lastSentRef.current = { lat, lng, time: now };
-            await updateLocation(userId, lat, lng);
-          }
+          lastSentRef.current = { lat, lng, time: now };
+          await updateLocation(userId, lat, lng);
         },
         (err) => {
+
           console.error("Geolocation error:", err);
+          setIsTracking(false);
           toast({
             title: "Location Error",
             description: "Unable to track location",
@@ -129,30 +153,28 @@ export const useLocationTracking = (userId: string | null) => {
           timeout: 20000,
         }
       );
-    })();
+      setIsTracking(true);
+    };
+    startTracking();
 
     return () => {
       cancelled = true;
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      if (locationRef.current) {
+        supabase.removeChannel(locationRef.current);
+        locationRef.current = null;
+      }
+      lastSentRef.current = null;
+      setIsTracking(false);
     };
   }, [userId, toast]);
 
-  /**
-   * Stop tracking ONLY when user logs out
-   */
-  useEffect(() => {
-    if (userId) return;
-
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-
-    lastSentRef.current = null;
-    setIsTracking(false);
-  }, [userId]);
-
   return { isTracking };
 };
+
 
 /**
  * Update DB
@@ -173,3 +195,4 @@ const updateLocation = async (
     })
     .eq("user_id", userId);
 };
+

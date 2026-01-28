@@ -47,13 +47,18 @@ BEGIN
   INTO v_delivery
   FROM deliveries
   WHERE id = p_delivery_id
-    AND status = 'pending'
-    AND driver_id IS NULL
-    AND NOT (v_driver_id = ANY(COALESCE(declined_driver_ids, '{}')))
   FOR UPDATE;
 
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Delivery unavailable or already declined';
+  IF v_delivery.status <> 'pending' THEN
+    RAISE EXCEPTION 'Delivery unavailable';
+  END IF;
+
+  if v_driver_id IS NOT NULL THEN
+    RAISE EXCEPTION 'already taken by another driver';
+  END IF;
+
+  IF v_driver_id = ANY(COALESCE(v_delivery.declined_driver_ids, '{}')) THEN
+    RAISE EXCEPTION 'Driver already declined this delivery';
   END IF;
 
   -- Accept delivery

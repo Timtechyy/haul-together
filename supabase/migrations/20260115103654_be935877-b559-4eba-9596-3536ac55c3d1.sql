@@ -15,7 +15,7 @@ BEGIN
   SELECT count(*) INTO active_count
   FROM deliveries
   WHERE driver_id = p_driver_id
-    AND status IN ('accepted', 'in_progress');
+    AND status IN ('accepted', 'picking_up', 'in_transit');
 
   IF active_count > 0 THEN
     RAISE EXCEPTION 'Driver already has an active delivery';
