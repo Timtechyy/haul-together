@@ -101,7 +101,19 @@ const OrderTracking = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe(
+        (status, err) => {  
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to delivery updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Channel error - subscription failed', err);
+          } else if (status === 'TIMED_OUT') {
+            console.error('Subscription timed out');
+          } else if (status === 'CLOSED') {
+            console.log('🔌 Channel closed');
+          }
+        } 
+      );
     return () => {
       supabase.removeChannel(channel);
     };
@@ -367,8 +379,9 @@ const OrderTracking = () => {
                 pickupAddress:delivery.pickup_location,
                 deliveryAddress:delivery.delivery_location
               }} 
-              mode={userRole ==="driver"?"driver":"user"}
-              driverId={delivery.driver_id}             
+              mode={userRole ==="driver"?"driver":"customer"}
+              driverId={delivery.driver_id}    
+              onDriverAction={updateStatus}         
               />
 
               {/* Action Buttons */}
@@ -376,18 +389,7 @@ const OrderTracking = () => {
                 {/* DRIVER CONTROLS */}
                 {isDriver && (
                   <>
-                    {delivery.status === "accepted" && (
-                      <Button className="flex-1" onClick={() => updateStatus("picking_up")}>
-                        Arrived at Pickup
-                      </Button>
-                    )}
-
-                    {delivery.status === "picking_up" && (
-                      <Button className="flex-1" onClick={() => updateStatus("in_transit")}>
-                        Start Delivery
-                      </Button>
-                    )}
-
+                   
                     {delivery.status === "in_transit" && (
                       <Button className="flex-1" onClick={() => updateStatus("delivered")}>
                        Complete Delivery

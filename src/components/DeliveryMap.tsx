@@ -18,12 +18,13 @@ interface BookingProps {
 
 interface DeliveryMapProps {
   booking:BookingProps;
-  mode: "driver" | "user";
+  mode: "driver" | "customer";
   driverId?: string;
+  onDriverAction?: (action:string) => Promise<void>;
 }
 
 
-const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
+const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDriverAction}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -64,11 +65,11 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
         interactive: false,
         controls: {
           inputs: false,      // Hides the search boxes
-          instructions: false // Hides the turn-by-turn text
+          instructions: mode === "driver" ? true : false // Hides the turn-by-turn text
         }
 
       });
-      mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-left");
       
       
       mapRef.current.on("load", () => {
@@ -81,9 +82,16 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
             driverLocation.current_lat
           ]);
         }
-        mapRef.current!.addControl(directionsRef.current, "top-left");
-        directionsRef.current.setOrigin([booking.pickupLng, booking.pickupLat]);
+        mapRef.current!.addControl(directionsRef.current, "top-right");   
+        // directionsRef.current.setOption({
+        //   routeLineColor: "#2563eb",
+        //   routeLineWidth: 6,
+        // });
+        directionsRef.current.setOrigin([driverLocation.current_lng, driverLocation.current_lat]);
+        directionsRef.current.addWaypoint(1, [booking.pickupLng, booking.pickupLat]);
         directionsRef.current.setDestination([booking.deliveryLng, booking.deliveryLat]);
+     
+
       });
     };
 
@@ -122,71 +130,80 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
   /* ---------------- DRIVER REALTIME ---------------- */
   useEffect(() => {
     if (!driverId || !directionsRef.current) return;
+    const startLsitening = async () => {
+      await supabase.realtime.setAuth()
+      const channel = supabase
+        .channel(`driver:${driverId}`,)
+        .on("broadcast", { 
+          event: `${driverId}-location-update`,
+        }, 
+        (payload) => {
+          console.log("Received driver location update:", payload);
+          // const { lat, lng } = payload.new as any;
+          // if (!current_lat || !current_lng) return;
+          const newPos: [number, number] = [payload.longitude, payload.latitude];
 
-    const channel = supabase
-      .channel("driver-location")
-      .on("postgres_changes", { 
-        event: "*", 
-        schema: "public", 
-        table: "driver_vehicles", 
-        filter: `user_id=eq.${driverId}` 
-      }, 
-      (payload) => {
-        const { current_lat, current_lng } = payload.new as any;
-        if (!current_lat || !current_lng) return;
-        const newPos: [number, number] = [current_lng, current_lat];
+          // 1. Update Marker & Camera
+          if (driverMarkerRef.current) animateMarker(driverMarkerRef.current, newPos);
+          if (followDriver) mapRef.current?.easeTo({ center: newPos, duration: 1000 });
 
-        // 1. Update Marker & Camera
-        if (driverMarkerRef.current) animateMarker(driverMarkerRef.current, newPos);
-        if (followDriver) mapRef.current?.easeTo({ center: newPos, duration: 1000 });
+          // 2. Precise Distance Check using Turf
+          const from = point([newPos[0], newPos[1]]);
+          const to = point([booking.pickupLng, booking.pickupLat]);
+          const options = { units: 'meters' as const };
+          
+          const distanceInMeters = distance(from, to, options);
 
-        // 2. Precise Distance Check using Turf
-        const from = point([newPos[0], newPos[1]]);
-        const to = point([booking.pickupLng, booking.pickupLat]);
-        const options = { units: 'meters' as const };
-        
-        const distanceInMeters = distance(from, to, options);
+          // 3. Threshold Logic (e.g., 100 meters)
+          const headingToPickup = distanceInMeters <= 500 && distanceInMeters > 100;
+          const hasReachedPickup = distanceInMeters <= 0;
 
-        // 3. Threshold Logic (e.g., 100 meters)
-        const hasReachedPickup = distanceInMeters < 100;
+          // 4. Update the Polyline via the Directions Plugin
+          directionsRef.current.setOrigin(newPos);
+          
+          if (hasReachedPickup) {
+            // Change destination to final delivery once at pickup
+            directionsRef.current.addWayPoint(0, []);
+            onDriverAction("in_transit");
+            console.log("Driver has reached pickup");
+          } else if (headingToPickup) {
+            onDriverAction("picking_up");   
+            console.log("Driver is heading to pickup");
+          } 
+          
+          //else {
+          //   // Still heading to pickup
+          //   directionsRef.current.setDestination([booking.pickupLng, booking.pickupLat]);
+          // }
+        })
+        .subscribe(
+          (status, err) => {  
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to delivery updates');
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('Channel error - subscription failed', err);
+            } else if (status === 'TIMED_OUT') {
+              console.error('Subscription timed out');
+            } else if (status === 'CLOSED') {
+              console.log('🔌 Channel closed');
+            }
+          }
+        );
 
-        // 4. Update the Polyline via the Directions Plugin
-        directionsRef.current.setOrigin(newPos);
-        
-        if (hasReachedPickup) {
-          // Change destination to final delivery once at pickup
-          directionsRef.current.setDestination([booking.deliveryLng, booking.deliveryLat]);
-        } else {
-          // Still heading to pickup
-          directionsRef.current.setDestination([booking.pickupLng, booking.pickupLat]);
+      return () => {
+        supabase.removeChannel(channel); 
+        if (driverMarkerRef.current) {
+          driverMarkerRef.current.remove();
+          driverMarkerRef.current = null;
         }
-      })
-      .subscribe(
-        
-        (status, err) => {
-          console.log("Subscribed to driver location updates");
-            console.log("Subscription status:", status);
-      
-      if (status === 'SUBSCRIBED') {
-        console.log('Successfully subscribed to delivery updates');
-      
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('Channel error - subscription failed', err);
-     
-      } else if (status === 'TIMED_OUT') {
-        console.error('Subscription timed out');
-      } else if (status === 'CLOSED') {
-        console.log('🔌 Channel closed');
-      }
-        }
-      );
-
-    return () => { supabase.removeChannel(channel); };
+      };
+    };
+    startLsitening();
   }, [driverId, booking]);
 
 
   /* ---------------- DRIVER ICON ---------------- */
-  const createDriverMarker = (lngLat: [number, number]) => {
+  const createDriverMarker = (lngLat: [number, number,]) => {
     const el = document.createElement("div");
     el.className = "driver-marker";
     el.innerHTML = `
@@ -204,7 +221,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId}) => {
         🚗
       </div>
     `;
-
+  
     return new mapboxgl.Marker(el)
       .setLngLat(lngLat)
       .setPopup(
