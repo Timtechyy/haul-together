@@ -24,7 +24,7 @@ const PhoneInputField: React.FC<PhoneInputFieldProps> = ({
   required = false,
   disabled = false,
 }) => {
-  console.log("inputted number", value);
+  // console.log("inputted number", value);
   const valueError = value
     ? isValidPhoneNumber(value)
       ? undefined

@@ -26,13 +26,15 @@ interface DeliveryMapProps {
 
 const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDriverAction}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const lastDriverPosition = useRef<[number, number] | null>(null);
+  const [heading, setHeading] = useState<number>(0);
   const [followDriver, setFollowDriver] = useState(true);
   const [loading, setLoading] = useState(true);
   const directionsRef = useRef<any>(null);
+  const [etaText, setEtaText] = useState<string | null>(null);
+  const [etaType, setEtaType] = useState<"pickup" | "delivery">("pickup");
+
 
   /* ---------------- MAP INIT ---------------- */
   useEffect(() => {
@@ -47,7 +49,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
       .select("*")
       .eq("user_id", driverId)
       .single();
-      console.log("driver current location", driverLocation.current_lat, driverLocation.current_lng);
+      // console.log("driver current location", driverLocation.current_lat, driverLocation.current_lng);
       mapRef.current = new mapboxgl.Map({
         container: mapContainer.current!,
         style: "mapbox://styles/mapbox/streets-v12",
@@ -58,7 +60,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
         zoom: 12,
       });
       // 2. Initialize Directions
-       directionsRef.current = new MapboxDirections({
+      directionsRef.current = new MapboxDirections({
         accessToken: mapboxgl.accessToken,
         unit: 'metric',
         profile: 'mapbox/driving',
@@ -80,7 +82,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
           driverMarkerRef.current = createDriverMarker([
             driverLocation.current_lng,
             driverLocation.current_lat
-          ]);
+          ], heading);
         }
         mapRef.current!.addControl(directionsRef.current, "top-right");   
         // directionsRef.current.setOption({
@@ -90,8 +92,6 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
         directionsRef.current.setOrigin([driverLocation.current_lng, driverLocation.current_lat]);
         directionsRef.current.addWaypoint(1, [booking.pickupLng, booking.pickupLat]);
         directionsRef.current.setDestination([booking.deliveryLng, booking.deliveryLat]);
-     
-
       });
     };
 
@@ -138,14 +138,15 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
           event: `${driverId}-location-update`,
         }, 
         (payload) => {
-          console.log("Received driver location update:", payload);
+          // console.log("Received driver location update:", payload);
           // const { lat, lng } = payload.new as any;
           // if (!current_lat || !current_lng) return;
           const newPos: [number, number] = [payload.longitude, payload.latitude];
+          setHeading(payload.heading);
 
           // 1. Update Marker & Camera
-          if (driverMarkerRef.current) animateMarker(driverMarkerRef.current, newPos);
-          if (followDriver) mapRef.current?.easeTo({ center: newPos, duration: 1000 });
+          if (driverMarkerRef.current) {animateMarker(driverMarkerRef.current, newPos)};
+          if (followDriver) {mapRef.current?.easeTo({ center: newPos, duration: 1000 })};
 
           // 2. Precise Distance Check using Turf
           const from = point([newPos[0], newPos[1]]);
@@ -163,12 +164,40 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
           
           if (hasReachedPickup) {
             // Change destination to final delivery once at pickup
-            directionsRef.current.addWayPoint(0, []);
+           const from = point([newPos[0], newPos[1]]);
+           const to = point([booking.deliveryLng, booking.deliveryLat]);
+            const options = { units: 'meters' as const };
+            const distanceToDelivery = distance(from, to, options);
+
+            const etaSeconds = calculateETASeconds(distanceToDelivery, payload.speed);
+
+            if (etaSeconds) {
+              setEtaText(`Delivering in ${formatETA(etaSeconds)}`);
+              setEtaType("delivery");
+            } else {
+              setEtaText("Calculating delivery ETA…");
+            }
+            directionsRef.current.removeWayPoint();
             onDriverAction("in_transit");
-            console.log("Driver has reached pickup");
+            // console.log("Driver has reached pickup");
           } else if (headingToPickup) {
+            // Driver is heading to pickup
+
+             const from = point([newPos[0], newPos[1]]);
+           const to = point([booking.pickupLng, booking.pickupLat]);
+            const options = { units: 'meters' as const };
+            const distanceToDelivery = distance(from, to, options);
+
+            const etaSeconds = calculateETASeconds(distanceToDelivery, payload.speed);
+
+            if (etaSeconds) {
+              setEtaText(`Delivering in ${formatETA(etaSeconds)}`);
+              setEtaType("delivery");
+            } else {
+              setEtaText("Calculating delivery ETA…");
+            }
             onDriverAction("picking_up");   
-            console.log("Driver is heading to pickup");
+            // console.log("Driver is heading to pickup");
           } 
           
           //else {
@@ -179,13 +208,13 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
         .subscribe(
           (status, err) => {  
             if (status === 'SUBSCRIBED') {
-              console.log('Successfully subscribed to delivery updates');
+              // console.log('Successfully subscribed to delivery updates');
             } else if (status === 'CHANNEL_ERROR') {
-              console.error('Channel error - subscription failed', err);
+              // console.error('Channel error - subscription failed', err);
             } else if (status === 'TIMED_OUT') {
-              console.error('Subscription timed out');
+              // console.error('Subscription timed out');
             } else if (status === 'CLOSED') {
-              console.log('🔌 Channel closed');
+              // console.log('🔌 Channel closed');
             }
           }
         );
@@ -203,7 +232,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
 
 
   /* ---------------- DRIVER ICON ---------------- */
-  const createDriverMarker = (lngLat: [number, number,]) => {
+  const createDriverMarker = (lngLat: [number, number,], heading: number) => {
     const el = document.createElement("div");
     el.className = "driver-marker";
     el.innerHTML = `
@@ -221,7 +250,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
         🚗
       </div>
     `;
-  
+    el.style.transform = `rotate(${heading ?? 0}deg)`;
     return new mapboxgl.Marker(el)
       .setLngLat(lngLat)
       .setPopup(
@@ -230,7 +259,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
       )
     
       .addTo(mapRef.current!);
-  };
+  }; 
 
   /* ---------------- SMOOTH ANIMATION ---------------- */
   const animateMarker = (
@@ -256,6 +285,21 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
     animate();
   };
 
+  const calculateETASeconds = (
+    distanceMeters: number,
+    speedMps: number | null
+  ) => {
+    if (!speedMps || speedMps < 1) return null;
+    return Math.round(distanceMeters / speedMps);
+  };
+
+  const formatETA = (seconds: number) => {
+    const mins = Math.ceil(seconds / 60);
+    return mins <= 1 ? "1 min" : `${mins} mins`;
+  };
+
+
+
   return (
     <div className="relative w-full h-96 rounded-lg overflow-hidden">
       {loading && (
@@ -263,6 +307,22 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
           <div className="text-sm text-muted-foreground">Loading map...</div>
         </div>
       )}
+      {etaText && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
+          <div
+            className={`
+              px-4 py-2 rounded-full shadow-lg text-sm font-medium
+              flex items-center gap-2
+              ${etaType === "pickup"
+                ? "bg-blue-600 text-white"
+                : "bg-green-600 text-white"}
+            `}
+          >
+            ⏱ {etaText}
+          </div>
+        </div>
+      )}
+
       <div ref={mapContainer} className="absolute inset-0" />
     </div>
   );

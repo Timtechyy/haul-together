@@ -77,7 +77,7 @@ serve(async ( req: Request ) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    console.log(`Submitting session ${sessionId} for review`);
+    // console.log(`Submitting session ${sessionId} for review`);
     const response = await fetch(`${VERIFF_BASE_URL}/sessions/${sessionId}`, {
       method: "PATCH",
       headers: {
@@ -93,7 +93,7 @@ serve(async ( req: Request ) => {
       throw new Error(`Veriff submit session error: ${text}`);
     }
 
-    console.log(`Session ${sessionId} submitted successfully`);
+    // console.log(`Session ${sessionId} submitted successfully`);
     return new Response(JSON.stringify({ success: true, sessionId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

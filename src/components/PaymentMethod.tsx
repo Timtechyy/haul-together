@@ -15,7 +15,7 @@ export default function SetupIntentForm({role, clientSecret }: Props) {
   const handleSubmit = async (role:string) => {
     if (!stripe || !elements) return;
 
-    console.log("adding payment method for:", role);
+    // console.log("adding payment method for:", role);
 
     const { error, setupIntent } = await stripe.confirmSetup({
       elements,
@@ -23,7 +23,7 @@ export default function SetupIntentForm({role, clientSecret }: Props) {
       redirect: "if_required",
     });
 
-    console.log(setupIntent.status);
+    // console.log(setupIntent.status);
     
     if (setupIntent?.status === "succeeded" )  {
       // setupIntent.payment_method is the ID you can use server-side

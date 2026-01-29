@@ -20,6 +20,8 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import DriverVerification from "./pages/DriverVerification";
 import OrderTracking from "./pages/OrderTracking";
 import DriverTracker from "./components/DriverTracker";
+import "flatpickr/dist/flatpickr.min.css";
+import "flatpickr/dist/themes/material_blue.css";
 
 const queryClient = new QueryClient();
 

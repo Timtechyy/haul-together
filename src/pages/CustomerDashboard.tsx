@@ -150,7 +150,7 @@ const CustomerDashboard = () => {
     )
     .subscribe();
     return () => {
-      console.log("Cleaning up delivery subscription");
+      // console.log("Cleaning up delivery subscription");
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
@@ -286,7 +286,7 @@ const CustomerDashboard = () => {
                 </div>
               ) : (
                 recentBookings.map((booking) => {
-                  console.log('recipt url ', booking.receipt_url);
+                  // console.log('recipt url ', booking.receipt_url);
                   const isAssignedToDriver = booking.driver_id !== null;
                   // const hasFullDetails = isAssignedToDriver;
                     return (

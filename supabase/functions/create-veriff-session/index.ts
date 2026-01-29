@@ -133,7 +133,7 @@ serve(async (req) => {
 
     // Extract JWT token from Bearer header
     const token = authHeader.replace('Bearer ', '');
-    console.log("Token extracted, length:", token.length);
+    // console.log("Token extracted, length:", token.length);
     
     const supabase = initSupabase(authHeader);
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -154,19 +154,19 @@ serve(async (req) => {
       });
     }
     
-    console.log("User authenticated:", user.id);
+    // console.log("User authenticated:", user.id);
 
     const { verification } = await req.json();
-    console.log("Creating Veriff session for user:", user.id);
-    console.log(
-          "Incoming verification payload:",
-          JSON.stringify(verification, null, 2)
-    );
+    // console.log("Creating Veriff session for user:", user.id);
+    // console.log(
+    //       "Incoming verification payload:",
+    //       JSON.stringify(verification, null, 2)
+    // );
 
     validateVerification(verification);
     
     const veriffSession = await createVeriffSession(user.id, verification);
-    console.log("Veriff session created:", veriffSession.id);
+    // console.log("Veriff session created:", veriffSession.id);
 
     return new Response(JSON.stringify({
       sessionId: veriffSession.id,

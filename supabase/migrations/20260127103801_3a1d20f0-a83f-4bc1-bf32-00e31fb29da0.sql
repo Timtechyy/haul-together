@@ -13,6 +13,7 @@ DECLARE
   v_active_count int;
   v_delivery deliveries;
   v_is_driver boolean;
+  v_is_verified boolean;
   v_driver_lat double precision;
   v_driver_lng double precision;
   v_distance_km double precision;
@@ -35,6 +36,18 @@ BEGIN
     RAISE EXCEPTION 'Only drivers can accept deliveries';
   END IF;
 
+  SELECT EXISTS (
+    SELECT 1
+    FROM driver_verification
+    WHERE user_id = v_driver_id
+      AND verification_status = 'approved'
+  )
+  INTO v_is_verified;
+
+  IF NOT v_is_verified THEN
+    RAISE EXCEPTION 'You need to be verified before accepting deliveries';
+  END IF;
+
   -- Ensure driver has no active delivery
   SELECT count(*) INTO v_active_count
   FROM deliveries
@@ -55,6 +68,7 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Delivery not found';
   END IF;
+
 
   IF v_delivery.status <> 'pending' THEN
     RAISE EXCEPTION 'Delivery unavailable';

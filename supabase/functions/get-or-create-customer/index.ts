@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    console.log("Checking for existing Stripe customer for user:", user.id);
+    // console.log("Checking for existing Stripe customer for user:", user.id);
 
     // Check if user already has a stripe_id in the database
     const { data: profile, error: profileError } = await supabaseClient
@@ -42,7 +42,7 @@ serve(async (req) => {
 
     // If stripe_id exists, return it
     if (profile.stripe_id) {
-      console.log("Found existing Stripe customer:", profile.stripe_id);
+      // console.log("Found existing Stripe customer:", profile.stripe_id);
       return new Response(
         JSON.stringify({ customerId: profile.stripe_id }),
         {
@@ -57,7 +57,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    console.log("Creating new Stripe customer for user:", user.id);
+    // console.log("Creating new Stripe customer for user:", user.id);
 
     // Create new Stripe customer
     const customer = await stripe.customers.create({
@@ -68,7 +68,7 @@ serve(async (req) => {
       },
     });
 
-    console.log("Created Stripe customer:", customer.id);
+    // console.log("Created Stripe customer:", customer.id);
 
     // Save stripe_id to the database
     const { error: updateError } = await supabaseClient

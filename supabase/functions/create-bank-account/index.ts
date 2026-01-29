@@ -53,7 +53,7 @@ serve(async (req) => {
       },
     );
 
-    console.log("Created token:", tokenId.id);
+    // console.log("Created token:", tokenId.id);
     const account = await stripe.accounts.update(stripeId!, {
       external_account: tokenId.id,
     });

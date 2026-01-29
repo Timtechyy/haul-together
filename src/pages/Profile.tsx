@@ -74,7 +74,7 @@ const Profile = () => {
   const isDriver = userRole === "driver"
   const isVerified = verification?.verification_status === "approved";
 
-  console.log("isDriver:", isDriver, "isVerified:", isVerified);
+  // console.log("isDriver:", isDriver, "isVerified:", isVerified);
 
   useEffect(() => {
     loadProfile();
@@ -153,7 +153,7 @@ const Profile = () => {
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log("Verification updated:", payload.new);
+            // console.log("Verification updated:", payload.new);
             setVerification(payload.new.verification_status);
           }
         )
@@ -182,7 +182,7 @@ const Profile = () => {
       .eq("user_id", userId)
       .single();
 
-      console.log("Verification Data:", verificationData);
+      // console.log("Verification Data:", verificationData);
 
     setVerification(verificationData);
   }
@@ -195,7 +195,7 @@ const Profile = () => {
       .eq("status", "delivered");
 
       
-    console.log("All Deliveries:", allDeliveries.length);
+    // console.log("All Deliveries:", allDeliveries.length);
     const totalDeliveries = allDeliveries?.length;
 
     // Calculate average rating from all completed deliveries
@@ -241,7 +241,7 @@ const Profile = () => {
             currentLat = position.coords.latitude;
             currentLng = position.coords.longitude;
           } catch (geoError) {
-            console.error("Location error:", geoError);
+            // console.error("Location error:", geoError);
           }
         }
 

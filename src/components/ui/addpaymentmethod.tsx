@@ -35,7 +35,7 @@ export default function PaymentMethods({ role,name, email }: Props) {
       alert(error.message);
       return;
     }
-    console.log('secret:', data.clientSecret);
+    // console.log('secret:', data.clientSecret);
     setModalSecret(data.clientSecret);
   };
 

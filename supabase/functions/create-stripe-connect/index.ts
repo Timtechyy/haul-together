@@ -62,22 +62,22 @@ serve(async (req: Request) => {
     // Get image files from form data
     const frontImage = form.get("licenseFront") as File;
     const backImage = form.get("licenseBack") as File;
-    console.log(frontImage);
-    console.log(backImage);
+    // console.log(frontImage);
+    // console.log(backImage);
 
     if (!frontImage || !backImage) {
       throw new Error("License images are required");
     }
 
-    console.log("Front:", frontImage?.name, frontImage?.size);
-    console.log("Back:", backImage?.name, backImage?.size);
+    // console.log("Front:", frontImage?.name, frontImage?.size);
+    // console.log("Back:", backImage?.name, backImage?.size);
 
-    console.log("ABOUT TO uploaded IMAGE Id:");
+    // console.log("ABOUT TO uploaded IMAGE Id:");
     const frontImageId = await uploadFile(frontImage);
     const backImageId = await uploadFile(backImage);
 
-    console.log("Image uploaded Id:", frontImageId);
-    console.log("back Image uploaded Id:", backImageId);
+    // console.log("Image uploaded Id:", frontImageId);
+    // console.log("back Image uploaded Id:", backImageId);
 
     // --- Add this logging right here ---
     const accountTokenParams = {
@@ -112,7 +112,7 @@ serve(async (req: Request) => {
       },
       tos_shown_and_accepted: true,
     };
-    console.log("Stripe Token Params:", JSON.stringify(accountTokenParams, null, 2));
+    // console.log("Stripe Token Params:", JSON.stringify(accountTokenParams, null, 2));
 
     // let tokenId;
     // try {
@@ -267,7 +267,7 @@ serve(async (req: Request) => {
     //   include: ["configuration.recipient", "defaults"],
     // });
 
-    console.log("account response:", JSON.stringify(account, null, 2));
+    // console.log("account response:", JSON.stringify(account, null, 2));
     // Save stripe_connect_id to the database
     const { error: updateError } = await supabaseClient
       .from("profiles")

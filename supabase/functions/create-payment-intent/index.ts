@@ -29,7 +29,7 @@ serve(async (req) => {
 
     if (!amount || amount <= 0) throw new Error("Invalid amount");
 
-    console.log("Processing payment for user:", user.id, "amount:", amount);
+    // console.log("Processing payment for user:", user.id, "amount:", amount);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -54,7 +54,7 @@ serve(async (req) => {
         name: user.user_metadata?.full_name || `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`,
         metadata: { supabase_user_id: user.id },
       });
-      console.log("New Stripe customer created:", customer.id);
+      // console.log("New Stripe customer created:", customer.id);
       stripeCustomerId = customer.id;
 
       // Update Supabase profile with new Stripe customer ID
@@ -65,7 +65,7 @@ serve(async (req) => {
 
       if (updateError) throw updateError;
 
-      console.log("Created new Stripe customer:", stripeCustomerId);
+      // console.log("Created new Stripe customer:", stripeCustomerId);
     }
 
     // Create Payment Intent
@@ -80,7 +80,7 @@ serve(async (req) => {
       automatic_payment_methods: { enabled: true, allow_redirects:'never' },
     });
 
-    console.log("Created payment intent:", paymentIntent.id);
+    // console.log("Created payment intent:", paymentIntent.id);
 
     return new Response(
       JSON.stringify({

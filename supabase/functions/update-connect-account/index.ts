@@ -71,7 +71,7 @@ serve(async ( req: Request ) => {
         'defaults',
       ],
     });
-    console.log("Created new Stripe customer:", account.id);
+    // console.log("Created new Stripe customer:", account.id);
 
     // Save stripe_id to the database
     const { error: updateError } = await supabaseClient
