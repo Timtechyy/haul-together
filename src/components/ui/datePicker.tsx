@@ -25,7 +25,7 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
       className,
       options = {},
     },
-    ref
+    ref,
   ) => {
     return (
       <Flatpickr
@@ -43,12 +43,12 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
         className={clsx(
           "w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
           "focus:outline-none focus:ring-2 focus:ring-ring",
-          className
+          className,
         )}
         placeholder={placeholder}
       />
     );
-  }
+  },
 );
 
 DatePicker.displayName = "DatePicker";
