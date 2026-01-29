@@ -21,7 +21,6 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
       value,
       onChange,
       enableTime = false,
-      minDate = "today",
       placeholder = "Select date",
       className,
       options = {},
@@ -38,7 +37,6 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
           enableTime,
           dateFormat: enableTime ? "Y-m-d H:i" : "d-m-Y",
           time_24hr: true,
-          minDate,
           disableMobile: true,
           ...options,
         }}
