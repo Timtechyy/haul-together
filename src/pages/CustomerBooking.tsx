@@ -109,7 +109,7 @@ const CustomerBooking = () => {
   useEffect(() => {
     if (!pendingDeliveryId || !user) return;
 
-    console.log("Setting up subscription for delivery:", pendingDeliveryId);
+    // console.log("Setting up subscription for delivery:", pendingDeliveryId);
 
     const channel = supabase
       .channel(`delivery-acceptance-${pendingDeliveryId}`)
@@ -122,13 +122,13 @@ const CustomerBooking = () => {
           filter: `id=eq.${pendingDeliveryId}`,
         },
         async (payload) => {
-          console.log("Delivery updated:", payload.new);
+          // console.log("Delivery updated:", payload.new);
           
           const updatedDelivery = payload.new as any;
 
           // Check if a driver has accepted (status changed to 'accepted' and driver_id is set)
           if (updatedDelivery.status === "accepted" && updatedDelivery.driver_id !== null ) {
-            console.log("Driver accepted delivery!");
+            // console.log("Driver accepted delivery!");
             
             
             // Find the driver from the existing drivers list
@@ -148,12 +148,12 @@ const CustomerBooking = () => {
         }
       )
       .subscribe((status) => {
-        console.log("Subscription status:", status);
+        // console.log("Subscription status:", status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to delivery updates');
+          // console.log('Successfully subscribed to delivery updates');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Channel error - subscription failed');
+          // console.error('Channel error - subscription failed');
           toast({
             title: "Connection Error",
             description: "Failed to subscribe to delivery updates",
@@ -163,7 +163,7 @@ const CustomerBooking = () => {
       });
 
     return () => {
-      console.log("Cleaning up delivery subscription");
+      // console.log("Cleaning up delivery subscription");
       supabase.removeChannel(channel);
     };
   }, [pendingDeliveryId, user, toast]);
@@ -274,7 +274,7 @@ const CustomerBooking = () => {
       });
 
       if (error) {
-        console.log("Error fetching drivers:", error.message);
+        // console.log("Error fetching drivers:", error.message);
         return toast({ title: "Error", description: error.message, variant: "destructive"});
       };
 
@@ -298,7 +298,7 @@ const CustomerBooking = () => {
           : `Found ${availableDriver.length} available drivers. Payment will show in 1 minute.`,
       });
     } catch (error: any) {
-      console.log(error.message)
+      // console.log(error.message)
       toast({
         title: "Error",
         description: error.message,
@@ -381,8 +381,8 @@ const CustomerBooking = () => {
         });
 
       if (error) {
-        console.log("Error creating delivery:", error.message);
-           console.log("Error fetching drivers:", error.message);
+        // console.log("Error creating delivery:", error.message);
+          //  console.log("Error fetching drivers:", error.message);
         toast({ title: "Error", description: error.message, variant: "destructive"});
         return;
       };

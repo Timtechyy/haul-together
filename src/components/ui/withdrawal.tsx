@@ -38,7 +38,7 @@ export default function WithdrawWidget({role, balance }: Props) {
       alert(error.message);
       return;
     }
-    console.log('secret:', data.clientSecret);
+    // console.log('secret:', data.clientSecret);
     setModalSecret(data.clientSecret);
   };
 

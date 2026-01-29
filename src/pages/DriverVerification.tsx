@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
-import { add } from "date-fns";
 import { US_STATES } from "@/contants/states";
+import Flatpickr from "react-flatpickr";
+import { DatePicker } from "@/components/ui/datePicker";
 const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
@@ -29,16 +30,18 @@ const DriverVerification = () => {
     licenseState: "",
     phone: "",
   });
-  const [address, setAddress] = useState<string | null>(null);
   const[stripeConnect, setStripeConnect] = useState<string| null>(null);
   const[veriffSessionId, setVeriffSessionId] = useState<string| null>(null);
   const[verifficationStatus, setVerificationStatus] = useState<string| null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
+  const [userFace, setUserFace] = useState<File | null>(null);
   const [licenseFrontBase64, setLicenseFrontBase64] = useState<{ base64: string; mimeType: string } | null>(null);
   const [licenseBackBase64, setLicenseBackBase64] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [userFaceBase64, setUserFaceBase64] = useState<{ base64: string; mimeType: string } | null>(null);
   const [previewFront, setPreviewFront] = useState<string | null>(null);
   const [previewBack, setPreviewBack] = useState<string | null>(null);
+  const [previewFace, setPreviewFace] = useState<string | null>(null);
 
   const workerFront = useRef<Worker>();
   const workerBack = useRef<Worker>();
@@ -93,10 +96,10 @@ const DriverVerification = () => {
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    console.log(formData.licenseState);
+    // console.log(formData.licenseState);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: "front" | "back" | "face") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -106,12 +109,17 @@ const DriverVerification = () => {
       setLicenseFront(file);
       setPreviewFront(previewURL);
       convertWithWorker(file, workerFront.current!).then((result) => setLicenseFrontBase64(result));
-    } else {
+    } else if (side === "back") {
       setLicenseBack(file);
       setPreviewBack(previewURL);
       convertWithWorker(file, workerBack.current!).then((result) => setLicenseBackBase64(result));
+    } else if (side === "face") {
+      setUserFace(file);
+      setPreviewFace(previewURL);
+      convertWithWorker(file, workerFront.current!).then((result) => setUserFaceBase64(result));
     }
   };
+  
   const convertWithWorker = (file: File, worker: Worker) => {
     return new Promise<{ base64: string; mimeType: string }>((resolve, reject) => {
       worker.postMessage(file);
@@ -132,8 +140,8 @@ const DriverVerification = () => {
         description: "Please wait",
       });
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.split("-");
-      console.log("address:", formData.address);
-      console.log("addressData:", formData.addressData);
+      // console.log("dob:", formData.dateOfBirth);
+      // console.log("addressData:", formData.addressData);
       
       // Use a local variable to track the session ID throughout this function
       let currentSessionId = veriffSessionId;
@@ -159,7 +167,7 @@ const DriverVerification = () => {
         
         currentSessionId = sessionData.sessionId;
         setVeriffSessionId(currentSessionId);
-        console.log("Session created:", currentSessionId);
+        // console.log("Session created:", currentSessionId);
       }
 
       // Step 2: Upload front image
@@ -203,7 +211,24 @@ const DriverVerification = () => {
         });
         if (backError) throw backError;
       }
-
+      // Step 4: Upload user face image
+          toast({
+        title: "Uploading face image...",
+        description: "Please wait",
+      });
+      const face = userFaceBase64 || (userFace ? await convertWithWorker(userFace, workerFront.current!) : null);
+      
+      if (face) {
+        const { error: faceError } = await supabase.functions.invoke("upload-veriff-image", {
+          body: {
+            sessionId: currentSessionId,
+            imageBase64: face.base64,
+            mimeType: face.mimeType,
+            imageType: "face",
+          },
+        });
+        if (faceError) throw faceError;
+      }
       // Step 4: Submit session
       toast({
         title: "Submitting verification...",
@@ -218,7 +243,7 @@ const DriverVerification = () => {
 
       if (submitError) throw submitError;
 
-      if (stripeConnect==null) {
+      if (stripeConnect === null) {
         const formDataToSend = new FormData();
         // Add text fields
         formDataToSend.append("firstName", formData.firstName);
@@ -248,7 +273,7 @@ const DriverVerification = () => {
         });
 
         if (stripeError) throw stripeError;
-        console.log("Stripe response:", accountData);
+        // console.log("Stripe response:", accountData);
 
         // if (stripeError) throw sessionError;
         // if (!accountData?.accountId) throw new Error("Failed to create Connect account");
@@ -317,14 +342,21 @@ const DriverVerification = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
+                  <DatePicker
+                    id="dateOfBirth"
+                    // enableTime
+                    value={formData.dateOfBirth}
+                    onChange={([date]) => handleInputChange(date ? { target: { name: "dateOfBirth", value: date.toISOString().split("T")[0] } } : { target: { name: "dateOfBirth", value: "" } })}
+                  />
+
+                  {/* <Input
                     id="dateOfBirth"
                     name="dateOfBirth"
                     type="date"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     required
-                  />
+                  /> */}
                 </div>
 
                 <div className="space-y-2">
@@ -337,7 +369,7 @@ const DriverVerification = () => {
                     value={formData.ssnLastFour}
                     onChange={handleInputChange}
                     // minLength={4}
-                    maxLength={10}
+                    maxLength={4}
                     required
                     className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
@@ -406,7 +438,10 @@ const DriverVerification = () => {
                     /> */}
                   </div>
                 </div>
+
+                <p className="italic">All images must be clear and well-lit.</p>
                 {/* FRONT IMAGE */}
+
                 <div className="space-y-2">
                   <Label htmlFor="licenseFront">Driver's License (Front)</Label>
                   <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
@@ -438,6 +473,24 @@ const DriverVerification = () => {
                       className="absolute opacity-0 cursor-pointer h-full w-full"
                       accept="image/*"
                       onChange={(e) => handleFileChange(e, "back")}
+                    />
+                  </div>
+                </div>
+
+                {/* USER FACE IMAGE */}
+                    <div className="space-y-2">
+                  <Label htmlFor="faceImage">User Face Image</Label>
+                  <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
+                    {previewFace ? (
+                      <img src={previewFace} alt="Face Preview" className="h-full w-auto object-cover" />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Click to upload image with your face</span>
+                    )}
+                    <Input
+                      type="file"
+                      className="absolute opacity-0 cursor-pointer h-full w-full"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, "face")}
                     />
                   </div>
                 </div>

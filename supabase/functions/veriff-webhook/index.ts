@@ -46,7 +46,7 @@ serve(async (req: Request) => {
     }
 
     const webhookData = JSON.parse(new TextDecoder().decode(bodyBytes));
-    console.log("Veriff webhook received:", webhookData);
+    // console.log("Veriff webhook received:", webhookData);
 
     const { sessionId, vendorData, acceptanceTime, time, data } = webhookData;
 
@@ -89,7 +89,7 @@ serve(async (req: Request) => {
       throw error;
     }
 
-    console.log(`Updated verification status to ${verificationStatus} for session ${sessionId} of ${userId}`);
+    // console.log(`Updated verification status to ${verificationStatus} for session ${sessionId} of ${userId}`);
 
     return new Response(
       JSON.stringify({

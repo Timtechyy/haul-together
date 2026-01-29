@@ -92,14 +92,14 @@ export default function LicensePlate({ userId, onComplete }: Details) {
       ...prev,
       plateState: e.target.value.toUpperCase(),
     }));
-    console.log(e.target.value.toUpperCase());
+    // console.log(e.target.value.toUpperCase());
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    console.log("looking up", keyword.plateNumber.split('-').join(''), keyword.plateState); 
+    // console.log("looking up", keyword.plateNumber.split('-').join(''), keyword.plateState);
     try {
       const { data, error } = await supabase.functions.invoke("get-vehicle-info", {
         body: {
@@ -115,7 +115,7 @@ export default function LicensePlate({ userId, onComplete }: Details) {
         setError(data.details);
         return;
       }
-      console.log("vehicle data:", data.vin);
+      // console.log("vehicle data:", data.vin);
       setVehicleResult(data.vin);
     } catch (err) {
       setError(err.message || "Failed to fetch vehicle information");

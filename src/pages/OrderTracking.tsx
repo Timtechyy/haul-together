@@ -104,13 +104,13 @@ const OrderTracking = () => {
       .subscribe(
         (status, err) => {  
           if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to delivery updates');
+            // console.log('Successfully subscribed to delivery updates');
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Channel error - subscription failed', err);
+            // console.error('Channel error - subscription failed', err);
           } else if (status === 'TIMED_OUT') {
-            console.error('Subscription timed out');
+            // console.error('Subscription timed out');
           } else if (status === 'CLOSED') {
-            console.log('🔌 Channel closed');
+            // console.log('🔌 Channel closed');
           }
         } 
       );
@@ -152,7 +152,7 @@ const OrderTracking = () => {
     });
 
     if (error) {
-      console.log(error);
+      // console.log(error);
       toast({
         title: "Error",
         description: "Failed to update status",

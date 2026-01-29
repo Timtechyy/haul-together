@@ -63,7 +63,7 @@ serve(async (req) => {
             });
         }
         const token = authHeader.replace('Bearer ', '');
-        console.log("Token extracted, length:", token.length);
+        // console.log("Token extracted, length:", token.length);
         
         const supabase = initSupabase(authHeader);
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
@@ -124,7 +124,7 @@ serve(async (req) => {
   } else {
     const data = await response.json();
 
-    console.log("Plates to VIN response data:", data.vin);
+    // console.log("Plates to VIN response data:", data.vin);
    
     return new Response(
       JSON.stringify({success: true, vin: data.vin }),

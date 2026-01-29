@@ -13,7 +13,7 @@ export class NotificationService {
 
   async requestPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
+      // console.log('This browser does not support notifications');
       return false;
     }
 
@@ -31,7 +31,7 @@ export class NotificationService {
 
   async showNotification(title: string, options?: NotificationOptions): Promise<void> {
     if (Notification.permission !== 'granted') {
-      console.log('Notification permission not granted');
+      // console.log('Notification permission not granted');
       return;
     }
 

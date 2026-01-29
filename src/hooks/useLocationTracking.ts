@@ -83,7 +83,7 @@ export const useLocationTracking = (userId: string | null) => {
 
       locationRef.current = supabase.channel(`driver:${userId}`, );
       await locationRef.current.subscribe((status, err)=>{if (status==='SUBSCRIBED'){
-        console.log('Successfully subscribed to location updates');
+        // console.log('Successfully subscribed to location updates');
       }});
      
 
@@ -104,7 +104,7 @@ export const useLocationTracking = (userId: string | null) => {
           const speed = pos.coords.speed;
           const now = Date.now();
 
-          console.log("Geolocation update:", { lat, lng, heading, speed});
+          // console.log("Geolocation update:", { lat, lng, heading, speed});
 
           locationRef.current.send({
             type: "broadcast",

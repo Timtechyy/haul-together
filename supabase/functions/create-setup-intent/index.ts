@@ -43,7 +43,7 @@ serve(async (req: Request) => {
       .select("role")
       .eq("user_id", user.id)
       .maybeSingle();
-    console.log("user role:", role?.role);
+    // console.log("user role:", role?.role);
     if (roleError) throw roleError;
 
 
@@ -63,8 +63,8 @@ serve(async (req: Request) => {
       throw new Error("Driver is missing Stripe connect account");
     }
 
-        console.log("user stripe id:", customerId);
-        console.log("user id:", user.id);
+      // console.log("user stripe id:", customerId);
+      // console.log("user id:", user.id);
 
         
     // 2. If no customer, create one
@@ -110,12 +110,12 @@ serve(async (req: Request) => {
     //     stripeAccount: 'acct_1SMQSjB8U5OdTNgh/acct_1SasesBrAMOOCwzT',
     //   }
     // );
-    console.log("secret:", setupIntent.client_secret);
+    // console.log("secret:", setupIntent.client_secret);
     return new Response(JSON.stringify({ clientSecret: setupIntent.client_secret }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
-    console.error("Error in create-setup-intent:", error);
+    // console.error("Error in create-setup-intent:", error);
     return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

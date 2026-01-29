@@ -15,7 +15,7 @@ async function getChargeId(paymentIntendId:string, stripe:Stripe):Promise<string
     });
     return paymentIntent.data[0]?.id as string;
   } catch (error) {
-    console.error("Error retrieving charge ID:", error);
+    // console.error("Error retrieving charge ID:", error);
     return null;
   }
 }
@@ -54,7 +54,7 @@ serve(async (req: Request) => {
       customer_confirmed_at,
       delivered_at,
       price,
-      payment_intent_id
+      paymentIntentId,
     `)
     .eq("id", delivery_id)
     .single();
@@ -68,14 +68,14 @@ serve(async (req: Request) => {
       !delivery.driver_confirmed_at ||
       !delivery.customer_confirmed_at ||
       !delivery.delivered_at ||
-      delivery.driver_paid || !delivery.payment_intent_id
+      delivery.driver_paid || !delivery.paymentIntentId
     ) {
       return new Response(
         JSON.stringify({ message: "Delivery not eligible for payout" }),
         { status: 200 }
       );
     }
-    const chargeId = await getChargeId(delivery.payment_intent_id, stripe);
+    const chargeId = await getChargeId(delivery.paymentIntentId, stripe);
 
     const transfer = await stripe.transfers.create({
       amount: delivery.price * 100,
@@ -90,6 +90,7 @@ serve(async (req: Request) => {
       .from("deliveries")
       .update({
         driver_paid: true,
+        transfer_id: transfer.id,
         // driver_paid_at: new Date().toISOString(),
       })
       .eq("id", delivery.id)
@@ -106,7 +107,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Error in get-or-create-customer:", error);
+    // console.error("Error in get-or-create-customer:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,3 +115,4 @@ serve(async (req: Request) => {
     });
   }
 });
+5
