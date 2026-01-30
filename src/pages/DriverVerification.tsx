@@ -42,6 +42,7 @@ const DriverVerification = () => {
   const [previewFront, setPreviewFront] = useState<string | null>(null);
   const [previewBack, setPreviewBack] = useState<string | null>(null);
   const [previewFace, setPreviewFace] = useState<string | null>(null);
+  const isVerifiled = verifficationStatus==="approved;"
 
   const workerFront = useRef<Worker>();
   const workerBack = useRef<Worker>();
@@ -148,108 +149,109 @@ const DriverVerification = () => {
       }
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
 
-      console.log("dob:", formData.dateOfBirth, dobYear, dobMonth, dobDay);
+      // console.log("dob:", formData.dateOfBirth, dobYear, dobMonth, dobDay);
       // console.log("addressData:", formData.addressData);
 
-      // Use a local variable to track the session ID throughout this function
-      let currentSessionId = veriffSessionId;
+      if(!isVerifiled){// Use a local variable to track the session ID throughout this function
+        let currentSessionId = veriffSessionId;
 
-      if (!currentSessionId) {
-        const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
-          body: {
-            verification: {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              dateOfBirth: formData.dateOfBirth,
-              phoneNumber: formData.phone,
-              idNumber: formData.ssnLastFour,
-              gender: formData.gender,
-              email: user?.email,
-              licenseNumber: formData.licenseNumber,
+        if (!currentSessionId) {
+          const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
+            body: {
+              verification: {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                dateOfBirth: formData.dateOfBirth,
+                phoneNumber: formData.phone,
+                idNumber: formData.ssnLastFour,
+                gender: formData.gender,
+                email: user?.email,
+                licenseNumber: formData.licenseNumber,
+              },
             },
-          },
+          });
+
+          if (sessionError) throw sessionError;
+          if (!sessionData?.sessionId) throw new Error("Failed to create session");
+
+          currentSessionId = sessionData.sessionId;
+          setVeriffSessionId(currentSessionId);
+          // console.log("Session created:", currentSessionId);
+        }
+
+        // Step 2: Upload front image
+        toast({
+          title: "Uploading front of license...",
+          description: "Please wait",
         });
 
-        if (sessionError) throw sessionError;
-        if (!sessionData?.sessionId) throw new Error("Failed to create session");
+        const front =
+          licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
 
-        currentSessionId = sessionData.sessionId;
-        setVeriffSessionId(currentSessionId);
-        // console.log("Session created:", currentSessionId);
-      }
+        if (front) {
+          const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
+            body: {
+              sessionId: currentSessionId,
+              imageBase64: front.base64,
+              mimeType: front.mimeType,
+              imageType: "document-front",
+            },
+          });
+          if (frontError) throw frontError;
+        }
 
-      // Step 2: Upload front image
-      toast({
-        title: "Uploading front of license...",
-        description: "Please wait",
-      });
+        // Step 3: Upload back image
+        toast({
+          title: "Uploading back of license...",
+          description: "Please wait",
+        });
 
-      const front =
-        licenseFrontBase64 || (licenseFront ? await convertWithWorker(licenseFront, workerFront.current!) : null);
+        const back =
+          licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
 
-      if (front) {
-        const { error: frontError } = await supabase.functions.invoke("upload-veriff-image", {
+        if (back) {
+          const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
+            body: {
+              sessionId: currentSessionId,
+              imageBase64: back.base64,
+              mimeType: back.mimeType,
+              imageType: "document-back",
+            },
+          });
+          if (backError) throw backError;
+        }
+        // Step 4: Upload user face image
+        toast({
+          title: "Uploading face image...",
+          description: "Please wait",
+        });
+        const face = userFaceBase64 || (userFace ? await convertWithWorker(userFace, workerFront.current!) : null);
+
+        if (face) {
+          const { error: faceError } = await supabase.functions.invoke("upload-veriff-image", {
+            body: {
+              sessionId: currentSessionId,
+              imageBase64: face.base64,
+              mimeType: face.mimeType,
+              imageType: "face",
+            },
+          });
+          if (faceError) throw faceError;
+        }
+        // Step 4: Submit session
+        toast({
+          title: "Submitting verification...",
+          description: "Almost done",
+        });
+
+        const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
           body: {
             sessionId: currentSessionId,
-            imageBase64: front.base64,
-            mimeType: front.mimeType,
-            imageType: "document-front",
           },
         });
-        if (frontError) throw frontError;
+
+        if (submitError) throw submitError;
       }
-
-      // Step 3: Upload back image
-      toast({
-        title: "Uploading back of license...",
-        description: "Please wait",
-      });
-
-      const back =
-        licenseBackBase64 || (licenseBack ? await convertWithWorker(licenseBack, workerBack.current!) : null);
-
-      if (back) {
-        const { error: backError } = await supabase.functions.invoke("upload-veriff-image", {
-          body: {
-            sessionId: currentSessionId,
-            imageBase64: back.base64,
-            mimeType: back.mimeType,
-            imageType: "document-back",
-          },
-        });
-        if (backError) throw backError;
-      }
-      // Step 4: Upload user face image
-      toast({
-        title: "Uploading face image...",
-        description: "Please wait",
-      });
-      const face = userFaceBase64 || (userFace ? await convertWithWorker(userFace, workerFront.current!) : null);
-
-      if (face) {
-        const { error: faceError } = await supabase.functions.invoke("upload-veriff-image", {
-          body: {
-            sessionId: currentSessionId,
-            imageBase64: face.base64,
-            mimeType: face.mimeType,
-            imageType: "face",
-          },
-        });
-        if (faceError) throw faceError;
-      }
-      // Step 4: Submit session
-      toast({
-        title: "Submitting verification...",
-        description: "Almost done",
-      });
-
-      const { error: submitError } = await supabase.functions.invoke("submit-veriff-session", {
-        body: {
-          sessionId: currentSessionId,
-        },
-      });
-
-      if (submitError) throw submitError;
 
       if (stripeConnect === null) {
         const formDataToSend = new FormData();
