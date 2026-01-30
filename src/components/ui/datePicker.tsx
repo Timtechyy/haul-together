@@ -36,11 +36,16 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
         ref={ref}
         value={value}
         onChange={onChange}
+      
         options={{
-          enableTime,
-          dateFormat: enableTime ? "Y-m-d H:i" : "d-m-Y",
-          time_24hr: true,
-          // disableMobile: true,
+          enableTime:false,
+          enableSeconds:false,
+          dateFormat:"d-m-Y",
+          time_24hr: false,
+          allowInput:true,
+          // maxDate: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
+
+          disableMobile: true,
           ...options,
         }}
         className={clsx(
