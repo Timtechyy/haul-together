@@ -22,7 +22,7 @@ const DriverVerification = () => {
     firstName: "",
     lastName: "",
     gender: "",
-    dateOfBirth: "",
+    dateOfBirth: null as Date | null,
     address: "",
     addressData: {} as any,
     ssnLastFour: "",
@@ -143,6 +143,9 @@ const DriverVerification = () => {
         title: "Creating verification session...",
         description: "Please wait",
       });
+      if (!formData.dateOfBirth) {
+        throw new Error("Date of birth is required");
+      }
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toISOString().split("-");
       // console.log("dob:", formData.dateOfBirth);
       // console.log("addressData:", formData.addressData);
