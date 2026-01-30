@@ -30,9 +30,9 @@ const DriverVerification = () => {
     licenseState: "",
     phone: "",
   });
-  const[stripeConnect, setStripeConnect] = useState<string| null>(null);
-  const[veriffSessionId, setVeriffSessionId] = useState<string| null>(null);
-  const[verifficationStatus, setVerificationStatus] = useState<string| null>(null);
+  const [stripeConnect, setStripeConnect] = useState<string | null>(null);
+  const [veriffSessionId, setVeriffSessionId] = useState<string | null>(null);
+  const [verifficationStatus, setVerificationStatus] = useState<string | null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
   const [userFace, setUserFace] = useState<File | null>(null);
@@ -85,7 +85,11 @@ const DriverVerification = () => {
         }));
       }
 
-      const { data: profileVerification } = await supabase.from("driver_verifications").select("veriff_session_id, verification_status").eq("user_id", session.user.id).maybeSingle();
+      const { data: profileVerification } = await supabase
+        .from("driver_verifications")
+        .select("veriff_session_id, verification_status")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
       if (profileVerification?.veriff_session_id) {
         setVeriffSessionId(profileVerification.veriff_session_id);
         setVerificationStatus(profileVerification.verification_status);
@@ -119,7 +123,7 @@ const DriverVerification = () => {
       convertWithWorker(file, workerFront.current!).then((result) => setUserFaceBase64(result));
     }
   };
-  
+
   const convertWithWorker = (file: File, worker: Worker) => {
     return new Promise<{ base64: string; mimeType: string }>((resolve, reject) => {
       worker.postMessage(file);
@@ -139,13 +143,13 @@ const DriverVerification = () => {
         title: "Creating verification session...",
         description: "Please wait",
       });
-      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.split("-");
+      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toISOString().split("-");
       // console.log("dob:", formData.dateOfBirth);
       // console.log("addressData:", formData.addressData);
-      
+
       // Use a local variable to track the session ID throughout this function
       let currentSessionId = veriffSessionId;
-      
+
       if (!currentSessionId) {
         const { data: sessionData, error: sessionError } = await supabase.functions.invoke("create-veriff-session", {
           body: {
@@ -164,7 +168,7 @@ const DriverVerification = () => {
 
         if (sessionError) throw sessionError;
         if (!sessionData?.sessionId) throw new Error("Failed to create session");
-        
+
         currentSessionId = sessionData.sessionId;
         setVeriffSessionId(currentSessionId);
         // console.log("Session created:", currentSessionId);
@@ -212,12 +216,12 @@ const DriverVerification = () => {
         if (backError) throw backError;
       }
       // Step 4: Upload user face image
-          toast({
+      toast({
         title: "Uploading face image...",
         description: "Please wait",
       });
       const face = userFaceBase64 || (userFace ? await convertWithWorker(userFace, workerFront.current!) : null);
-      
+
       if (face) {
         const { error: faceError } = await supabase.functions.invoke("upload-veriff-image", {
           body: {
@@ -280,7 +284,7 @@ const DriverVerification = () => {
 
         // console.log("Stripe connect account created:", accountData?.accountId);
       }
-      
+
       toast({
         title: "Success!",
         description: "Your verification has been submitted successfully.",
@@ -369,12 +373,13 @@ const DriverVerification = () => {
                     pattern="\d{4}"
                     placeholder="XXXX1234"
                     value={formData.ssnLastFour}
-                    onChange={(e)=>{    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
-                      setFormData(prev => ({
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setFormData((prev) => ({
                         ...prev,
                         ssnLastFour: value,
-                      }));}
-                    }
+                      }));
+                    }}
                     // minLength={4}
                     maxLength={4}
                     required
@@ -416,25 +421,25 @@ const DriverVerification = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="licenseState">State</Label>
-                        <select
-                          id="licenseState"
-                          value={formData.licenseState}
-                          name="licenseState"
-                          onChange={handleInputChange}
-                          required 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"    
-                      >
-                          <option value="" disabled>
-                          Select state
-                          </option>
-  
-                          {US_STATES.map((state) => (
-                          <option key={state.code} value={state.code}>
-                              {state.name} ({state.code})
-                          </option>
-                          ))}   
-                      </select>
-                      
+                    <select
+                      id="licenseState"
+                      value={formData.licenseState}
+                      name="licenseState"
+                      onChange={handleInputChange}
+                      required
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="" disabled>
+                        Select state
+                      </option>
+
+                      {US_STATES.map((state) => (
+                        <option key={state.code} value={state.code}>
+                          {state.name} ({state.code})
+                        </option>
+                      ))}
+                    </select>
+
                     {/* <Input
                       id="licenseState"
                       name="licenseState"
@@ -486,7 +491,7 @@ const DriverVerification = () => {
                 </div>
 
                 {/* USER FACE IMAGE */}
-                    <div className="space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="faceImage">User Face Image</Label>
                   <div className="w-full h-[200px] border rounded-md flex items-center justify-center overflow-hidden bg-muted cursor-pointer relative">
                     {previewFace ? (
