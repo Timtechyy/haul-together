@@ -43,7 +43,7 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({booking, mode, driverId, onDri
     const initMap = async () => {
       // const { data } = await supabase.functions.invoke("get-mapbox-token");
      
-      mapboxgl.accessToken = "pk.eyJ1Ijoid2VoYXVsZXIiLCJhIjoiY21pbHZyMXlmMDl4MzNkcHVyb21nMHV4eCJ9.V5eUmLUwnEdScdxfALmSqQ";
+      mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_PUBLIC_KEY
       const { data: driverLocation } = await supabase
       .from("driver_vehicles")
       .select("*")

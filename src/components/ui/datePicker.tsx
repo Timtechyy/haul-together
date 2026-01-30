@@ -4,6 +4,7 @@ import clsx from "clsx";
 
 interface DatePickerProps {
   id: string;
+  name:string;
   value?: Date | string | (Date | string)[];
   onChange?: (dates: Date[]) => void;
   enableTime?: boolean;
@@ -23,6 +24,7 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
       enableTime = false,
       placeholder = "Select date",
       className,
+      name,
       options = {},
     },
     ref,
@@ -30,6 +32,7 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
     return (
       <Flatpickr
         id={id}
+        
         ref={ref}
         value={value}
         onChange={onChange}
@@ -37,7 +40,7 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
           enableTime,
           dateFormat: enableTime ? "Y-m-d H:i" : "d-m-Y",
           time_24hr: true,
-          disableMobile: true,
+          // disableMobile: true,
           ...options,
         }}
         className={clsx(
@@ -45,6 +48,7 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
           "focus:outline-none focus:ring-2 focus:ring-ring",
           className,
         )}
+        name={name}
         placeholder={placeholder}
       />
     );
