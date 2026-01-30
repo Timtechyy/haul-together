@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { z } from "zod";
 import logo from "@/assets/logo.png";
 import PhoneInputField from "@/components/ui/phoneinput"
 import LicensePlate from "@/components/LicensePlate";
+import { useDebounce } from "@/hooks/debouncer";
 const signupSchema = z
   .object({
     firstName: z.string().trim().min(1, "First name is required").max(50),
@@ -67,7 +68,48 @@ const Signup = () => {
     firstName: "",
     lastName: "",
   });
+  const debouncedPhone = useDebounce(formData.phone, 600);
+  const [phoneStatus, setPhoneStatus] = useState<
+  "idle" | "checking" | "available" | "taken" | "error"
+>("idle");
 
+  const canSubmit = phoneStatus === "available";
+
+  useEffect(()=>{
+    if (!debouncedPhone || debouncedPhone.length < 10) {
+      setPhoneStatus("idle");
+      return;
+    }
+
+    let cancelled = false;
+
+
+    const checkPhone = async () => {
+    setPhoneStatus("checking");
+
+    const { data, error } = await supabase
+      .from("profiles") // or users table
+      .select("id")
+      .eq("phone", debouncedPhone)
+      .limit(1)
+      .maybeSingle();
+
+    if (cancelled) return;
+
+    if (error) {
+      setPhoneStatus("error");
+      return;
+    }
+
+    if (data) {
+      setPhoneStatus("taken");
+    } else {
+      setPhoneStatus("available");
+    }
+  };
+
+  checkPhone();
+  }, [debouncedPhone])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,6 +316,7 @@ const Signup = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
+
                 <PhoneInputField
                   id="phone"
                   placeholder="(555) 123-4567"
@@ -283,8 +326,26 @@ const Signup = () => {
                   }
                   required
                 />
+
+                {phoneStatus === "checking" && (
+                  <p className="text-sm text-muted-foreground">
+                    Checking phone number…
+                  </p>
+                )}
+
+                {phoneStatus === "taken" && (
+                  <p className="text-sm text-red-500">
+                    This phone number is already registered
+                  </p>
+                )}
+
+                {phoneStatus === "available" && (
+                  <p className="text-sm text-green-600">
+                    Phone number is available
+                  </p>
+                )}
               </div>
-              
+
               {userType === "driver" && (
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender</Label>
@@ -341,8 +402,8 @@ const Signup = () => {
                   required
                 />
               </div>
-
-              <Button type="submit" variant="hero" className="w-full" disabled={isLoading}>
+                
+              <Button type="submit" variant="hero" className="w-full" disabled={isLoading && !canSubmit}>
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>

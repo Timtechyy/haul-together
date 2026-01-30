@@ -344,9 +344,10 @@ const DriverVerification = () => {
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
                   <DatePicker
                     id="dateOfBirth"
+                    name=""
                     // enableTime
                     value={formData.dateOfBirth}
-                    onChange={([date]) => handleInputChange(date ? { target: { name: "dateOfBirth", value: date.toISOString().split("T")[0] } } : { target: { name: "dateOfBirth", value: "" } })}
+                    onChange={([date]) => handleInputChange({ target: { name: "dateOfBirth", value: date } })}
                   />
 
                   {/* <Input
@@ -366,8 +367,14 @@ const DriverVerification = () => {
                     id="ssnLastFour"
                     name="ssnLastFour"
                     pattern="\d{4}"
+                    placeholder="XXXX1234"
                     value={formData.ssnLastFour}
-                    onChange={handleInputChange}
+                    onChange={(e)=>{    const value = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setFormData(prev => ({
+                        ...prev,
+                        ssnLastFour: value,
+                      }));}
+                    }
                     // minLength={4}
                     maxLength={4}
                     required
@@ -401,6 +408,7 @@ const DriverVerification = () => {
                       name="licenseNumber"
                       minLength={9}
                       type="text"
+                      placeholder="A12345678"
                       value={formData.licenseNumber}
                       onChange={handleInputChange}
                       required
