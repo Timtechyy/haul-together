@@ -146,8 +146,9 @@ const DriverVerification = () => {
       if (!formData.dateOfBirth) {
         throw new Error("Date of birth is required");
       }
-      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toISOString().split("-");
-      // console.log("dob:", formData.dateOfBirth);
+      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
+
+      console.log("dob:", formData.dateOfBirth, dobYear, dobMonth, dobDay);
       // console.log("addressData:", formData.addressData);
 
       // Use a local variable to track the session ID throughout this function
@@ -354,7 +355,8 @@ const DriverVerification = () => {
                     name=""
                     // enableTime
                     value={formData.dateOfBirth}
-                    onChange={([date]) => handleInputChange({ target: { name: "dateOfBirth", value: date } })}
+                    onChange={([date]) => { 
+                      handleInputChange({ target: { name: "dateOfBirth", value: date } })}}
                   />
 
                   {/* <Input
