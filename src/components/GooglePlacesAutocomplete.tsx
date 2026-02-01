@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loadGoogleMaps } from "@/utils/loadGoogleMap";
+import { useGoogleMapsKey } from "@/hooks/useGoogleMapsKey";
 
 interface AddressData {
   line1: string;
@@ -37,9 +38,10 @@ export default function GooglePlacesAutocomplete({
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [loaded, setLoaded] = useState(false);
   const debounceRef = useRef<number | null>(null);
+  const { apiKey, loading: keyLoading, error: keyError } = useGoogleMapsKey();
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return;
 
     loadGoogleMaps(apiKey)
       .then(() => {
@@ -56,7 +58,7 @@ export default function GooglePlacesAutocomplete({
       }
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, []);
+  }, [apiKey]);
 
   const initAutocomplete = () => {
     if (!inputRef.current || !window.google?.maps?.places) return;
@@ -134,7 +136,8 @@ export default function GooglePlacesAutocomplete({
         required={required}
       />
 
-      {!loaded && <p className="text-xs text-muted-foreground">Loading Google Maps…</p>}
+      {keyError && <p className="text-xs text-destructive">Failed to load Google Maps</p>}
+      {!loaded && !keyError && <p className="text-xs text-muted-foreground">Loading Google Maps…</p>}
     </div>
   );
 }
