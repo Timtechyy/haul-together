@@ -153,13 +153,9 @@ const DriverVerification = () => {
       const dobMonth = String(date.getMonth() + 1).padStart(2, "0");
       const dobDay = String(date.getDate()).padStart(2, "0");
 
-      const dob1 = `${dobYear}-${dobMonth}-${dobDay}`;
-      console.log("dob1", dob1);
+      const dob = `${dobYear}-${dobMonth}-${dobDay}`;
+      // console.log("dob", dob);
 
-      // const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
-      const dob = formData.dateOfBirth.toLocaleDateString().split("/").join("-");
-
-      // console.log("dob:", formData.dateOfBirth.toLocaleDateString(), dobYear, dobMonth, dobDay);
       // console.log("addressData:", formData.addressData);
 
       if (!isVerifiled) {
@@ -172,7 +168,7 @@ const DriverVerification = () => {
               verification: {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
-                dateOfBirth: formData.dateOfBirth,
+                dateOfBirth: dob,
                 phoneNumber: formData.phone,
                 idNumber: formData.ssnLastFour,
                 gender: formData.gender,
