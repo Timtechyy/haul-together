@@ -149,7 +149,7 @@ const DriverVerification = () => {
       }
 
       const date = new Date(formData.dateOfBirth);
-      const dobYear = date.getFullYear();
+      const dobYear = String(date.getFullYear());
       const dobMonth = String(date.getMonth() + 1).padStart(2, "0");
       const dobDay = String(date.getDate()).padStart(2, "0");
 
@@ -265,9 +265,9 @@ const DriverVerification = () => {
         // Add text fields
         formDataToSend.append("firstName", formData.firstName);
         formDataToSend.append("lastName", formData.lastName);
-        formDataToSend.append("dobday", String(dobDay));
-        formDataToSend.append("dobmonth", String(dobMonth));
-        formDataToSend.append("dobyear", String(dobYear));
+        formDataToSend.append("dobday", dobDay);
+        formDataToSend.append("dobmonth", dobMonth);
+        formDataToSend.append("dobyear", dobYear);
         formDataToSend.append("phoneNumber", formData.phone);
         formDataToSend.append("gender", formData.gender);
         formDataToSend.append("email", user?.email ?? "");
@@ -280,7 +280,6 @@ const DriverVerification = () => {
         formDataToSend.append("state", formData.addressData.state);
         formDataToSend.append("postal_code", formData.addressData.postal_code);
         formDataToSend.append("country", formData.addressData.country);
-
         // Add the actual files
         formDataToSend.append("licenseFront", licenseFront!);
         formDataToSend.append("licenseBack", licenseBack!);

@@ -38,11 +38,12 @@ export const DatePicker = forwardRef<any, DatePickerProps>(
         onChange={onChange}
       
         options={{
+          allowInput:true,
           enableTime:false,
           enableSeconds:false,
           dateFormat:"d-m-Y",
           time_24hr: false,
-          allowInput:true,
+          
           // maxDate: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
 
           disableMobile: true,
