@@ -156,10 +156,10 @@ const DriverVerification = () => {
       const dob1 = `${dobYear}-${dobMonth}-${dobDay}`;
       console.log("dob1", dob1);
 
-      const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
+      // const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
       const dob = formData.dateOfBirth.toLocaleDateString().split("/").join("-");
 
-      console.log("dob:", formData.dateOfBirth.toLocaleDateString(), dobYear, dobMonth, dobDay);
+      // console.log("dob:", formData.dateOfBirth.toLocaleDateString(), dobYear, dobMonth, dobDay);
       // console.log("addressData:", formData.addressData);
 
       if (!isVerifiled) {
