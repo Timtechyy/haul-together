@@ -22,7 +22,7 @@ const DriverVerification = () => {
     firstName: "",
     lastName: "",
     gender: "",
-    dateOfBirth: null as Date | null,
+    dateOfBirth: "",
     address: "",
     addressData: {} as any,
     ssnLastFour: "",
@@ -267,7 +267,7 @@ const DriverVerification = () => {
         formDataToSend.append("lastName", formData.lastName);
         formDataToSend.append("dobday", dobDay);
         formDataToSend.append("dobmonth", dobMonth);
-        formDataToSend.append("dobyear", String(dobYear));
+        formDataToSend.append("dobyear", dobYear);
         formDataToSend.append("phoneNumber", formData.phone);
         formDataToSend.append("gender", formData.gender);
         formDataToSend.append("email", user?.email ?? "");
