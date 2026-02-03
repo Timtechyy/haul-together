@@ -80,7 +80,7 @@ serve(async ( req: Request ) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
 
-    // console.log(`Uploading ${imageType} to session ${sessionId}`);
+    console.log(`Uploading ${imageType} to session ${sessionId}`);
     const response = await fetch(`${VERIFF_BASE_URL}/sessions/${sessionId}/media`, {
       method: "POST",
       headers: {
@@ -96,14 +96,14 @@ serve(async ( req: Request ) => {
       throw new Error(`Failed to upload ${imageType}: ${text}`);
     }
 
-    // console.log(`Successfully uploaded ${imageType}`);
+    console.log(`Successfully uploaded ${imageType}`);
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    // console.error("Error in upload-veriff-image:", error);
+    console.error("Error in upload-veriff-image:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
