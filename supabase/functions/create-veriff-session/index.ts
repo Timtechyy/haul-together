@@ -123,36 +123,27 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     
-    if (!authHeader) {
-      console.error("Missing authorization header");
-      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error("Missing or invalid authorization header");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
 
-    // Extract JWT token from Bearer header
-    const token = authHeader.replace('Bearer ', '');
-    // console.log("Token extracted, length:", token.length);
-    
     const supabase = initSupabase(authHeader);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const token = authHeader.replace('Bearer ', '');
+    const { data, error: claimsError } = await supabase.auth.getClaims(token);
     
-    if (userError) {
-      console.error("Auth error:", userError);
-      return new Response(JSON.stringify({ error: "Authentication failed: " + userError.message }), {
+    if (claimsError || !data?.claims) {
+      console.error("Auth error:", claimsError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
     
-    if (!user) {
-      console.error("No user found");
-      return new Response(JSON.stringify({ error: "User not authenticated" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
+    const userId = data.claims.sub;
     
     // console.log("User authenticated:", user.id);
 
@@ -165,7 +156,7 @@ serve(async (req) => {
 
     validateVerification(verification);
     
-    const veriffSession = await createVeriffSession(user.id, verification);
+    const veriffSession = await createVeriffSession(userId, verification);
     // console.log("Veriff session created:", veriffSession.id);
 
     return new Response(JSON.stringify({
