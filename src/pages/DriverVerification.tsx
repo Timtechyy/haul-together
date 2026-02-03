@@ -267,7 +267,7 @@ const DriverVerification = () => {
         formDataToSend.append("lastName", formData.lastName);
         formDataToSend.append("dobday", dobDay);
         formDataToSend.append("dobmonth", dobMonth);
-        formDataToSend.append("dobyear", dobYear);
+        formDataToSend.append("dobyear", String(dobYear));
         formDataToSend.append("phoneNumber", formData.phone);
         formDataToSend.append("gender", formData.gender);
         formDataToSend.append("email", user?.email ?? "");
