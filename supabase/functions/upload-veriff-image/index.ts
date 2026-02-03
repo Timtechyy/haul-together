@@ -8,14 +8,12 @@ const corsHeaders = {
 };
 
 const initSupabase = (authHeader: string) => {
-  return createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: authHeader } } }
-  );
+  return createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+    global: { headers: { Authorization: authHeader } },
+  });
 };
 
-serve(async ( req: Request ) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -27,10 +25,13 @@ serve(async ( req: Request ) => {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace("Bearer ", "");
     const supabase = initSupabase(authHeader);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Authentication failed" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -39,7 +40,7 @@ serve(async ( req: Request ) => {
     }
 
     const { sessionId, imageBase64, mimeType, imageType } = await req.json();
-    
+
     if (!sessionId || !imageBase64 || !imageType) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,17 +69,11 @@ serve(async ( req: Request ) => {
     const encoder = new TextEncoder();
     const keyData = encoder.encode(VERIFF_SHARED_SECRET);
     const messageData = encoder.encode(payloadString);
-    const cryptoKey = await crypto.subtle.importKey(
-      "raw",
-      keyData,
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
+    const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
     const signature = Array.from(new Uint8Array(signatureBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
 
     console.log(`Uploading ${imageType} to session ${sessionId}`);
     const response = await fetch(`${VERIFF_BASE_URL}/sessions/${sessionId}/media`, {
@@ -101,7 +96,6 @@ serve(async ( req: Request ) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
     console.error("Error in upload-veriff-image:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
