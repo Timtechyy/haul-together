@@ -265,9 +265,9 @@ const DriverVerification = () => {
         // Add text fields
         formDataToSend.append("firstName", formData.firstName);
         formDataToSend.append("lastName", formData.lastName);
-        formDataToSend.append("dobday", dobDay);
-        formDataToSend.append("dobmonth", dobMonth);
-        formDataToSend.append("dobyear", dobYear);
+        formDataToSend.append("dobday", String(dobDay));
+        formDataToSend.append("dobmonth", String(dobMonth));
+        formDataToSend.append("dobyear", String(dobYear));
         formDataToSend.append("phoneNumber", formData.phone);
         formDataToSend.append("gender", formData.gender);
         formDataToSend.append("email", user?.email ?? "");
