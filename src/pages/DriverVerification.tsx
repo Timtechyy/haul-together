@@ -42,7 +42,7 @@ const DriverVerification = () => {
   const [previewFront, setPreviewFront] = useState<string | null>(null);
   const [previewBack, setPreviewBack] = useState<string | null>(null);
   const [previewFace, setPreviewFace] = useState<string | null>(null);
-  const isVerifiled = verifficationStatus==="approved;"
+  const isVerifiled = verifficationStatus === "approved;";
 
   const workerFront = useRef<Worker>();
   const workerBack = useRef<Worker>();
@@ -149,10 +149,11 @@ const DriverVerification = () => {
       }
       const [dobYear, dobMonth, dobDay] = formData.dateOfBirth.toLocaleDateString().split("/");
 
-      // console.log("dob:", formData.dateOfBirth, dobYear, dobMonth, dobDay);
+      console.log("dob:", formData.dateOfBirth, dobYear, dobMonth, dobDay);
       // console.log("addressData:", formData.addressData);
 
-      if(!isVerifiled){// Use a local variable to track the session ID throughout this function
+      if (!isVerifiled) {
+        // Use a local variable to track the session ID throughout this function
         let currentSessionId = veriffSessionId;
 
         if (!currentSessionId) {
@@ -357,8 +358,9 @@ const DriverVerification = () => {
                     name=""
                     // enableTime
                     value={formData.dateOfBirth}
-                    onChange={([date]) => { 
-                      handleInputChange({ target: { name: "dateOfBirth", value: date } })}}
+                    onChange={([date]) => {
+                      handleInputChange({ target: { name: "dateOfBirth", value: date } });
+                    }}
                   />
 
                   {/* <Input
