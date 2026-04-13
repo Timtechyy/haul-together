@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/hooks/user-auth";
 
 const passwordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -29,22 +30,16 @@ const ResetPassword = () => {
   });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { session } = useAuth();
 
-  useEffect(() => {
-    // Check if we have a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Invalid or Expired Link",
-          description: "This password reset link is invalid or has expired. Please request a new one.",
-          variant: "destructive",
-        });
-        navigate("/forgot-password");
-      }
-    };
-    checkSession();
-  }, [navigate, toast]);
+  if (!session) {
+    toast({
+      title: "Invalid or Expired Link",
+      description: "This password reset link is invalid or has expired. Please request a new one.",
+      variant: "destructive",
+    });
+    navigate("/forgot-password");
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

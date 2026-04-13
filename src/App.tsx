@@ -22,12 +22,14 @@ import OrderTracking from "./pages/OrderTracking";
 import DriverTracker from "./components/DriverTracker";
 import "flatpickr/dist/flatpickr.min.css";
 import "flatpickr/dist/themes/material_blue.css";
+import { AuthProvider } from "./hooks/auth-context";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   
   <QueryClientProvider client={queryClient}>
+      <AuthProvider> 
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -56,6 +58,7 @@ const App = () => (
         </BrowserRouter>
       </DriverTracker>
     </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

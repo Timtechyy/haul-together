@@ -15,6 +15,7 @@ import logo from "@/assets/logo.png";
 import { ReceiptImage } from "@/components/ReceiptImage";
 import { useLocationTrackingContext } from "@/components/locationtracking";
 import { formatTime } from "@/components/time";
+import { useAuth } from "@/hooks/user-auth";
 
 // Preview interface for unassigned deliveries (limited data for privacy)
 interface DeliveryPreview {
@@ -54,7 +55,7 @@ interface AssignedDelivery extends DeliveryPreview {
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  // const [user, setUser] = useState<any>(null);
   const [pendingRequests, setPendingRequests] = useState<DeliveryPreview[]>([]);
   const [completedDeliveries, setCompletedDeliveries] = useState<DeliveryPreview[]>([]);
   const [isVerified, setIsVerified] = useState(false);
@@ -64,7 +65,7 @@ const DriverDashboard = () => {
   const [sortBy, setSortBy] = useState<"distance" | "price" | "time">("time");
   const [filterDistance, setFilterDistance] = useState<"all" | "near" | "far">("all");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-    const [tabType, setTabType] = useState<"pending" | "completed">("pending");
+  const [tabType, setTabType] = useState<"pending" | "completed">("pending");
   const { isTracking } = useLocationTrackingContext();
   // console.log("Location tracking status:", isTracking);
   // console.log("Current user ID:", user?.id);
@@ -75,255 +76,245 @@ const DriverDashboard = () => {
     rating: 0,
   });
 
+  const { user, loading } = useAuth();
+  if (!user) {
+    navigate("/login");
+    return;
+  }
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
-    };
-    checkUser();
-  }, [navigate]);
+
   
   useEffect(() => {
-  if (!user) return;
+    if (!user) return;
 
-  const fetchDriverData = async () => {
-    // Fetch unassigned pending deliveries
-    const { data: unassignedData, error: unassignedError } = await supabase
-      .from("deliveries")
-      .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, receipt_url, status")
-      .eq("status", "pending")
-      .is("driver_id", null);
+    const fetchDriverData = async () => {
+      // Fetch unassigned pending deliveries
+      const { data: unassignedData, error: unassignedError } = await supabase
+        .from("deliveries")
+        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, receipt_url, status")
+        .eq("status", "pending")
+        .is("driver_id", null);
 
-    // Fetch deliveries assigned to this driver
-    const { data: assignedData, error: assignedError } = await supabase
-      .from("deliveries")
-      .select("*")
-      .eq("driver_id", user.id)
-      .in("status", ["accepted","picking_up", "in_transit"]);
+      // Fetch deliveries assigned to this driver
+      const { data: assignedData, error: assignedError } = await supabase
+        .from("deliveries")
+        .select("*")
+        .eq("driver_id", user.id)
+        .in("status", ["accepted","picking_up", "in_transit"]);
 
-    const{ data: completedDeliveries, error: completedError } = await supabase
-      .from("deliveries")
-      .select("*")
-      .eq("driver_id", user.id)
-      .eq("status", "delivered");
-      setCompletedDeliveries(completedDeliveries);
-      if(completedError){ console.error("Error fetching completed deliveries:", completedError); }
+      const{ data: completedDeliveries, error: completedError } = await supabase
+        .from("deliveries")
+        .select("*")
+        .eq("driver_id", user.id)
+        .eq("status", "delivered");
+        setCompletedDeliveries(completedDeliveries);
+        if(completedError){ console.error("Error fetching completed deliveries:", completedError); }
 
-    if (unassignedError || assignedError) {
-      console.error("Error fetching deliveries:", unassignedError || assignedError);
-      toast({
-        title: "Error",
-        description: "Failed to load pending requests",
-        variant: "destructive",
-      });
-    } else {
-      const allDeliveries: DeliveryPreview[] = [
-        ...(unassignedData || []),
-        ...(assignedData || []),
-      ];
-      setPendingRequests(allDeliveries);
-      // console.log("Initial deliveries loaded:", allDeliveries.length);
-    }
-
-    // Fetch stats (your existing code)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-
-    const { data: todayDeliveries } = await supabase
-      .from("deliveries")
-      .select("price, customer_rating")
-      .eq("driver_id", user.id)
-      .eq("status", "delivered")
-      .gte("delivered_at", todayISO);
-
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayISO = yesterday.toISOString();
-
-    const { data: yesterdayDeliveries } = await supabase
-      .from("deliveries")
-      .select("price")
-      .eq("driver_id", user.id)
-      .eq("status", "delivered")
-      .gte("delivered_at", yesterdayISO)
-      .lt("delivered_at", todayISO);
-
-    const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
-    const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
-    const completedTrips = todayDeliveries?.length || 0;
-
-    const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
-    const avgRating = ratingsToday.length > 0
-      ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
-      : 0;
-
-    setStats({
-      todayEarnings,
-      yesterdayEarnings,
-      completedTrips,
-      rating: Number(avgRating.toFixed(1)),
-    });
-  };
-
-
-
-  fetchDriverData();
-
-  const isDriververified = async () => {
-    const { data, error } = await supabase.from("driver_verifications").select("verification_status").eq("user_id", user.id).maybeSingle();
-    if (error) {
-      console.error("Error checking verification status:", error);
-    } else {
-      setIsVerified(data?.verification_status === "approved");
-    }
-  };
-
-  isDriververified();
-
-  // Set up realtime subscription
-  const channel = supabase
-    .channel(`driver-deliveries-${user.id}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "deliveries",
-      },
-      async (payload) => {
-        // console.log("NEW DELIVERY INSERTED:", payload.new);
-        
-        const newDelivery = payload.new as DeliveryPreview;
-        
-        // Check if this delivery is relevant to the driver
-        const isPending = newDelivery.status === "pending" && !newDelivery.driver_id;
-        const isAssignedToMe = newDelivery.driver_id === user.id;
-        
-        // console.log("Is pending?", isPending, "Is assigned to me?", isAssignedToMe);
-        
-        if (!isPending && !isAssignedToMe) {
-          // console.log("Delivery not relevant, skipping");
-          return;
-        }
-
-        // Add to list if not already present
-        setPendingRequests((prev) => {
-          if (prev.some((p) => p.id === newDelivery.id)) {
-            // console.log(" Delivery already in list");
-            return prev;
-          }
-          // console.log("Adding new delivery to list");
-          return [newDelivery, ...prev];
-        });
-
-        // Send notification if assigned to this driver
-        if (isAssignedToMe && notificationsEnabled) {
-          const assignedDelivery = newDelivery as AssignedDelivery;
-          const { notificationService } = await import('@/utils/notificationService');
-          await notificationService.showNotification('New Delivery Assigned!', {
-            body: `${assignedDelivery.pickup_location} → ${assignedDelivery.delivery_location}\n$${assignedDelivery.price.toFixed(2)} • ${assignedDelivery.estimated_distance.toFixed(1)} mi`,
-            tag: 'assigned-delivery',
-            requireInteraction: true,
-          });
-          
-          toast({
-            title: "New Delivery Assigned!",
-            description: `$${assignedDelivery.price.toFixed(2)} - ${assignedDelivery.pickup_location}`,
-          });
-        } else if (isPending) {
-          toast({
-            title: "New Delivery Available!",
-            description: `$${newDelivery.price.toFixed(2)} - ${newDelivery.estimated_distance.toFixed(1)} mi`,
-          });
-        }
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "deliveries",
-      },
-      (payload) => {
-        // console.log("DELIVERY UPDATED:", payload.new);
-        
-        const updatedDelivery = payload.new as DeliveryPreview;
-        const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
-
-        setPendingRequests((prev) => {
-          // Remove if no longer active
-          if (!activeStatuses.includes(updatedDelivery.status)) {
-            // console.log("Removing completed/cancelled delivery");
-            return prev.filter((p) => p.id !== updatedDelivery.id);
-          }
-
-          // Remove if assigned to another driver
-          if (updatedDelivery.driver_id && 
-              updatedDelivery.driver_id !== user.id && 
-              updatedDelivery.status !== "pending") {
-            // console.log("Removing delivery assigned to another driver");
-            return prev.filter((p) => p.id !== updatedDelivery.id);
-          }
-
-          // Update existing or add new
-          const existingIndex = prev.findIndex((p) => p.id === updatedDelivery.id);
-          if (existingIndex !== -1) {
-            // console.log("Updating existing delivery");
-            const updated = [...prev];
-            updated[existingIndex] = updatedDelivery;
-            return updated;
-          }
-
-          // Add if it's relevant and not already in the list
-          if (updatedDelivery.status === "pending" || updatedDelivery.driver_id === user.id) {
-            // console.log("Adding updated delivery to list");
-            return [updatedDelivery, ...prev];
-          }
-
-          return prev;
-        });
-      }
-    )
-    .subscribe((status, err) => {
-      // console.log("Subscription status:", status);
-      
-      if (status === 'SUBSCRIBED') {
-        // console.log('Successfully subscribed to delivery updates');
+      if (unassignedError || assignedError) {
+        console.error("Error fetching deliveries:", unassignedError || assignedError);
         toast({
-          title: "Connected",
-          description: "Real-time updates active",
-        });
-      } else if (status === 'CHANNEL_ERROR') {
-        // console.error('Channel error - subscription failed', err);
-        toast({
-          title: "Connection Error",
-          description: "Failed to subscribe to real-time updates",
+          title: "Error",
+          description: "Failed to load pending requests",
           variant: "destructive",
         });
-      } else if (status === 'TIMED_OUT') {
-        console.error('Subscription timed out');
-      } else if (status === 'CLOSED') {
-        // console.log('🔌 Channel closed');
+      } else {
+        const allDeliveries: DeliveryPreview[] = [
+          ...(unassignedData || []),
+          ...(assignedData || []),
+        ];
+        setPendingRequests(allDeliveries);
+        // console.log("Initial deliveries loaded:", allDeliveries.length);
       }
-    });
 
-  return () => {
-    // console.log("🧹 Cleaning up subscription");
-    supabase.removeChannel(channel);
-  };
+      // Fetch stats (your existing code)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
 
-  
+      const { data: todayDeliveries } = await supabase
+        .from("deliveries")
+        .select("price, customer_rating")
+        .eq("driver_id", user.id)
+        .eq("status", "delivered")
+        .gte("delivered_at", todayISO);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString();
+
+      const { data: yesterdayDeliveries } = await supabase
+        .from("deliveries")
+        .select("price")
+        .eq("driver_id", user.id)
+        .eq("status", "delivered")
+        .gte("delivered_at", yesterdayISO)
+        .lt("delivered_at", todayISO);
+
+      const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+      const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
+      const completedTrips = todayDeliveries?.length || 0;
+
+      const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
+      const avgRating = ratingsToday.length > 0
+        ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
+        : 0;
+
+      setStats({
+        todayEarnings,
+        yesterdayEarnings,
+        completedTrips,
+        rating: Number(avgRating.toFixed(1)),
+      });
+    };
 
 
 
-}, [user, toast, notificationsEnabled]);
+    fetchDriverData();
+
+    const isDriververified = async () => {
+      const { data, error } = await supabase.from("driver_verifications").select("verification_status").eq("user_id", user.id).maybeSingle();
+      if (error) {
+        console.error("Error checking verification status:", error);
+      } else {
+        setIsVerified(data?.verification_status === "approved");
+      }
+    };
+
+    isDriververified();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel(`driver-deliveries-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "deliveries",
+        },
+        async (payload) => {
+          // console.log("NEW DELIVERY INSERTED:", payload.new);
+          
+          const newDelivery = payload.new as DeliveryPreview;
+          
+          // Check if this delivery is relevant to the driver
+          const isPending = newDelivery.status === "pending" && !newDelivery.driver_id;
+          const isAssignedToMe = newDelivery.driver_id === user.id;
+          
+          // console.log("Is pending?", isPending, "Is assigned to me?", isAssignedToMe);
+          
+          if (!isPending && !isAssignedToMe) {
+            // console.log("Delivery not relevant, skipping");
+            return;
+          }
+
+          // Add to list if not already present
+          setPendingRequests((prev) => {
+            if (prev.some((p) => p.id === newDelivery.id)) {
+              // console.log(" Delivery already in list");
+              return prev;
+            }
+            // console.log("Adding new delivery to list");
+            return [newDelivery, ...prev];
+          });
+
+          // Send notification if assigned to this driver
+          if (isAssignedToMe && notificationsEnabled) {
+            const assignedDelivery = newDelivery as AssignedDelivery;
+            const { notificationService } = await import('@/utils/notificationService');
+            await notificationService.showNotification('New Delivery Assigned!', {
+              body: `${assignedDelivery.pickup_location} → ${assignedDelivery.delivery_location}\n$${assignedDelivery.price.toFixed(2)} • ${assignedDelivery.estimated_distance.toFixed(1)} mi`,
+              tag: 'assigned-delivery',
+              requireInteraction: true,
+            });
+            
+            toast({
+              title: "New Delivery Assigned!",
+              description: `$${assignedDelivery.price.toFixed(2)} - ${assignedDelivery.pickup_location}`,
+            });
+          } else if (isPending) {
+            toast({
+              title: "New Delivery Available!",
+              description: `$${newDelivery.price.toFixed(2)} - ${newDelivery.estimated_distance.toFixed(1)} mi`,
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "deliveries",
+        },
+        (payload) => {
+          // console.log("DELIVERY UPDATED:", payload.new);
+          
+          const updatedDelivery = payload.new as DeliveryPreview;
+          const activeStatuses = ["pending", "assigned", "accepted", "picked_up"];
+
+          setPendingRequests((prev) => {
+            // Remove if no longer active
+            if (!activeStatuses.includes(updatedDelivery.status)) {
+              // console.log("Removing completed/cancelled delivery");
+              return prev.filter((p) => p.id !== updatedDelivery.id);
+            }
+
+            // Remove if assigned to another driver
+            if (updatedDelivery.driver_id && 
+                updatedDelivery.driver_id !== user.id && 
+                updatedDelivery.status !== "pending") {
+              // console.log("Removing delivery assigned to another driver");
+              return prev.filter((p) => p.id !== updatedDelivery.id);
+            }
+
+            // Update existing or add new
+            const existingIndex = prev.findIndex((p) => p.id === updatedDelivery.id);
+            if (existingIndex !== -1) {
+              // console.log("Updating existing delivery");
+              const updated = [...prev];
+              updated[existingIndex] = updatedDelivery;
+              return updated;
+            }
+
+            // Add if it's relevant and not already in the list
+            if (updatedDelivery.status === "pending" || updatedDelivery.driver_id === user.id) {
+              // console.log("Adding updated delivery to list");
+              return [updatedDelivery, ...prev];
+            }
+
+            return prev;
+          });
+        }
+      )
+      .subscribe((status, err) => {
+        // console.log("Subscription status:", status);
+        
+        if (status === 'SUBSCRIBED') {
+          // console.log('Successfully subscribed to delivery updates');
+          toast({
+            title: "Connected",
+            description: "Real-time updates active",
+          });
+        } else if (status === 'CHANNEL_ERROR') {
+          // console.error('Channel error - subscription failed', err);
+          toast({
+            title: "Connection Error",
+            description: "Failed to subscribe to real-time updates",
+            variant: "destructive",
+          });
+        } else if (status === 'TIMED_OUT') {
+          console.error('Subscription timed out');
+        } else if (status === 'CLOSED') {
+          // console.log('🔌 Channel closed');
+        }
+      });
+
+    return () => {
+      // console.log("🧹 Cleaning up subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [user, toast, notificationsEnabled]);
 
 
   // completed deliveries

@@ -22,29 +22,20 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffectRunner } from "@/hooks/use-effects";
+import { useAuth } from "@/hooks/user-auth";
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState<"book" | "deliveries" | "earnings">("book");
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+    if (!user) {
         navigate("/login");
       }
-    };
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/login");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [user, navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

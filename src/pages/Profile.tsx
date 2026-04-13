@@ -31,10 +31,9 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import PaymentMethods from "@/components/ui/addpaymentmethod";
-import PhoneInput, { formatPhoneNumber, formatPhoneNumberIntl, isPossiblePhoneNumber } from "react-phone-number-input";
 import PhoneInputField from "@/components/ui/phoneinput";
-import { create } from "domain";
 import { formatTime } from "@/components/time";
+import { useAuth } from "@/hooks/user-auth"
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -42,9 +41,10 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { user, role } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  // const [userId, setUserId] = useState<string | null>(null);
+  // const [userRole, setUserRole] = useState<string | null>(null);
   const [verification, setVerification] = useState<any>(null);
   const [driverStats, setDriverStats] = useState({
     totalDeliveries: 0,
@@ -71,42 +71,25 @@ const Profile = () => {
     created_at: "",
   });
 
-  const isDriver = userRole === "driver"
+  const isDriver = role === "driver"
   const isVerified = verification?.verification_status === "approved";
-
-  // console.log("isDriver:", isDriver, "isVerified:", isVerified);
+  if (!user) {
+    navigate("/login");
+    return;
+  }
 
   useEffect(() => {
+    if (!user) return;
+    
     loadProfile();
-   
-
-  }, []);
-
-
-
+  }, [user]);
   const loadProfile = async () => {
+    if (!user) return;
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/login");
-        return;
-      }
-
-      setUserId(user.id);
-
-      // Get user role
-      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
-
-      setUserRole(roleData?.role);
-     
-
       // Get profile data
       const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, created_at").eq("id", user.id).single();
 
       if (error) throw error;
-
       setProfile({
         firstName: profileData.first_name || "",
         lastName: profileData.last_name || "",
@@ -118,8 +101,7 @@ const Profile = () => {
       });
 
       // Fetch vehicle info if driver
-      if (roleData?.role === "driver") {
-        
+      if (isDriver) {
          driverVerification(user.id);
          driverStat(user.id, profileData.created_at);
 
@@ -213,7 +195,7 @@ const Profile = () => {
   }
 
   const handleSave = async () => {
-    if (!userId) return;
+    if (!user) return;
 
     try {
       const { error } = await supabase
@@ -223,7 +205,7 @@ const Profile = () => {
           last_name: profile.lastName,
           phone: profile.phone,
         })
-        .eq("id", userId);
+        .eq("id", user.id);
 
       if (error) throw error;
 
@@ -253,7 +235,7 @@ const Profile = () => {
             current_lng: currentLng,
             last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
           },
-        ).eq("user_id", userId);
+        ).eq("user_id", user.id);
 
         if (vehicleError) throw vehicleError;
       }
@@ -279,14 +261,14 @@ const Profile = () => {
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !userId) return;
+    if (!file || !user.id) return;
 
     try {
       setUploading(true);
 
       // Upload to storage
       const fileExt = file.name.split(".").pop();
-      const filePath = `${userId}/avatar.${fileExt}`;
+      const filePath = `${user.id}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true });
 
@@ -298,7 +280,7 @@ const Profile = () => {
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       // Update profile with new avatar URL
-      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", userId);
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
 
       if (updateError) throw updateError;
 
@@ -711,7 +693,7 @@ const Profile = () => {
             </Card>
           )}
           {/* Payment Methods */}
-          <PaymentMethods role={userRole} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
+          <PaymentMethods role={role} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
           
         </div>
 

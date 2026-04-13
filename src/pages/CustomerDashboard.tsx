@@ -10,13 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ReceiptImage } from "@/components/ReceiptImage";
-import { format } from "path";
 import { formatTime } from "@/components/time";
+import { useAuth } from "@/hooks/user-auth";
 
 const CustomerDashboard = () => {
+  const { user, role} = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  // const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
@@ -25,21 +26,21 @@ const CustomerDashboard = () => {
     activeBookings: 0,
     totalSpent: 0,
   });
+  if (!user) {
+    navigate("/login");
+    return;
+  }
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
+    if(!user)return;
+    async () => {
+   
 
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
       
       setProfile(profileData);
@@ -50,7 +51,7 @@ const CustomerDashboard = () => {
         .select(`
           *,
           driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, color)) `)
-        .eq("customer_id", session.user.id)
+        .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -76,8 +77,8 @@ const CustomerDashboard = () => {
 
       setLoading(false);
     };
-    checkUser();
-  }, [navigate]);
+ 
+  }, [user, navigate]);
 
   useEffect(() => {
     const channel = supabase

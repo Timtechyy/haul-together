@@ -16,12 +16,14 @@ import logo from "@/assets/logo.png";
 import ResponsivePaymentModal  from "@/components/ui/modal";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CheckCircle } from "lucide-react";
+import { useAuth } from "@/hooks/user-auth";
 
 
 const CustomerBooking = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const { user, role } = useAuth();
+  // const [user, setUser] = useState<any>(null);
   const [showForm, setShowForm] = useState(true);
   const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -56,15 +58,14 @@ const CustomerBooking = () => {
   };
 
   const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: false });
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+  if (!user) {
         navigate("/login");
         return;
       }
-      setUser(session.user);
+  useEffect(() => {
+    async () => {
+    
+    
       
       // Fetch unique vehicle types
       const { data: vehicles } = await supabase
@@ -76,8 +77,7 @@ const CustomerBooking = () => {
         setVehicleTypes(uniqueTypes);
       }
     };
-    checkUser();
-  }, [navigate]);
+  }, [user,navigate]);
   
 
   // Update price when pickup and delivery locations change

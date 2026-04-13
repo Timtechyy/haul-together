@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Package, CheckCircle, Car, Star } from "lucide-react";
 import DeliveryMap from "@/components/DeliveryMap";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/user-auth"
 
 const OrderTracking = () => {
   const navigate = useNavigate();
@@ -16,26 +17,27 @@ const OrderTracking = () => {
   const orderId = searchParams.get('id');
   const [delivery, setDelivery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, role } = useAuth();
   const [rating, setRating] = useState(0);
-  const isDriver = userRole === "driver";
-  const isCustomer = userRole === "user";
+  const isDriver = role === "driver";
+  const isCustomer = role === "user";
+
+  if(!user ){
+    navigate("/login");
+  }
+   
+  if (!orderId && isDriver) {
+    navigate("/driver/dashboard");
+  }
+
+  if (!orderId && isCustomer) {
+    navigate("/driver/dashboard");
+  }
 
   useEffect(() => {
+    if (!user) return;
+
     const fetchDelivery = async () => {
-
-      const { data: { user },} = await supabase.auth.getUser();
-      if (!user) { navigate("/login"); return; } 
-      setUserId(user.id);
-
-      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
-      setUserRole(roleData?.role);
-
-      if (!orderId) {
-        navigate("/");
-        return;
-      }
 
       const { data, error } = await supabase
         .from('deliveries')
@@ -49,31 +51,20 @@ const OrderTracking = () => {
           description: "Failed to load delivery details",
           variant: "destructive",
         });
-        navigate("/");
-        return;
-      }  
-      const isCustomer = data.customer_id === user.id;
-      const isDriver = data.driver_id === user.id;
-
-      if (!isCustomer && !isDriver) {
-        navigate("/unauthorized");
+        if (isDriver) {
+          navigate("/driver/dashboard");
+        }
+        if (isCustomer) {
+          navigate("/driver/dashboard");
+        }
         return;
       }
-
-      // // Optional: Only allow accepted orders
-      // if (data.status !== "accepted") {
-      //   navigate("/dashboard");
-      //   return;
-      // }
-
       setDelivery(data);
       
       setLoading(false);
     };
 
-   fetchDelivery();
-
-  
+   fetchDelivery();  
     // Set up realtime subscription for delivery updates
     const channel = supabase
       .channel(`delivery-${orderId}`)
@@ -93,7 +84,6 @@ const OrderTracking = () => {
           payload.new?.driver_id
           ) {
             await fetchDelivery();
-
             toast({
               title: "Driver Assigned!",
               description: "A driver has accepted your delivery",
@@ -117,13 +107,7 @@ const OrderTracking = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-
-
-   
-  }, [orderId, navigate, toast]);
-
-   
-
+  }, [orderId,isDriver,isCustomer, navigate, toast]);
 
   const updateStatus = async (newStatus: string) => {
     const { error } = await supabase.rpc("driver_confirm_delivery", {
@@ -379,7 +363,7 @@ const OrderTracking = () => {
                 pickupAddress:delivery.pickup_location,
                 deliveryAddress:delivery.delivery_location
               }} 
-              mode={userRole ==="driver"?"driver":"customer"}
+              mode={role ==="driver"?"driver":"customer"}
               driverId={delivery.driver_id}    
               onDriverAction={updateStatus}         
               />

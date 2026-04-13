@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import Withdrawal from "@/components/ui/withdrawal";
 import ResponsivePaymentModal from "@/components/ui/modal";
 import { getBalance } from "@/hooks/balance";
-
+import { useAuth } from "@/hooks/user-auth"
 interface EarningsData {
   date: string;
   earnings: number;
@@ -20,7 +20,8 @@ interface EarningsData {
 const DriverEarnings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const { user, role } = useAuth();
+  // const [user, setUser] = useState<any>(null);
   const [dailyData, setDailyData] = useState<EarningsData[]>([]);
   const [weeklyData, setWeeklyData] = useState<EarningsData[]>([]);
   const [monthlyData, setMonthlyData] = useState<EarningsData[]>([]);
@@ -39,23 +40,12 @@ const DriverEarnings = () => {
   });
   const {balance, loading, reload} = getBalance(profile.stripe_connect_id);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
-    };
-    checkUser();
-  }, [navigate]);
-
+  if (!user) {
+    navigate("/login");
+    return;
+  }
   useEffect(() => {
     if (!user) return;
-
     const fetchEarnings = async () => {
       const { data, error } = await supabase
         .from("deliveries")

@@ -11,10 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
 import LicensePlate from "@/components/LicensePlate";
+import {useAuth } from "@/hooks/user-auth"
+
+
 const loginSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
+
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +37,51 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { user, role } = useAuth();
+  useEffect( () => {
+    if (!user || !role) return;
+    const redirect =async()=>{
+      if (role === "driver") {
+        const { data: vehicle, error } = await supabase
+        .from("driver_vehicles")
+        .select(`
+          vehicle_type,
+          make,
+          model,
+          year,
+          license_plate,
+          tracking_consent
+        `)
+        .eq("user_id", user.id)
+        .maybeSingle();
 
+        const isVehicleComplete =
+        vehicle &&
+        vehicle.vehicle_type &&
+        vehicle.make &&
+        vehicle.model &&
+        vehicle.year &&
+        vehicle.license_plate
+        if (!isVehicleComplete) {
+          const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single();
+          setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
+          setDriverUserId(user.id);
+          setShowPlateWidget(true);
+
+          toast({
+            title: "Almost there!",
+            description: "Please add your vehicle details to continue",
+          });
+
+          return;
+        }
+        navigate("/driver/dashboard");
+      } else {
+        navigate("/customer/dashboard");
+      };
+    }
+    redirect();
+  }, [user, role]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -49,67 +97,17 @@ const Login = () => {
         return;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) throw error;
-
-      if (data.user) {
-        // Check user role to redirect appropriately
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .single();
-
-        toast({
+       toast({
           title: "Success!",
           description: "Logged in successfully",
         });
 
-        // Redirect based on role
-        if (roleData?.role === 'driver') {
-          const { data: vehicle, error } = await supabase
-          .from("driver_vehicles")
-          .select(`
-            vehicle_type,
-            make,
-            model,
-            year,
-            license_plate,
-            tracking_consent
-          `)
-          .eq("user_id", data.user.id)
-          .maybeSingle();
-
-          const isVehicleComplete =
-          vehicle &&
-          vehicle.vehicle_type &&
-          vehicle.make &&
-          vehicle.model &&
-          vehicle.year &&
-          vehicle.license_plate
-          if (!isVehicleComplete) {
-            const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", data.user.id).single();
-            setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
-            setDriverUserId(data.user.id);
-            setShowPlateWidget(true);
-
-            toast({
-              title: "Almost there!",
-              description: "Please add your vehicle details to continue",
-            });
-
-            return;
-          }
-
-          navigate("/driver/dashboard");
-        } else {
-          navigate("/customer/dashboard");
-        }
-      }
     } catch (error: any) {
       toast({
         title: "Login Failed",

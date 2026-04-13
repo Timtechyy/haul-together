@@ -9,15 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { US_STATES } from "@/contants/states";
-import Flatpickr from "react-flatpickr";
 import { DatePicker } from "@/components/ui/datePicker";
+import { useAuth } from "@/hooks/user-auth";
 const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const {user, role} = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -56,23 +56,18 @@ const DriverVerification = () => {
       workerBack.current?.terminate();
     };
   }, []);
-
+  if (!user) {
+    navigate("/login");
+    return;
+  }
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
-      setUser(session.user);
-
+    if(!user)return;
+     async () => {
       // Fetch profile data to auto-populate fields
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_name, last_name, phone, gender, stripe_connect_id")
-        .eq("id", session.user.id)
+        .eq("id", user.id)
         .single();
 
       if (profile) {
@@ -89,14 +84,13 @@ const DriverVerification = () => {
       const { data: profileVerification } = await supabase
         .from("driver_verifications")
         .select("veriff_session_id, verification_status")
-        .eq("user_id", session.user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (profileVerification?.veriff_session_id) {
         setVeriffSessionId(profileVerification.veriff_session_id);
         setVerificationStatus(profileVerification.verification_status);
       }
     };
-    checkUser();
   }, [navigate]);
 
   const handleInputChange = (e) => {
