@@ -133,17 +133,17 @@ serve(async (req) => {
 
     const supabase = initSupabase(authHeader);
     const token = authHeader.replace('Bearer ', '');
-    const { data, error: claimsError } = await supabase.auth.getClaims(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
-    if (claimsError || !data?.claims) {
-      console.error("Auth error:", claimsError);
+    if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
     }
     
-    const userId = data.claims.sub;
+    const userId = user.id;
     
     // console.log("User authenticated:", user.id);
 
