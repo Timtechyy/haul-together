@@ -33,9 +33,7 @@ const CustomerDashboard = () => {
 
   useEffect(() => {
     if(!user)return;
-    async () => {
-   
-
+    const data = async () => {
       // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
@@ -77,7 +75,7 @@ const CustomerDashboard = () => {
 
       setLoading(false);
     };
- 
+    data();
   }, [user, navigate]);
 
   useEffect(() => {

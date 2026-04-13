@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import logo from "@/assets/logo.png";
 import LicensePlate from "@/components/LicensePlate";
-import {useAuth } from "@/hooks/user-auth"
+import { useAuth } from "@/hooks/user-auth"
 
 
 const loginSchema = z.object({
@@ -38,55 +38,63 @@ const Login = () => {
   const { toast } = useToast();
 
   const { user, role } = useAuth();
-  useEffect( () => {
-    if (!user || !role) return;
-    const redirect =async()=>{
-      if (role === "driver") {
-        const { data: vehicle, error } = await supabase
-        .from("driver_vehicles")
-        .select(`
-          vehicle_type,
-          make,
-          model,
-          year,
-          license_plate,
-          tracking_consent
-        `)
-        .eq("user_id", user.id)
-        .maybeSingle();
+   const handleRedirect = async()=>{
+    if (role === "driver") {
+      
+      const { data: vehicle, error } = await supabase
+      .from("driver_vehicles")
+      .select(`
+        vehicle_type,
+        make,
+        model,
+        year,
+        license_plate,  
+        tracking_consent
+      `)
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-        const isVehicleComplete =
-        vehicle &&
-        vehicle.vehicle_type &&
-        vehicle.make &&
-        vehicle.model &&
-        vehicle.year &&
-        vehicle.license_plate
-        if (!isVehicleComplete) {
-          const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single();
-          setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
-          setDriverUserId(user.id);
-          setShowPlateWidget(true);
+      const isVehicleComplete =
+      vehicle &&
+      vehicle.vehicle_type &&
+      vehicle.make &&
+      vehicle.model &&
+      vehicle.year &&
+      vehicle.license_plate
+      if (!isVehicleComplete) {
+        const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single();
+        setDriverName({firstName:profileData.first_name, lastName:profileData.last_name});
+        setDriverUserId(user.id);
+        setShowPlateWidget(true);
 
-          toast({
-            title: "Almost there!",
-            description: "Please add your vehicle details to continue",
-          });
+        toast({
+          title: "Almost there!",
+          description: "Please add your vehicle details to continue",
+        });
 
-          return;
-        }
-        navigate("/driver/dashboard");
+        return;
+      }
+      navigate("/driver/dashboard");
+        
       } else {
         navigate("/customer/dashboard");
       };
-    }
-    redirect();
+    };
+  
+  useEffect( () => {
+    if (!user || !role) return;
+    console.log('getting current user:', user);
+   
+    handleRedirect();
+    
   }, [user, role]);
+
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
+      console.log('loggin user in');
       const validation = loginSchema.safeParse(formData);
       if (!validation.success) {
         toast({
@@ -97,17 +105,18 @@ const Login = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: user, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (error) throw error;
-       toast({
+    if(user){
+         toast({
           title: "Success!",
           description: "Logged in successfully",
         });
-
+    }
     } catch (error: any) {
       toast({
         title: "Login Failed",

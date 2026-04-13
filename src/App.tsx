@@ -23,6 +23,7 @@ import DriverTracker from "./components/DriverTracker";
 import "flatpickr/dist/flatpickr.min.css";
 import "flatpickr/dist/themes/material_blue.css";
 import { AuthProvider } from "./hooks/auth-context";
+import ProtectedRoute, { PublicRoute } from "./components/AppRoute";
 
 const queryClient = new QueryClient();
 
@@ -37,22 +38,89 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Onboarding />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+
+            <Route
+              path="/signup"
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              }
+            />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/customer/booking" element={<CustomerBooking />} />
-            <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-            <Route path="/driver/dashboard" element={<DriverDashboard />} />
-            <Route path="/driver/earnings" element={<DriverEarnings />} />
-            <Route path="/driver/verification" element={<DriverVerification />} />
-            <Route path="/driver/tracking" element={<OrderTracking />} />
-            <Route path="/profile" element={<Profile />} />
+            {/* <Route path="/home" element={<Home />} /> */}
+            <Route
+              path="/customer/dashboard"
+              element={
+                <ProtectedRoute role="user">
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer/booking"
+              element={
+                <ProtectedRoute role="user">
+                  <CustomerBooking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/driver/dashboard"
+              element={
+                <ProtectedRoute role="driver">
+                  <DriverDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/driver/earnings"
+              element={
+                <ProtectedRoute role="driver">
+                  <DriverEarnings />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/driver/verification"
+              element={
+                <ProtectedRoute role="driver">
+                  <DriverVerification />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/driver/tracking"
+              element={
+                <ProtectedRoute role="driver">
+                  <OrderTracking />
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute role ='driver'>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/order-tracking" element={<OrderTracking />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
