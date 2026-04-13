@@ -16,9 +16,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<Role>(null);
-  const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
+
+  const loading = authLoading || roleLoading;
 
   // fetch role
   // const fetchRole = async (userId: string) => {
