@@ -65,8 +65,6 @@ const CustomerBooking = () => {
   useEffect(() => {
     async () => {
     
-    
-      
       // Fetch unique vehicle types
       const { data: vehicles } = await supabase
         .from("driver_vehicles")

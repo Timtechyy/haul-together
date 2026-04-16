@@ -6,7 +6,7 @@ export function PublicRoute({ children }) {
 
   console.log("PublicRoute:", { user, role, loading });
 
-//   if (loading) return null;
+  if (loading) return null;
 
   if (user && role) {
     return role === "driver"?<Navigate to="/driver/dashboard" />:<Navigate to="/customer/dashboard" />;
@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children, role: requiredRole }) {
 
   if (!user) return <Navigate to="/login" />;
   
-  if (role !== requiredRole) return <Navigate to="/home" />;
+  if (role !== requiredRole) return requiredRole === "driver"?<Navigate to="/driver/dashboard" />:<Navigate to="/customer/dashboard" />;
   
   return children;
 }

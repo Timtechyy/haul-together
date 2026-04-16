@@ -83,7 +83,6 @@ const Login = () => {
   
   useEffect( () => {
     if (!user || !role) return;
-    console.log('getting current user:', user);
    
     handleRedirect();
     

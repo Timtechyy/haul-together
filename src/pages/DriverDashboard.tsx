@@ -16,6 +16,7 @@ import { ReceiptImage } from "@/components/ReceiptImage";
 import { useLocationTrackingContext } from "@/components/locationtracking";
 import { formatTime } from "@/components/time";
 import { useAuth } from "@/hooks/user-auth";
+import { useProfile, useVehicle, useVerififcation } from "@/hooks/user-data";
 
 // Preview interface for unassigned deliveries (limited data for privacy)
 interface DeliveryPreview {
@@ -54,8 +55,11 @@ interface AssignedDelivery extends DeliveryPreview {
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  // const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();  
+  const { user, role, loading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
+  const { data: vehicle, isLoading: vehicleLoading } = useVehicle(user?.id);
+  const { data: verification, isLoading: verififcationLoading } = useVerififcation(user?.id, role)
   const [pendingRequests, setPendingRequests] = useState<DeliveryPreview[]>([]);
   const [completedDeliveries, setCompletedDeliveries] = useState<DeliveryPreview[]>([]);
   const [isVerified, setIsVerified] = useState(false);
@@ -75,18 +79,14 @@ const DriverDashboard = () => {
     completedTrips: 0,
     rating: 0,
   });
-
-  const { user, loading } = useAuth();
-  if (!user) {
-    navigate("/login");
-    return;
-  }
+ 
+  
 
 
   
   useEffect(() => {
-    if (!user) return;
-
+    if (!user || !profile) return;
+    setIsVerified(verification?.verification_status === "approved");
     const fetchDriverData = async () => {
       // Fetch unassigned pending deliveries
       const { data: unassignedData, error: unassignedError } = await supabase
@@ -104,7 +104,7 @@ const DriverDashboard = () => {
 
       const{ data: completedDeliveries, error: completedError } = await supabase
         .from("deliveries")
-        .select("*")
+        .select("id, item_description, item_type, quantity, vehicle_type, price, estimated_distance, created_at, status, driver_id, pickup_location, delivery_location, pickup_lat, pickup_lng, delivery_lat, delivery_lng, receipt_url, customer_id")
         .eq("driver_id", user.id)
         .eq("status", "delivered");
         setCompletedDeliveries(completedDeliveries);
@@ -125,7 +125,6 @@ const DriverDashboard = () => {
         setPendingRequests(allDeliveries);
         // console.log("Initial deliveries loaded:", allDeliveries.length);
       }
-
       // Fetch stats (your existing code)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -153,7 +152,6 @@ const DriverDashboard = () => {
       const todayEarnings = todayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
       const yesterdayEarnings = yesterdayDeliveries?.reduce((sum, d) => sum + (Number(d.price) || 0), 0) || 0;
       const completedTrips = todayDeliveries?.length || 0;
-
       const ratingsToday = todayDeliveries?.filter(d => d.customer_rating) || [];
       const avgRating = ratingsToday.length > 0
         ? ratingsToday.reduce((sum, d) => sum + (d.customer_rating || 0), 0) / ratingsToday.length
@@ -167,20 +165,7 @@ const DriverDashboard = () => {
       });
     };
 
-
-
     fetchDriverData();
-
-    const isDriververified = async () => {
-      const { data, error } = await supabase.from("driver_verifications").select("verification_status").eq("user_id", user.id).maybeSingle();
-      if (error) {
-        console.error("Error checking verification status:", error);
-      } else {
-        setIsVerified(data?.verification_status === "approved");
-      }
-    };
-
-    isDriververified();
 
     // Set up realtime subscription
     const channel = supabase
@@ -314,7 +299,7 @@ const DriverDashboard = () => {
       // console.log("🧹 Cleaning up subscription");
       supabase.removeChannel(channel);
     };
-  }, [user, toast, notificationsEnabled]);
+  }, [user, profile,toast, notificationsEnabled]);
 
 
   // completed deliveries
@@ -506,10 +491,25 @@ const DriverDashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Driver Dashboard</h1>
-            <p className="text-muted-foreground">Manage your deliveries and earnings</p>
+          <div className=" flex flex-col-reverse sm:flex-row justify-between gap-y-4">
+           
+            <div>
+              <h2 className="text-2xl font-bold">
+                Welcome back, {profile?.first_name}!
+              </h2>
+              {/* <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Verified Customer
+                </Badge>
+              </div> */}
+            </div>  
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Driver Dashboard</h1>
+              <p className="text-muted-foreground">Manage your deliveries and earnings</p>
+            </div> 
           </div>
+        
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

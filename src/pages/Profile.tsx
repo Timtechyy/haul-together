@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/user-auth"
+import { useProfile, useVehicle, useVerififcation } from "@/hooks/user-data";
 import { Button } from "@/components/ui/enhanced-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,25 +35,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import PaymentMethods from "@/components/ui/addpaymentmethod";
 import PhoneInputField from "@/components/ui/phoneinput";
 import { formatTime } from "@/components/time";
-import { useAuth } from "@/hooks/user-auth"
 
-const Profile = () => {
+
+const Profile = () => { 
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useToast(); 
+  const { user, role } = useAuth(); 
+  console.log('user id in profile ', user.id);  
+  const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
+  const { data: vehicle, isLoading: vehicleLoading } = useVehicle(user?.id); 
+  const { data: verificationStatus, isLoading: verififcationLoading } = useVerififcation(user?.id, role)
+  console.log('profile data in profile ', profile);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const { user, role } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  // const [userId, setUserId] = useState<string | null>(null);
-  // const [userRole, setUserRole] = useState<string | null>(null);
-  const [verification, setVerification] = useState<any>(null);
+  const [verification, setVerification] = useState(false);
   const [driverStats, setDriverStats] = useState({
     totalDeliveries: 0,
     rating: 0,
     memberSince: "",
   });
-  const [vehicle, setVehicle] = useState({
+  const [vehicleUpdateForm, setVehicleForm] = useState({
     vehicleType: "",
     make: "",
     model: "",
@@ -60,8 +65,7 @@ const Profile = () => {
     insuranceNumber: "",
     trackingConsent: false,
   });
-
-  const [profile, setProfile] = useState({
+  const [profileUpdateForm, setProfileForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -72,102 +76,37 @@ const Profile = () => {
   });
 
   const isDriver = role === "driver"
-  const isVerified = verification?.verification_status === "approved";
-  if (!user) {
-    navigate("/login");
-    return;
-  }
 
   useEffect(() => {
-    if (!user) return;
+   if (!user || !profile) return;
     
-    loadProfile();
-  }, [user]);
-  const loadProfile = async () => {
-    if (!user) return;
-    try {
-      // Get profile data
-      const { data: profileData, error } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, created_at").eq("id", user.id).single();
+    if (isDriver) {
+      setVerification(verificationStatus?.verification_status === "approved");
+      driverStat(user.id, profile?.created_at);
 
-      if (error) throw error;
-      setProfile({
-        firstName: profileData.first_name || "",
-        lastName: profileData.last_name || "",
-        email: user.email || "",
-        phone: profileData.phone || "",
-        avatarUrl: profileData.avatar_url || "",
-        gender: profileData.gender || "",
-        created_at: profileData.created_at || "",
-      });
-
-      // Fetch vehicle info if driver
-      if (isDriver) {
-         driverVerification(user.id);
-         driverStat(user.id, profileData.created_at);
-
-        const { data: vehicleData } = await supabase
-          .from("driver_vehicles")
-          .select("vehicle_type, make, model, year, license_plate, insurance_number, tracking_consent")
-          .eq("user_id", user.id)
-          .single();
-
-        if (vehicleData) {
-          setVehicle({
-            vehicleType: vehicleData.vehicle_type || "",
-            make: vehicleData.make || "",
-            model: vehicleData.model || "",
-            year: vehicleData.year?.toString() || "",
-            licensePlate: vehicleData.license_plate || "",
-            insuranceNumber: vehicleData.insurance_number || "",
-            trackingConsent: vehicleData.tracking_consent || false,
-          });
+      const channel = supabase
+      .channel("driver-verification-status")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "driver_verifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // console.log("Verification updated:", payload.new);
+          setVerification(payload.new.verification_status);
         }
-      
+      )
+      .subscribe();
 
-        const channel = supabase
-        .channel("driver-verification-status")
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "driver_verifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload) => {
-            // console.log("Verification updated:", payload.new);
-            setVerification(payload.new.verification_status);
-          }
-        )
-        .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
+      return () => {
+        supabase.removeChannel(channel);
       }
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const driverVerification = async(userId:string) => {    
-    const { data: verificationData } = await supabase
-      .from("driver_verifications")
-      .select("verification_status")
-      .eq("user_id", userId)
-      .single();
-
-      // console.log("Verification Data:", verificationData);
-
-    setVerification(verificationData);
-  }
+  }, [user]);
+  
   // Fetch driver stats
   const driverStat = async (userId:string, created_at:string) => { 
     const { data: allDeliveries } = await supabase
@@ -201,9 +140,9 @@ const Profile = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          first_name: profile.firstName,
-          last_name: profile.lastName,
-          phone: profile.phone,
+          first_name: profileUpdateForm.firstName,
+          last_name: profileUpdateForm.lastName,
+          phone: profileUpdateForm.phone,
         })
         .eq("id", user.id);
 
@@ -215,7 +154,7 @@ const Profile = () => {
         let currentLat = null;
         let currentLng = null;
 
-        if (vehicle.trackingConsent) {
+        if (vehicleUpdateForm.trackingConsent) {
           try {
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject);
@@ -229,8 +168,8 @@ const Profile = () => {
 
         const { error: vehicleError } = await supabase.from("driver_vehicles").update(
           {
-            insurance_number: vehicle.insuranceNumber,
-            tracking_consent: vehicle.trackingConsent,
+            insurance_number: vehicleUpdateForm.insuranceNumber,
+            tracking_consent: vehicleUpdateForm.trackingConsent,
             current_lat: currentLat,
             current_lng: currentLng,
             last_location_update: currentLat && currentLng ? new Date().toISOString() : null,
@@ -284,7 +223,7 @@ const Profile = () => {
 
       if (updateError) throw updateError;
 
-      setProfile({ ...profile, avatarUrl: publicUrl });
+      setProfileForm({ ...profileUpdateForm, avatarUrl: publicUrl });
 
       toast({
         title: "Success",
@@ -356,12 +295,12 @@ const Profile = () => {
             <div className="flex flex-col md:flex-row items-start gap-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  {profile.avatarUrl ? (
-                    <AvatarImage src={profile.avatarUrl} alt="Profile" />
+                  {profile?.avatar_url ? (
+                    <AvatarImage src={profile?.avatar_url} alt="Profile" />
                   ) : (
                     <AvatarFallback className="text-2xl">
-                      {profile.firstName[0]}
-                      {profile.lastName[0]}
+                      {profile?.first_name[0]}
+                      {profile?.last_name[0]}
                     </AvatarFallback>
                   )}
                 </Avatar>
@@ -387,16 +326,16 @@ const Profile = () => {
                 <div className="flex items-start justify-between">
                   <div>
                     <h1 className="text-2xl font-bold">
-                      {profile.firstName} {profile.lastName}
+                      {profile?.first_name} {profile?.last_name}
                     </h1>
                     <div className="flex items-center gap-2 mt-2">
-                      {isDriver &&isVerified && (
+                      {isDriver && verification && (
                         <Badge variant="default" className="flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Verified {isDriver ? "Driver" : "Customer"}
                         </Badge>
                       )}
-                      {isDriver && !isVerified  && (
+                      {isDriver && !verification  && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Verification Pending
@@ -461,8 +400,8 @@ const Profile = () => {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
-                    value={profile.firstName}
-                    onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                    value={profile?.first_name}
+                    onChange={(e) => setProfileForm({ ...profileUpdateForm, firstName: e.target.value })}
                     disabled={!isEditing}
                   />
                 </div>
@@ -470,8 +409,8 @@ const Profile = () => {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
-                    value={profile.lastName}
-                    onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                    value={profile?.last_name}
+                    onChange={(e) => setProfileForm({ ...profileUpdateForm, lastName: e.target.value })}
                     disabled={!isEditing}
                   />
                 </div>
@@ -481,7 +420,7 @@ const Profile = () => {
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="email" type="email" value={profile.email} disabled className="pl-10 bg-muted" />
+                  <Input id="email" type="email" value={user.email} disabled className="pl-10 bg-muted" />
                 </div>
               </div>
 
@@ -491,27 +430,27 @@ const Profile = () => {
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <PhoneInputField
                     id="phone"
-                    placeholder={profile.phone}
-                    value={profile.phone}
-                    onChange={(value) => setProfile({ ...profile, phone: value })}
+                    placeholder={profile?.phone}
+                    value={profile?.phone}
+                    onChange={(value) => setProfileForm({ ...profileUpdateForm, phone: value })}
                     disabled={!isEditing}
                     // className="pl-10"
                   />
                   {/* <Input
                     id="phone"
-                    value={profile.phone}
+                    value={profile?.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                     
                   /> */}
                 </div>
               </div>
 
-              {profile.gender && (
+              {profile?.gender && (
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender</Label>
                   <Input
                     id="gender"
-                    value={profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+                    value={profile?.gender.charAt(0).toUpperCase() + profile?.gender.slice(1)}
                     disabled
                     className="bg-muted"
                   />
@@ -548,8 +487,8 @@ const Profile = () => {
                     <Input
                       id="vehicleType"
                       placeholder="e.g., Pickup Truck"
-                      value={vehicle.vehicleType}
-                      onChange={(e) => setVehicle({ ...vehicle, vehicleType: e.target.value })}
+                      value={vehicle?.vehicle_type}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, vehicleType: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -559,8 +498,8 @@ const Profile = () => {
                     <Input
                       id="make"
                       placeholder="e.g., Ford"
-                      value={vehicle.make}
-                      onChange={(e) => setVehicle({ ...vehicle, make: e.target.value })}
+                      value={vehicle?.make}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, make: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -573,8 +512,8 @@ const Profile = () => {
                     <Input
                       id="model"
                       placeholder="e.g., F-150"
-                      value={vehicle.model}
-                      onChange={(e) => setVehicle({ ...vehicle, model: e.target.value })}
+                      value={vehicle?.model}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, model: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -584,8 +523,8 @@ const Profile = () => {
                     <Input
                       id="year"
                       placeholder="e.g., 2020"
-                      value={vehicle.year}
-                      onChange={(e) => setVehicle({ ...vehicle, year: e.target.value })}
+                      value={vehicle?.year}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, year: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -598,8 +537,8 @@ const Profile = () => {
                     <Input
                       id="licensePlate"
                       placeholder="e.g., ABC1234"
-                      value={vehicle.licensePlate}
-                      onChange={(e) => setVehicle({ ...vehicle, licensePlate: e.target.value })}
+                      value={vehicle?.license_plate}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, licensePlate: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -609,8 +548,8 @@ const Profile = () => {
                     <Input
                       id="insuranceNumber"
                       placeholder="Optional"
-                      value={vehicle.insuranceNumber}
-                      onChange={(e) => setVehicle({ ...vehicle, insuranceNumber: e.target.value })}
+                      value={vehicle?.insurance_number}
+                      onChange={(e) => setVehicleForm({ ...vehicleUpdateForm, insuranceNumber: e.target.value })}
                       // disabled={!isEditing}
                       readOnly
                     />
@@ -620,8 +559,8 @@ const Profile = () => {
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="trackingConsent"
-                    checked={vehicle.trackingConsent}
-                    onCheckedChange={(checked) => setVehicle({ ...vehicle, trackingConsent: checked as boolean })}
+                    checked={vehicle?.tracking_consent}
+                    onCheckedChange={(checked) => setVehicleForm({ ...vehicleUpdateForm, trackingConsent: checked as boolean })}
                     disabled={!isEditing}
                   />
                   <Label htmlFor="trackingConsent" className="text-sm">
@@ -676,7 +615,7 @@ const Profile = () => {
 
           {/* </div>  */}
           {/* Verification Card - Only for Drivers */}
-          {isDriver && !isVerified && (
+          {isDriver && !verification && (
             <Card className="h-46">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -687,13 +626,13 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 <Button variant="hero" className="w-full" onClick={() => navigate("/driver/verification")}>
-                  {verification?.verification_status === "pending" ? "View Verification Status" : "Verify Now"}
+                  {!verification ? "View Verification Status" : "Verify Now"}
                 </Button>
               </CardContent>
             </Card>
           )}
           {/* Payment Methods */}
-          <PaymentMethods role={role} name={`${profile.firstName} ${profile.lastName}`} email={profile.email} />
+          <PaymentMethods role={role} name={`${profile?.first_name} ${profile?.last_name}`} email={user.email} />
           
         </div>
 

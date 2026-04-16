@@ -12,14 +12,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ReceiptImage } from "@/components/ReceiptImage";
 import { formatTime } from "@/components/time";
 import { useAuth } from "@/hooks/user-auth";
+import { useProfile } from "@/hooks/user-data"
 
 const CustomerDashboard = () => {
   const { user, role} = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   // const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
   const [loading, setLoading] = useState(true);
+  
+
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalBookings: 0,
@@ -34,20 +37,11 @@ const CustomerDashboard = () => {
   useEffect(() => {
     if(!user)return;
     const data = async () => {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      
-      setProfile(profileData);
-
       // Fetch delivery statistics from recent bookings with driver info
       const { data: bookingsData } = await supabase
         .from("deliveries")
         .select(`
-          *,
+          id,price,status,receipt_url, item_type, vehicle_type, quantity, pickup_location, delivery_location, estimated_distance,
           driver:driver_id(first_name, last_name, phone, avatar_url, gender, driver_vehicles( vehicle_type, make, model, year, license_plate, color)) `)
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
