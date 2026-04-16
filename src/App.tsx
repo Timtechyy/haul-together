@@ -89,7 +89,7 @@ const App = () => {
                 <Route
                   path="/profile"
                   element={
-                    <ProtectedRoute role={'driver'}>
+                    <ProtectedRoute role={['driver', 'user']}>
                        <Profile />
                     </ProtectedRoute>
                   } />
