@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         queryKey: ["role", userId],
         queryFn: () => fetchUserRole(userId),
       });
-      console.log('user role', role)
+      // console.log('user role', role)
 
       setRole(role);
 

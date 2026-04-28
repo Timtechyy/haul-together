@@ -74,7 +74,7 @@ const DriverVerification = () => {
     setIsVerified(verification?.verification_status === "approved");
     
   }, [user, profile, verification]);
-  console.log('stripe connectid and verification status', stripeConnect, veriffSessionId, isVerified);
+  // console.log('stripe connectid and verification status', stripeConnect, veriffSessionId, isVerified);
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // console.log(formData.licenseState);
