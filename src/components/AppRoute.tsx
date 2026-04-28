@@ -9,7 +9,7 @@ type Props = {
 export function PublicRoute({ children }) {
   const { user, role, loading } = useAuth();
 
-  console.log("PublicRoute:", { user, role, loading });
+  // console.log("PublicRoute:", { user, role, loading });
 
   if (loading) return null;
 

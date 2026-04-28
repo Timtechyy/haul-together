@@ -11,6 +11,7 @@ import GooglePlacesAutocomplete from "@/components/GooglePlacesAutocomplete";
 import { US_STATES } from "@/contants/states";
 import { DatePicker } from "@/components/ui/datePicker";
 import { useAuth } from "@/hooks/user-auth";
+import { useProfile, useVerififcation } from "@/hooks/user-data";
 const createWorker = () => new Worker(new URL("@/worker/ImageWorker.tsx", import.meta.url));
 
 const DriverVerification = () => {
@@ -18,6 +19,8 @@ const DriverVerification = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const {user, role} = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
+  const { data: verification, isLoading: verififcationLoading } = useVerififcation(user?.id, role)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -32,7 +35,7 @@ const DriverVerification = () => {
   });
   const [stripeConnect, setStripeConnect] = useState<string | null>(null);
   const [veriffSessionId, setVeriffSessionId] = useState<string | null>(null);
-  const [verifficationStatus, setVerificationStatus] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [licenseFront, setLicenseFront] = useState<File | null>(null);
   const [licenseBack, setLicenseBack] = useState<File | null>(null);
   const [userFace, setUserFace] = useState<File | null>(null);
@@ -42,7 +45,7 @@ const DriverVerification = () => {
   const [previewFront, setPreviewFront] = useState<string | null>(null);
   const [previewBack, setPreviewBack] = useState<string | null>(null);
   const [previewFace, setPreviewFace] = useState<string | null>(null);
-  const isVerifiled = verifficationStatus === "approved;";
+  // const isVerified = verificationStatus?.verification_status === "approved";
 
   const workerFront = useRef<Worker>();
   const workerBack = useRef<Worker>();
@@ -56,43 +59,22 @@ const DriverVerification = () => {
       workerBack.current?.terminate();
     };
   }, []);
-  if (!user) {
-    navigate("/login");
-    return;
-  }
   useEffect(() => {
-    if(!user)return;
-     async () => {
-      // Fetch profile data to auto-populate fields
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, phone, gender, stripe_connect_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        setStripeConnect(profile.stripe_connect_id);
-        setFormData((prev) => ({
-          ...prev,
-          firstName: profile.first_name || "",
-          lastName: profile.last_name || "",
-          gender: profile.gender || "",
-          phone: profile.phone,
-        }));
-      }
-
-      const { data: profileVerification } = await supabase
-        .from("driver_verifications")
-        .select("veriff_session_id, verification_status")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (profileVerification?.veriff_session_id) {
-        setVeriffSessionId(profileVerification.veriff_session_id);
-        setVerificationStatus(profileVerification.verification_status);
-      }
-    };
-  }, [navigate]);
-
+    if (!user || !profile) return;
+    if (profile) {
+      setFormData((prev) => ({
+        ...prev,
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        gender: profile.gender || "",
+      }));
+    }
+    setStripeConnect(profile.stripe_connect_id);
+    setVeriffSessionId(verification?.veriff_session_id);
+    setIsVerified(verification?.verification_status === "approved");
+    
+  }, [user, profile, verification]);
+  console.log('stripe connectid and verification status', stripeConnect, veriffSessionId, isVerified);
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // console.log(formData.licenseState);
@@ -152,7 +134,7 @@ const DriverVerification = () => {
 
       // console.log("addressData:", formData.addressData);
 
-      if (!isVerifiled) {
+      if (!isVerified) {
         // Use a local variable to track the session ID throughout this function
         let currentSessionId = veriffSessionId;
 

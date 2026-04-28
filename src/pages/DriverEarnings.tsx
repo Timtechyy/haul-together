@@ -9,8 +9,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useToast } from "@/hooks/use-toast";
 import Withdrawal from "@/components/ui/withdrawal";
 import ResponsivePaymentModal from "@/components/ui/modal";
-import { getBalance } from "@/hooks/balance";
+import { useBalance } from "@/hooks/balance";
 import { useAuth } from "@/hooks/user-auth"
+import { useProfile, useVehicle, useVerififcation } from "@/hooks/user-data";
 interface EarningsData {
   date: string;
   earnings: number;
@@ -21,13 +22,15 @@ const DriverEarnings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, role } = useAuth();
+  const { data: profileData, isLoading: profileLoading } = useProfile(user?.id);
+  const { data: verification, isLoading: verififcationLoading } = useVerififcation(user?.id, role)
   // const [user, setUser] = useState<any>(null);
   const [dailyData, setDailyData] = useState<EarningsData[]>([]);
   const [weeklyData, setWeeklyData] = useState<EarningsData[]>([]);
   const [monthlyData, setMonthlyData] = useState<EarningsData[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalTrips, setTotalTrips] = useState(0);
-  const [verification, setVerification] = useState<any>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     firstName: "",
@@ -38,14 +41,23 @@ const DriverEarnings = () => {
     gender: "",
     stripe_connect_id:""
   });
-  const {balance, loading, reload} = getBalance(profile.stripe_connect_id);
+  const {balance, loading, reload} = useBalance(profile.stripe_connect_id);
   const [showWithdrawal, setShowWithdrawal] = useState(false);
-  if (!user) {
-    navigate("/login");
-    return;
-  }
+
   useEffect(() => {
     if (!user) return;
+    setProfile({
+      firstName: profileData.first_name || "",
+      lastName: profileData.last_name || "",
+      email: user.email || "",
+      phone: profileData.phone || "",
+      avatarUrl: profileData.avatar_url || "",
+      gender: profileData.gender || "",
+      stripe_connect_id:profileData.stripe_connect_id || ""
+    });
+
+    setIsVerified(verification.verification_status === "approved");  
+    setUserRole(role || null);
     const fetchEarnings = async () => {
       const { data, error } = await supabase
         .from("deliveries")
@@ -127,43 +139,14 @@ const DriverEarnings = () => {
         };
       });
       setMonthlyData(monthly);
-
-      const { data: verificationData } = await supabase
-      .from("driver_verifications")
-      .select("verification_status")
-      .eq("user_id", user.id)
-      .single();
-
-      setVerification(verificationData.verification_status);
-
-      // Get user role
-      const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", user.id).single();
-
-      setUserRole(roleData?.role || null);
-      
-
-      // Get profile data
-      const { data: profileData, error: profileError } = await supabase.from("profiles").select("first_name, last_name, phone, avatar_url, gender, created_at, stripe_connect_id").eq("id", user.id).single();
-
-      if (profileError) throw error;
-
-      setProfile({
-        firstName: profileData.first_name || "",
-        lastName: profileData.last_name || "",
-        email: user.email || "",
-        phone: profileData.phone || "",
-        avatarUrl: profileData.avatar_url || "",
-        gender: profileData.gender || "",
-        stripe_connect_id:profileData.stripe_connect_id || ""
-      });
-        
     };
 
     fetchEarnings();
 
-  }, [user, toast]);
-   const isVerified = verification === "approved";
-   function withdraw() {
+  }, [user,role, profileData, verification, toast]);
+
+   
+  function withdraw() {
     if (!isVerified) {
       toast({
         title: "You need to complete verification",
@@ -181,7 +164,7 @@ const DriverEarnings = () => {
         variant: "destructive",
       });
     }
-   }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">

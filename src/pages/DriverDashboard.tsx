@@ -648,7 +648,7 @@ const DriverDashboard = () => {
                                         : "Accept to view full pickup details"
                                       }
                                     </div>
-                                  </div>
+  ssN                             </div>
                                   <div className="flex items-center gap-3">
                                     <div className="text-right">
                                       <div className="text-xl font-bold">${request.price.toFixed(2)}</div>

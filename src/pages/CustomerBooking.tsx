@@ -58,10 +58,6 @@ const CustomerBooking = () => {
   };
 
   const [paymentModal, setPaymentModal] = useState<PaymentModalState>({ open: false });
-  if (!user) {
-        navigate("/login");
-        return;
-      }
   useEffect(() => {
     async () => {
     
@@ -273,7 +269,9 @@ const CustomerBooking = () => {
 
       if (error) {
         // console.log("Error fetching drivers:", error.message);
-        return toast({ title: "Error", description: error.message, variant: "destructive"});
+        throw new Error(error.message);
+        
+        // return toast({ title: "Error", description: error.message, variant: "destructive"});
       };
 
       // // Store drivers with the receipt URL for later booking
@@ -381,8 +379,7 @@ const CustomerBooking = () => {
       if (error) {
         // console.log("Error creating delivery:", error.message);
           //  console.log("Error fetching drivers:", error.message);
-        toast({ title: "Error", description: error.message, variant: "destructive"});
-        return;
+        throw new Error(error.message);
       };
 
       setPendingDeliveryId(delivery);

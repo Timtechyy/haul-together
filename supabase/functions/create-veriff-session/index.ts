@@ -114,6 +114,7 @@ async function createVeriffSession(userId: string, verification: VerificationPay
   }
 
   const data = await response.json();
+  
   return data.verification;
 }
 
@@ -158,6 +159,16 @@ serve(async (req) => {
     
     const veriffSession = await createVeriffSession(userId, verification);
     // console.log("Veriff session created:", veriffSession.id);
+    // await supabase.from("profiles").update({ stripe_id: customerId }).eq("id", user.id);
+    await supabase.from("driver_verifications").upsert(
+      {
+        veriff_session_id: veriffSession.id,
+        user_id: userId,
+      },
+      {
+        onConflict: "user_id",
+      },
+    );
 
     return new Response(JSON.stringify({
       sessionId: veriffSession.id,

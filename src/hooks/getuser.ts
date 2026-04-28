@@ -14,7 +14,7 @@ export const fetchUserRole = async (userId: string) => {
 export const fetchProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("first_name, last_name, phone, avatar_url, gender, created_at")
+    .select("first_name, last_name, phone, avatar_url, gender, created_at, stripe_connect_id")
     .eq("id", userId)
     .single();
 
@@ -40,7 +40,7 @@ export const fetchDriverVehicle = async (userId: string) => {
 export const fetchDriverVerification = async (userId: string) => {
   const { data, error } = await supabase
     .from("driver_verifications")
-    .select("verification_status")
+    .select("verification_status, veriff_session_id")
     .eq("user_id", userId)
     .maybeSingle(); // safer than single()
 
