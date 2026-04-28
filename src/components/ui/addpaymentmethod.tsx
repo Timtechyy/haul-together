@@ -10,6 +10,8 @@ import SetupIntentModal from "@/components/PaymentMethod";
 import { supabase } from "@/integrations/supabase/client";
 import { PayoutMethod } from "@/contants/paymentMethodTypes";
 import clsx from "clsx"
+import { Toast } from "@radix-ui/react-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   role: string;
@@ -18,26 +20,36 @@ interface Props {
 }
 
 export default function PaymentMethods({ role,name, email }: Props) {
+  const { toast } = useToast();
   const { methods, loading, reload } = usePaymentMethods();
   const [modalSecret, setModalSecret] = useState<string | null>(null);
-    const isCard = (m: PayoutMethod) => m.object === "card"
-    const isBank = (m: PayoutMethod) => m.object === "bank_account"
-    const [payoutMethod, setPayoutMethod] = useState<PayoutMethod | null>(null)
+  const isCard = (m: PayoutMethod) => m.object === "card"
+  const isBank = (m: PayoutMethod) => m.object === "bank_account"
+  const [payoutMethod, setPayoutMethod] = useState<PayoutMethod | null>(null)
 
 
   const handleAddPaymentMethod = async () => {
-    // if (!customerId) return;
+    try {
+      // if (!customerId) return;
 
-    // Create a SetupIntent via Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke("create-setup-intent");
+      // Create a SetupIntentz via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke("create-setup-intent");
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+      if (error) {
+        throw new Error(error.message);
+      }
     // console.log('secret:', data.clientSecret);
     setModalSecret(data.clientSecret);
+    } catch (error) {
+       toast({
+        title: "Error Occured trying to add payment method",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  
 
   return (
     <>

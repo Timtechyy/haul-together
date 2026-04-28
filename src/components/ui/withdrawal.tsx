@@ -9,6 +9,7 @@ import SetupIntentModal from "@/components/PaymentMethod";
 import { supabase } from "@/integrations/supabase/client";
 import clsx from "clsx"
 import { PayoutMethod } from "@/contants/paymentMethodTypes";
+import { useToast } from "@/hooks/use-toast"; 
 
 interface Props {
   role: string;
@@ -20,6 +21,7 @@ interface Props {
 
 
 export default function WithdrawWidget({role, balance }: Props) {
+  const { toast } = useToast();
   const numericBalance = Number(balance)
   const isCard = (m: PayoutMethod) => m.object === "card"
   const isBank = (m: PayoutMethod) => m.object === "bank_account"
@@ -28,46 +30,71 @@ export default function WithdrawWidget({role, balance }: Props) {
   const [payoutMethod, setPayoutMethod] = useState<PayoutMethod | null>(null)
   const [modalSecret, setModalSecret] = useState<string | null>(null)
 
-    const handleAddPaymentMethod = async () => {
-    // if (!customerId) return;
+  const handleAddPaymentMethod = async () => {
+    try {   
+      // if (!customerId) return;
+      // Create a SetupIntent via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke("create-setup-intent");
 
-    // Create a SetupIntent via Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke("create-setup-intent");
-
-    if (error) {
-      alert(error.message);
-      return;
+      if (error) {
+        throw new Error(error.message);
+      }
+      // console.log('secret:', data.clientSecret);
+      setModalSecret(data.clientSecret);
+    } catch (error) {
+      toast({
+        title: "Error Occured trying to add payment method",
+        description: "Please try again.",
+        variant: "destructive",
+      }); 
     }
-    // console.log('secret:', data.clientSecret);
-    setModalSecret(data.clientSecret);
   };
 
   const handleWithdrawal= async()=>{
-    const { data, error } = await supabase.functions.invoke("create-payout", {
-      body:{amount:amount , destination:payoutMethod.id ,}
-    });
+    try {
+      if (!payoutMethod) return;
 
-    if (error) {
-      alert(error.message);
-      return;
+      const { data, error } = await supabase.functions.invoke("create-payout", {
+        body:{amount:amount , destination:payoutMethod.id ,}
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Withdrawal Requested",
+        description: "Your withdrawal request has been submitted.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error Occured trying to process withdrawal",
+        description: "Please try again.",
+        variant: "destructive",
+      }); 
     }
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseFloat(e.target.value)
+    try {
+      let value = parseFloat(e.target.value)
 
-    if (isNaN(value)) {
-      setAmount("")
-      return
+      if (isNaN(value)) {
+        setAmount("")
+        return
+      }
+
+      if (value > numericBalance) {
+        value = numericBalance
+      }
+
+      if (value < 0) value = 0
+
+      setAmount(value.toString())
+      
+    } catch (error) {
+      
     }
-
-    if (value > numericBalance) {
-      value = numericBalance
-    }
-
-    if (value < 0) value = 0
-
-    setAmount(value.toString())
   }
 
   return (

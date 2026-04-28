@@ -35,24 +35,28 @@ export default function LicensePlate({ userId, onComplete }: Details) {
     //   },
     // );
 
-   const { data, error } = await supabase.from("driver_vehicles").insert({
-      user_id: userId,
-      vehicle_type: vehicleResult.style,
-      make: vehicleResult.make,
-      model: vehicleResult.model,
-      year: parseInt(vehicleResult.year),
-      color: vehicleResult.color.name,
-      trim: vehicleResult.trim,
-      license_plate: keyword.plateNumber,
-      vin: vehicleResult.vin,
-      tracking_consent: vehicleTracking, 
-    })
-    .select()
-    .single();
+    try {
+      const { data, error } = await supabase.from("driver_vehicles").insert({
+        user_id: userId,
+        vehicle_type: vehicleResult.style,
+        make: vehicleResult.make,
+        model: vehicleResult.model,
+        year: parseInt(vehicleResult.year),
+        color: vehicleResult.color.name,
+        trim: vehicleResult.trim,
+        license_plate: keyword.plateNumber,
+        vin: vehicleResult.vin,
+        tracking_consent: vehicleTracking, 
+      })
+      .select()
+      .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    onComplete();
+      onComplete();
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   const [keyword, setKeyword] = useState({

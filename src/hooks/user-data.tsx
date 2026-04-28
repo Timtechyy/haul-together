@@ -22,9 +22,10 @@ export const useVehicle = (userId?: string) =>
     enabled: !!userId,
   });
 
-  export const useVerififcation = (userId?: string) =>
+  export const useVerififcation = (userId?: string, role?:string) =>
   useQuery({
-    queryKey: ["driver-verfifction", userId],
+    queryKey: ["driverVerification", userId],
     queryFn: () => fetchDriverVerification(userId!),
-    enabled: !!userId,
+    enabled: !!userId && role === "driver",
+    staleTime: 1000 * 60 * 5, // cache 5 mins
   });

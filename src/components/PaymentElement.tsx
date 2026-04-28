@@ -37,10 +37,7 @@ export default function PaymentForm({ onSuccess, onFailure }:PaymentFormProps) {
       if (error) {
         onFailure(true);
         setRetry(true);
-        throw error;
-        // alert(error.message);
-        // setLoading(false);
-        // return;
+        throw new Error(error.message);
       }
 
       if (paymentIntent.status === "succeeded") {

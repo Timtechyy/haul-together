@@ -41,11 +41,11 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast(); 
   const { user, role } = useAuth(); 
-  console.log('user id in profile ', user.id);  
+  // console.log('user id in profile ', user.id); 
   const { data: profile, isLoading: profileLoading } = useProfile(user?.id);
   const { data: vehicle, isLoading: vehicleLoading } = useVehicle(user?.id); 
   const { data: verificationStatus, isLoading: verififcationLoading } = useVerififcation(user?.id, role)
-  console.log('profile data in profile ', profile);
+  // console.log('profile data in profile ', profile);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);

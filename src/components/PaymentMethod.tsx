@@ -13,6 +13,7 @@ export default function SetupIntentForm({role, clientSecret }: Props) {
   const {toast} = useToast();
 
   const handleSubmit = async (role:string) => {
+  try {
     if (!stripe || !elements) return;
 
     // console.log("adding payment method for:", role);
@@ -40,12 +41,19 @@ export default function SetupIntentForm({role, clientSecret }: Props) {
     }
     
     if (error) {
-      alert(error.message);
       setLoading(false);
-      return;
+      throw new Error(error.message);
+      
     }
 
     setLoading(false);
+  } catch (error) {
+    toast({
+      title: "Error Occured trying to add payment method",
+      description: "Please try again.",
+      variant: "destructive",
+    }); 
+  }
   };   
   
     // const submit =async()=>{
