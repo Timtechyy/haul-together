@@ -39,7 +39,8 @@
         "@stripe/stripe-js": "^8.4.0",
         "@supabase/supabase-js": "^2.58.0",
         "@tanstack/react-query": "^5.99.0",
-        "@turf/distance": "^7.3.2",
+        "@turf/distance": "^7.3.5",
+        "@turf/helpers": "^7.3.5",
         "@types/google.maps": "^3.58.1",
         "@vitejs/plugin-react": "^4.7.0",
         "class-variance-authority": "^0.7.1",
@@ -465,11 +466,11 @@
 
     "@tanstack/react-query": ["@tanstack/react-query@5.100.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@tanstack/react-query/-/react-query-5.100.5.tgz", { "dependencies": { "@tanstack/query-core": "5.100.5" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-aNwj1mi2v2bQ9IxkyR1grLOUkv3BYWoykHy9KDyLNbjC3tsahbOHJibK+Wjtr1wRhG59/AvJhiJG5OlthaCgJA=="],
 
-    "@turf/distance": ["@turf/distance@7.3.2", "", { "dependencies": { "@turf/helpers": "7.3.2", "@turf/invariant": "7.3.2", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-aY2HQDZpu/doKRUTEcBKdV2olNOD1x0wKR6ujzC+D1EZLKWOEmTJRR+6OjzB+xuv5zZbhFPe9f0MXEuNDxzwfQ=="],
+    "@turf/distance": ["@turf/distance@7.3.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@turf/distance/-/distance-7.3.5.tgz", { "dependencies": { "@turf/helpers": "7.3.5", "@turf/invariant": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-uQAC63zg/l91KUxzfhqio7Ii3+UXTrPOVJScIdRj6EO6+9XHI4kC+AdyIS4cPAv14sZfJLIBxzMnzcGrss+kEA=="],
 
-    "@turf/helpers": ["@turf/helpers@7.3.2", "", { "dependencies": { "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-5HFN42rgWjSobdTMxbuq+ZdXPcqp1IbMgFYULTLCplEQM3dXhsyRFe7DCss4Eiw12iW3q6Z5UeTNVfITsE5lgA=="],
+    "@turf/helpers": ["@turf/helpers@7.3.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@turf/helpers/-/helpers-7.3.5.tgz", { "dependencies": { "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-E/NMGV5MwbjjP7AJXBtsanC3yY8N2MQ87IGdIgkB2ji5AtBpwnH4L3gEqpYN4RlCJJWbLbzO91BbKv2waUd0eg=="],
 
-    "@turf/invariant": ["@turf/invariant@7.3.2", "", { "dependencies": { "@turf/helpers": "7.3.2", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-brGmL1EFhZH/YNXhq6S+8sPWBEnmvEyxMWJO8bUNOFZyWHYiRTwxQHZM+An1blkbQ77PiEzsdNAspZqE1j7YKA=="],
+    "@turf/invariant": ["@turf/invariant@7.3.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@turf/invariant/-/invariant-7.3.5.tgz", { "dependencies": { "@turf/helpers": "7.3.5", "@types/geojson": "^7946.0.10", "tslib": "^2.8.1" } }, "sha512-ZVIvsBvjr8lO7WxC5zYNjRsjSDvyGvWkJMjuWaJjTU8x+1tmfNnw3gDX/TI2Sit83gcRYLYkNo23lB/udqx/Hg=="],
 
     "@types/babel__core": ["@types/babel__core@7.20.5", "", { "dependencies": { "@babel/parser": "^7.20.7", "@babel/types": "^7.20.7", "@types/babel__generator": "*", "@types/babel__template": "*", "@types/babel__traverse": "*" } }, "sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA=="],
 
